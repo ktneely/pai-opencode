@@ -1,12 +1,12 @@
 # PAI Adaptations
 
-**What we changed from vanilla PAI 2.5 and why**
+**What we changed from vanilla PAI v3.0 and why**
 
 ---
 
 ## Overview
 
-PAI-OpenCode is **PAI 2.5 ported to OpenCode**. Most of the system is unchanged—same skills, same agents, same memory structure. But some parts required adaptation due to fundamental platform differences.
+PAI-OpenCode is **PAI v3.0 (Algorithm v1.8.0) ported to OpenCode**. Most of the system is unchanged—same skills, same agents, same memory structure. But some parts required adaptation due to fundamental platform differences.
 
 This document explains **what we changed** and **why**.
 
@@ -19,7 +19,7 @@ This document explains **what we changed** and **why**.
 | v1.0.0 | PAI 2.4 | v0.2.24 | Core port, 8 handlers |
 | v1.1.0 | PAI 2.5 | v0.2.25 | 13 handlers, voice/sentiment |
 | v1.3.0 | PAI 2.5 | v0.2.25 | 16 agents, model tiers, 3 presets |
-| **v2.0.0** | **PAI 3.0** | **v1.2.0** | **8 effort levels, 25-capability audit, PRD system, 5 new handlers** |
+| **v2.0.0** | **PAI 3.0** | **v1.8.0** | **8 effort levels, Verify Completion Gate, Wisdom Frames, 20 handlers, 39 skills** |
 
 ---
 
@@ -201,9 +201,11 @@ export function fileLog(message: string, level = "info") {
 
 ### Platform-Specific Adaptations
 
-**Algorithm v1.2.0** introduced several features — some portable to OpenCode, some Claude Code only:
+**Algorithm v1.2.0–v1.8.0** introduced numerous features — some portable to OpenCode, some Claude Code only:
 
 #### ✅ Ported to OpenCode
+
+##### Algorithm v1.2.0 (Base)
 
 | Feature | Implementation | Notes |
 |---------|----------------|-------|
@@ -223,6 +225,27 @@ export function fileLog(message: string, level = "info") {
 | **OBSERVE Hard Gate** | In SKILL.md | Thinking-only phase |
 | **AUTO-COMPRESS 150%** | In SKILL.md | Drop effort tier on budget overrun |
 | **Loop Mode** | In SKILL.md (concept) | Multi-pass refinement |
+
+##### Algorithm v1.3.0–v1.8.0 (Upstream Sync)
+
+| Feature | Version | Implementation | Notes |
+|---------|---------|----------------|-------|
+| **Verify Completion Gate** | v1.6.0 | In SKILL.md (VERIFY phase) | **CRITICAL:** Prevents "PASS" claims without actual TaskUpdate calls. NON-NEGOTIABLE. |
+| **Phase Separation Enforcement** | v1.6.0 | In SKILL.md | "STOP" markers on THINK, PLAN, BUILD, EXECUTE, VERIFY |
+| **Zero-Delay Output** | v1.6.0 | In SKILL.md | Instant output before any processing |
+| **Self-Interrogation Effort Scaling** | v1.3.0 | In SKILL.md | Instant/Fast skip, Standard answers 1+4, Extended+ all 5 |
+| **Constraint Extraction Effort Gate** | v1.3.0 | In SKILL.md | Gate for effort levels below Standard |
+| **Steps 6-8 Gated to Extended+** | v1.3.0 | In SKILL.md | Constraint Fidelity steps scale by effort |
+| **QG6/QG7 Gated to Extended+** | v1.3.0 | In SKILL.md | Quality gates scale by effort |
+| **ISC Scale Tiers Updated** | v1.3.0 | In SKILL.md | Simple: 4-16, Medium: 17-32, Large: 33-99, Massive: 100-500+ |
+| **BUILD Capability Execution** | v1.8.0 | In SKILL.md | Explicit capability execution substep within BUILD |
+| **Wisdom Injection (OUTPUT 1.75)** | v1.8.0 | In SKILL.md | Injects domain wisdom between Constraint Extraction and ISC |
+| **Wisdom Frame Update in LEARN** | v1.8.0 | In SKILL.md | Captures new wisdom into domain frames |
+| **Algorithm Reflection First in LEARN** | v1.8.0 | In SKILL.md | Reflection before PRD LOG |
+| **Wisdom Frames System** | v1.8.0 | `MEMORY/WISDOM/` directory | 5 seed domains + WisdomFrameUpdater CLI tool |
+| **Security: env var prefix strip** | upstream #620 | `security-validator.ts` | Strips export/set/declare/readonly prefixes |
+| **Rating: 5/10 noise filter** | upstream | `rating-capture.ts` | Ambiguous ratings skip learning files |
+| **Symlink skill support** | upstream | `GenerateSkillIndex.ts` | `findSkillFiles()` follows symlinks |
 
 #### ❌ Not Portable (Claude Code Only)
 
@@ -369,33 +392,36 @@ Mandatory in THINK phase - justify exclusion of:
 
 ---
 
-## What's Deferred to v1.2+
+## What's Deferred to Future Versions
 
 | Feature | Status | Target |
 |---------|--------|--------|
-| Observability Dashboard | Deferred | v1.2 |
-| Multi-Channel Notifications | Partial | v1.2 |
-| Auto-Migration | Deferred | v2.0 |
-| MCP Server Adapters | Deferred | v2.0 |
+| Observability Dashboard | ✅ Shipped | v1.2.0 |
+| Multi-Channel Notifications | ✅ Shipped (Voice) | v1.1.0 |
+| Auto-Migration | Deferred | v3.0 |
+| MCP Server Adapters | Deferred | v3.0 |
+| PRD Auto-Creation Handler | Deferred | v2.1 |
+| Dynamic Algorithm Version (LATEST file) | Deferred | v2.1 |
 
-See **DEFERRED-FEATURES.md** for detailed roadmap.
+See **ROADMAP.md** for detailed timeline.
 
 ---
 
 ## Version Compatibility
 
-| Component | PAI 2.5 | PAI-OpenCode v1.1 |
-|-----------|---------|-------------------|
-| Skills | ✅ Identical | ✅ Identical |
-| Agents | ✅ Content identical | ⚠️ Filename casing changed |
-| MEMORY | ✅ Identical | ✅ Identical |
+| Component | PAI v3.0 | PAI-OpenCode v2.0 |
+|-----------|----------|-------------------|
+| Skills | ✅ 39 skills | ✅ 39 skills (identical) |
+| Agents | ✅ Content identical | ⚠️ Filename casing changed (PascalCase) |
+| MEMORY | ✅ Identical | ✅ Identical (+ WISDOM/ directory) |
 | Security Patterns | ✅ Identical | ✅ Identical |
-| Hooks/Plugins | ❌ Different architecture | ✅ Plugin system (13 handlers) |
-| Algorithm v0.2.25 | ✅ Full | ✅ Full |
+| Hooks/Plugins | ❌ Different architecture | ✅ Plugin system (20 handlers) |
+| Algorithm v1.8.0 | ✅ Full | ✅ Full |
+| Wisdom Frames | ✅ Available | ✅ Available (5 seed domains) |
 | Voice Server | ✅ Available | ✅ Available (3 backends) |
 | Sentiment Detection | ✅ Available | ✅ Available |
-| Tab State | ✅ Available | ✅ Available |
-| Observability Dashboard | ✅ Available | ⏳ Deferred to v1.2 |
+| Verify Completion Gate | ✅ Available | ✅ Available |
+| Observability Dashboard | ✅ Available | ✅ Available |
 
 ---
 
@@ -448,4 +474,4 @@ See **MIGRATION.md** for full guide.
 
 ---
 
-**PAI-OpenCode v1.3** - Full PAI 2.5, 16 Agents, Multi-Provider Ready
+**PAI-OpenCode v2.0** — Full PAI v3.0, Algorithm v1.8.0, 39 Skills, 20 Handlers, Wisdom Frames

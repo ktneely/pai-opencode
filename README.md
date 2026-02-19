@@ -7,10 +7,10 @@
 [![Version](https://img.shields.io/badge/Version-2.0.0-brightgreen)](CHANGELOG.md)
 [![OpenCode Compatible](https://img.shields.io/badge/OpenCode-Compatible-green)](https://github.com/anomalyco/opencode)
 [![PAI Version](https://img.shields.io/badge/PAI-3.0-blue)](https://github.com/danielmiessler/Personal_AI_Infrastructure)
-[![Algorithm](https://img.shields.io/badge/Algorithm-1.2.0-blueviolet)](https://github.com/danielmiessler/TheAlgorithm)
+[![Algorithm](https://img.shields.io/badge/Algorithm-1.8.0-blueviolet)](https://github.com/danielmiessler/TheAlgorithm)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> **v2.0 Release** — PAI v3.0 / Algorithm v1.2.0 with 8 effort levels, 25-capability audit, PRD system, constraint extraction, and 5 new quality mechanisms. See [CHANGELOG.md](CHANGELOG.md).
+> **v2.0 Release** — PAI v3.0 / Algorithm v1.8.0 with 8 effort levels, Verify Completion Gate, Wisdom Frames, 25-capability audit, PRD system, and 39 skills. See [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -22,7 +22,7 @@ PAI-OpenCode is the complete port of **Daniel Miessler's Personal AI Infrastruct
 
 **PAI** is a scaffolding system that makes AI assistants work better for *you*. It's not about which model you use — it's about the infrastructure around it:
 
-- **The Algorithm (v1.2.0)** — 8 effort levels with 25-capability audit, constraint extraction, and quality gates
+- **The Algorithm (v1.8.0)** — 8 effort levels with Verify Completion Gate, Wisdom Frames, phase separation enforcement, and quality gates
 - **Skills** — Modular capabilities (39 skills including Cloudflare, ExtractWisdom, Science)
 - **Agents** — Dynamic multi-agent orchestration
 - **Memory** — Session history, project context, learning loops, PRD system
@@ -113,7 +113,7 @@ This **10-15 minute** interactive session will configure your complete TELOS fra
 
 ### 🎯 Skills System (39 Skills)
 Modular, reusable capabilities invoked by name:
-- **CORE** — Identity, preferences, auto-loaded at session start (Algorithm v1.2.0)
+- **CORE** — Identity, preferences, auto-loaded at session start (Algorithm v1.8.0)
 - **Art** — Excalidraw-style visual diagrams
 - **Browser** — Code-first browser automation
 - **Security** — Pentesting, secret scanning
@@ -153,7 +153,7 @@ Persistent context across sessions:
 - Project documentation (`.opencode/MEMORY/projects/`)
 - Learning loops (`.opencode/MEMORY/LEARNINGS/`)
 
-### 🔧 Plugin System (19 Handlers)
+### 🔧 Plugin System (20 Handlers)
 TypeScript lifecycle plugins with comprehensive coverage:
 - **Context injection** at session start
 - **Security validation** before commands
@@ -317,8 +317,8 @@ PAI-OpenCode's design is documented through **Architecture Decision Records (ADR
 | [CHANGELOG.md](CHANGELOG.md) | Version history and release notes |
 | [docs/WHAT-IS-PAI.md](docs/WHAT-IS-PAI.md) | PAI fundamentals explained |
 | [docs/OPENCODE-FEATURES.md](docs/OPENCODE-FEATURES.md) | OpenCode unique features |
-| [docs/PLUGIN-SYSTEM.md](docs/PLUGIN-SYSTEM.md) | Plugin architecture (14 handlers) |
-| [docs/PAI-ADAPTATIONS.md](docs/PAI-ADAPTATIONS.md) | Changes from PAI 2.5 |
+| [docs/PLUGIN-SYSTEM.md](docs/PLUGIN-SYSTEM.md) | Plugin architecture (20 handlers) |
+| [docs/PAI-ADAPTATIONS.md](docs/PAI-ADAPTATIONS.md) | Changes from PAI v3.0 |
 | [docs/MIGRATION.md](docs/MIGRATION.md) | Migration from Claude Code PAI |
 | [ROADMAP.md](ROADMAP.md) | Version roadmap |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |

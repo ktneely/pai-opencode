@@ -404,4 +404,4 @@ Tracks ISC criteria satisfaction and captures learnings.
 
 ---
 
-**PAI-OpenCode v2.0** — 20 Handlers, Full PAI v3.0 Algorithm (v1.2.0), 8-Tier Effort Levels, PRD System
+**PAI-OpenCode v2.0** — 20 Handlers, Full PAI v3.0 Algorithm (v1.8.0), 8-Tier Effort Levels, Wisdom Frames, Verify Completion Gate

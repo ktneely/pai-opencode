@@ -6,6 +6,52 @@ This roadmap outlines the development path from v1.0 to v2.0 and beyond.
 
 ## Current Release
 
+### v2.0.0 - PAI v3.0 / Algorithm v1.8.0 (February 2026)
+
+**Status:** ✅ Released
+
+**Major Feature:** Full upstream sync to Algorithm v1.8.0 with Wisdom Frames, Verify Completion Gate, and 10 new skills
+
+**What's New in v2.0:**
+
+#### Algorithm v1.2.0 Base
+- **8 Effort Levels** — Instant, Fast, Standard, Extended, Advanced, Deep, Comprehensive, Loop
+- **25-Capability Full Scan Audit** — Replaces Two-Pass capability selection
+- **Constraint Extraction** — Mechanical [EX-N] extraction before ISC
+- **Self-Interrogation** — 5 structured questions before BUILD
+- **7 Quality Gates** — QG1-QG7 must pass before proceeding
+- **PRD System** — Persistent Requirements Documents for cross-session tracking
+- **Start Symbol ♻︎** — Replaces 🤖
+
+#### Algorithm v1.3.0–v1.8.0 Upstream Sync (14 commits)
+- **Verify Completion Gate (v1.6.0)** — Prevents "PASS" claims without TaskUpdate calls
+- **Phase Separation Enforcement (v1.6.0)** — "STOP" markers on every phase
+- **Zero-Delay Output (v1.6.0)** — Instant output before processing
+- **Effort-Scaled Gates (v1.3.0)** — Self-Interrogation, Constraint Extraction, QG6/QG7 scale by effort
+- **Wisdom Frames (v1.8.0)** — Domain knowledge accumulation across sessions (`MEMORY/WISDOM/`)
+- **Wisdom Injection (v1.8.0)** — OUTPUT 1.75 injects domain wisdom before ISC creation
+- **BUILD Capability Execution (v1.8.0)** — Explicit substep within BUILD phase
+
+#### New Skills & Handlers
+- **10 New Skills** — Cloudflare, ExtractWisdom, IterativeDepth, Science, Parser, Remotion, Sales, USMetrics, WorldThreatModelHarness, WriteStory
+- **6 New/Updated Handlers** — algorithm-tracker, agent-execution-guard, skill-guard, check-version, integrity-check, format-reminder (updated)
+- **WisdomFrameUpdater.ts** — CLI tool for managing wisdom frames
+
+#### Infrastructure
+- **5 Seed Wisdom Frames** — development, deployment, security, architecture, communication
+- **Security Validator fix** — env var prefix stripping (upstream #620)
+- **Rating Capture fix** — 5/10 noise filter
+- **Symlink support** — GenerateSkillIndex follows symlinks
+- **SessionHarvester** — PAI_DIR variable rename
+
+**Documentation:**
+- [CHANGELOG.md](CHANGELOG.md) — Full release notes
+- [docs/specs/UPSTREAM-SYNC-v1.8.0-SPEC.md](docs/specs/UPSTREAM-SYNC-v1.8.0-SPEC.md) — Porting specification
+
+---
+
+## Previous Releases
+
 ### v1.3.0 - Multi-Provider Agent System (February 2026)
 
 **Status:** ✅ Released
@@ -19,22 +65,16 @@ This roadmap outlines the development path from v1.0 to v2.0 and beyond.
 - **Rewritten Wizard** - Prerequisites → Dev build → 3 presets → Identity → Config
 - **Researcher Renames** - `ClaudeResearcher` → `DeepResearcher`, `PerplexityProResearcher` removed
 - **Profile YAML** - New format: `default_model:` + `agents:` with optional `tiers:`
-- **Git Cleanup** - `MEMORY/` excluded from git, `.gitkeep` preserves structure
-
-**Technical Details:**
-- 16 agents with tier-based routing
-- PR #11377 enables `model_tiers` support (requires dev build)
-- Simplified provider configuration (3 presets vs 8 providers)
-- Backwards-compatible wizard flow
-
-**Documentation:**
-- [CHANGELOG.md](CHANGELOG.md) - Full release notes
-- [README.md](README.md) - Updated for v1.3
-- [docs/ADVANCED-SETUP.md](docs/ADVANCED-SETUP.md) - Model tier configuration
 
 ---
 
-## Previous Releases
+### v1.2.0 - Observability Dashboard (February 2026)
+
+**Status:** ✅ Released
+
+**Major Feature:** Real-time event streaming, SQLite persistence, Vue 3 dashboard
+
+---
 
 ### v1.1.0 - PAI 2.5 + Voice/Sentiment Handlers (February 2026)
 
@@ -50,11 +90,6 @@ This roadmap outlines the development path from v1.0 to v2.0 and beyond.
 - **Update Counts Handler** - Skill/workflow counting at session end
 - **Response Capture Handler** - ISC extraction and learning capture
 
-**Technical Details:**
-- 13 handlers total (up from 8 in v1.0)
-- Build: 21 modules, 85.77 KB
-- Graceful fallbacks for all optional features
-
 ---
 
 ### v1.0.0 - Core PAI on OpenCode (January 2026)
@@ -69,23 +104,26 @@ This roadmap outlines the development path from v1.0 to v2.0 and beyond.
 - Skill search and indexing tools
 - Full TypeScript tooling with Bun runtime
 
-**Documentation:**
-- [README.md](README.md) - Project overview
-- [INSTALL.md](INSTALL.md) - Installation guide
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
-
 ---
 
 ## Upcoming Releases
 
+### v2.1.0 - SHOULD-PORT Completions (Q1 2026)
+
+**Goal:** Complete remaining upstream items and polish
+
+**Features:**
+- PRD auto-creation via AutoWorkCreation plugin handler
+- Dynamic Algorithm version reading via LATEST file
+- Enhanced Wisdom Frames with auto-population from session learnings
+
 ---
 
-### v1.5.0 - Enhanced Setup & Health Monitoring (Q2 2026)
+### v2.5.0 - Enhanced Setup & Health Monitoring (Q2 2026)
 
 **Goal:** Advanced setup options and system health
 
 **Features:**
-- ✅ Installation Wizard (shipped in v1.3)
 - Skill selection UI (enable/disable individual skills)
 - System health checks and diagnostics
 - Configuration validation
@@ -95,14 +133,14 @@ This roadmap outlines the development path from v1.0 to v2.0 and beyond.
 
 ## Future Vision
 
-### v2.0.0 - Full PAI Parity & Auto-Migration (Q3 2026)
+### v3.0.0 - Full PAI Parity & Auto-Migration (Q3 2026)
 
-**Goal:** Complete feature parity with PAI 2.4 + seamless migration
+**Goal:** Complete feature parity with latest upstream PAI + seamless migration
 
 **Major Features:**
 
 1. **Auto-Migration System**
-   - One-command migration from PAI 2.4
+   - One-command migration from Claude Code PAI
    - Skill mapping and compatibility layer
    - Memory import (sessions, projects, learning)
 
@@ -120,7 +158,7 @@ This roadmap outlines the development path from v1.0 to v2.0 and beyond.
    - deepwiki-enhanced (GitHub repo Q&A via Devin API)
    - Community MCP server integrations
 
-![v2.0 Architecture](docs/images/v2-architecture.jpg)
+![v3.0 Architecture](docs/images/v2-architecture.jpg)
 
 ---
 
@@ -139,6 +177,7 @@ We value community input! Here's how to shape PAI-OpenCode's future:
 
 | Version | Release Date | Highlights |
 |---------|-------------|------------|
+| **v2.0.0** | **February 2026** | **PAI v3.0 / Algorithm v1.8.0, Wisdom Frames, Verify Completion Gate, 39 skills** |
 | v1.3.0  | February 2026 | Multi-Provider Agent System with Model Tiers |
 | v1.2.0  | February 2026 | Observability Dashboard + 14 handlers |
 | v1.1.0  | February 2026 | PAI 2.5 upgrade + Voice/Sentiment handlers |
