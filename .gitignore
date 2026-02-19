@@ -25,6 +25,7 @@ node_modules/
 !.opencode/MEMORY/**/
 !.opencode/MEMORY/**/.gitkeep
 !.opencode/MEMORY/README.md
+!.opencode/MEMORY/WISDOM/*.md
 .opencode/settings.json
 
 # Exploration artifacts

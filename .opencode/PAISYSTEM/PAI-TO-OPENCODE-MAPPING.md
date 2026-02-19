@@ -1,20 +1,21 @@
-# PAI 2.4 to PAI-OpenCode Mapping Guide
+# PAI to PAI-OpenCode Mapping Guide
 
-**Version:** 1.0
+**Version:** 2.1
 **Created:** 2026-01-24
-**Purpose:** Reference document for correctly importing PAI 2.4 components into PAI-OpenCode
+**Updated:** 2026-02-19
+**Purpose:** Reference document for correctly importing PAI components into PAI-OpenCode
 
 ---
 
 ## Executive Summary
 
-PAI-OpenCode is a vanilla PAI 2.4 implementation adapted for OpenCode's architecture. This document defines the mapping rules between Daniel Miessler's PAI 2.4 structure and PAI-OpenCode's conventions.
+PAI-OpenCode is a vanilla PAI implementation adapted for OpenCode's architecture. Currently synced to **Algorithm v1.8.0** (upstream v3.0). This document defines the mapping rules between Daniel Miessler's PAI structure and PAI-OpenCode's conventions.
 
 ---
 
 ## Architecture Comparison
 
-| Aspect | PAI 2.4 (Claude Code) | PAI-OpenCode |
+| Aspect | PAI v3.0 (Claude Code) | PAI-OpenCode |
 |--------|----------------------|--------------|
 | **Root Directory** | `.claude/` | `.opencode/` |
 | **Lifecycle Events** | `hooks/*.hook.ts` | `plugins/handlers/*.ts` |
@@ -115,6 +116,13 @@ PAI-OpenCode:   .opencode/agents/*.md
 ├── SECURITY/
 ├── STATE/
 ├── VOICE/
+├── WISDOM/              # NEW in v1.8.0 — Domain wisdom frames
+│   ├── README.md
+│   ├── architecture.md
+│   ├── communication.md
+│   ├── deployment.md
+│   ├── development.md
+│   └── security.md
 └── WORK/
 ```
 
@@ -264,7 +272,9 @@ When importing a new PAI version:
 
 ## v3.0 Feature Mapping
 
-The following features were added in PAI v3.0 (Algorithm v1.2.0):
+The following features were added in PAI v3.0 (Algorithm v1.2.0–v1.8.0):
+
+### Algorithm v1.2.0 (Base)
 
 | v3.0 Feature | Claude Code | OpenCode | Status |
 |---|---|---|---|
@@ -289,6 +299,34 @@ The following features were added in PAI v3.0 (Algorithm v1.2.0):
 | StatusLine | Claude Code UI | N/A | ❌ Not portable |
 | Voice Personality | settings.json personality block | settings.json personality block | ✅ Compatible |
 
+### Algorithm v1.3.0–v1.8.0 (Upstream Sync 2026-02-19)
+
+| Feature | Version | Claude Code | OpenCode | Status |
+|---|---|---|---|---|
+| Self-Interrogation effort scaling | v1.3.0 | In SKILL.md | In SKILL.md | ✅ Ported |
+| Constraint Extraction effort gate | v1.3.0 | In SKILL.md | In SKILL.md | ✅ Ported |
+| Steps 6-8 gated to Extended+ | v1.3.0 | In SKILL.md | In SKILL.md | ✅ Ported |
+| QG6/QG7 gated to Extended+ | v1.3.0 | In SKILL.md | In SKILL.md | ✅ Ported |
+| ISC Scale Tiers (4-500+) | v1.3.0 | In SKILL.md | In SKILL.md | ✅ Ported |
+| Constraint Fidelity System v1.3.0 | v1.3.0 | In SKILL.md | In SKILL.md | ✅ Ported |
+| Phase Separation Enforcement | v1.6.0 | In SKILL.md | In SKILL.md | ✅ Ported |
+| Verify Completion Gate | v1.6.0 | In SKILL.md | In SKILL.md | ✅ Ported |
+| Zero-Delay Output Section | v1.6.0 | In SKILL.md | In SKILL.md | ✅ Ported |
+| BUILD Capability Execution | v1.8.0 | In SKILL.md | In SKILL.md | ✅ Ported |
+| Wisdom Injection (OUTPUT 1.75) | v1.8.0 | In SKILL.md | In SKILL.md | ✅ Ported |
+| Wisdom Frame Update in LEARN | v1.8.0 | In SKILL.md | In SKILL.md | ✅ Ported |
+| Algorithm Reflection first in LEARN | v1.8.0 | In SKILL.md | In SKILL.md | ✅ Ported |
+| Wisdom Frames system | v1.8.0 | ~/.claude/MEMORY/WISDOM/ | ~/.opencode/MEMORY/WISDOM/ | ✅ Ported |
+| WisdomFrameUpdater.ts | v1.8.0 | Tools/WisdomFrameUpdater.ts | Tools/WisdomFrameUpdater.ts | ✅ Ported |
+| Voice_id template variable | v1.6.0 | `{DAIDENTITY.ALGORITHMVOICEID}` | `{DAIDENTITY.ALGORITHMVOICEID}` | ✅ Ported |
+| Security: env var prefix strip | #620 | SecurityValidator.hook.ts | security-validator.ts | ✅ Ported |
+| Rating: 5/10 noise filter | commit | ExplicitRatingCapture.hook.ts | rating-capture.ts | ✅ Ported |
+| Symlink skill support | commit | SkillIndexGenerator.hook.ts | GenerateSkillIndex.ts | ✅ Ported |
+| SessionHarvester PAI_DIR | commit | SessionHarvester.ts | SessionHarvester.ts | ✅ Ported |
+| PRD auto-creation hook | commit | AutoWorkCreation.hook.ts | N/A | ⏳ SHOULD-PORT |
+| Dynamic version from LATEST | commit | Algorithm/LATEST | N/A | ⏳ SHOULD-PORT |
+| SecurityValidator stdin fix #452 | #452 | SecurityValidator.hook.ts | N/A | ❌ Not applicable (in-process plugins) |
+
 ---
 
 ## v3.0 Hook → Handler Mapping
@@ -310,6 +348,7 @@ New hooks added in v3.0 and their OpenCode handler equivalents:
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-02-19 | 2.1 | Upstream sync v1.3.0–v1.8.0: 18 features mapped, MEMORY/WISDOM added, SHOULD-PORT items tracked |
 | 2026-02-17 | 2.0 | Added v3.0 Feature Mapping, Hook → Handler Mapping |
 | 2026-01-24 | 1.1 | Added Model Configuration section, Agent Type Mapping |
 | 2026-01-24 | 1.0 | Initial mapping guide created |
@@ -380,9 +419,10 @@ Use getModel("agents.intern") from plugins/lib/model-config.ts
 
 ## References
 
-- PAI 2.4 Source: `github.com/danielmiessler/Personal_AI_Infrastructure`
+- PAI v3.0 Source: `github.com/danielmiessler/Personal_AI_Infrastructure`
 - PAI-OpenCode: `github.com/Steffen025/pai-opencode`
 - OpenCode Plugin API: `@opencode-ai/plugin`
+- Upstream Sync Spec: `docs/specs/UPSTREAM-SYNC-v1.8.0-SPEC.md`
 
 ---
 

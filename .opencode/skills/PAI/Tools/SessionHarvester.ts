@@ -25,10 +25,10 @@ import { getLearningCategory, isLearningCapture } from "../../../plugins/lib/lea
 // Configuration
 // ============================================================================
 
-const CLAUDE_DIR = path.join(process.env.HOME!, ".opencode");
+const PAI_DIR = process.env.PAI_DIR || path.join(process.env.HOME!, ".opencode");
 const USERNAME = process.env.USER || require("os").userInfo().username;
-const PROJECTS_DIR = path.join(CLAUDE_DIR, "projects", `-Users-${USERNAME}--claude`);
-const LEARNING_DIR = path.join(CLAUDE_DIR, "MEMORY", "LEARNING");
+const PROJECTS_DIR = path.join(PAI_DIR, "projects", `-Users-${USERNAME}--opencode`);
+const LEARNING_DIR = path.join(PAI_DIR, "MEMORY", "LEARNING");
 
 // Patterns indicating learning moments in conversations
 const CORRECTION_PATTERNS = [

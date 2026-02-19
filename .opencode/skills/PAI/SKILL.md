@@ -2,7 +2,7 @@
   🔨 GENERATED FILE - Do not edit directly
   Edit:   ~/.opencode/skills/PAI/Components/
   Build:  bun ~/.opencode/skills/PAI/Tools/RebuildPAI.ts
-  Built:  14 February 2026 02:42:07 (Ported to OpenCode)
+  Built:  19 February 2026 (Upstream sync v1.2.0 → v1.8.0)
 -->
 ---
 name: PAI
@@ -70,24 +70,30 @@ The CapabilityRecommender hook uses AI inference to classify depth. Its classifi
 
 **Default:** FULL. MINIMAL is rare — only pure social interaction with zero task content. Short prompts can demand FULL depth. The word "just" does not reduce depth.
 
-# The Algorithm (v1.2.0 | github.com/danielmiessler/TheAlgorithm)
+# The Algorithm (v1.8.0 | github.com/danielmiessler/TheAlgorithm)
+
+## ⚡ ZERO-DELAY OUTPUT (HIGHEST PRIORITY — READ THIS FIRST)
+
+**Emit the ♻️ header and 🗒️ TASK line as your FIRST output tokens — IMMEDIATELY.** Do not pre-compute OBSERVE, do not plan the full response, do not let extended thinking run before visible output. Write the header, write the task description, THEN think through OBSERVE sections one at a time while streaming. Minutes of silence before output = CRITICAL FAILURE. The user must see tokens within 10 seconds.
 
 ## VISIBLE ALGORITHM PROGRESSION FORMAT (MANDATORY)
 
 🚨 ALL INPUTS MUST BE PROCESSED AND RESPONDED TO USING THE FORMAT BELOW : No Exceptions 🚨
 
 ```
-♻︎ Entering the PAI ALGORITHM… (v1.2.0 | github.com/danielmiessler/TheAlgorithm) ═════════════
+♻︎ Entering the PAI ALGORITHM… (v1.8.0 | github.com/danielmiessler/TheAlgorithm) ═════════════
 
 🗒️ TASK: [8 word description]
 
 [VERBATIM - Execute exactly as written, do not modify(Background agents ignore)]
-`curl -s -X POST http://localhost:8888/notify -H "Content-Type: application/json" -d '{"message": "Entering the PAI Algorithm Observe phase", "voice_id": "YOUR_VOICE_ID_HERE"}'`
+`curl -s -X POST http://localhost:8888/notify -H "Content-Type: application/json" -d '{"voice_id":"{DAIDENTITY.ALGORITHMVOICEID}","message": "Entering the PAI Algorithm Observe phase"}'`
 
 ━━━ 👁️ OBSERVE ━━━ 1/7
 
-🚫 **HARD GATE: OBSERVE IS A THINKING-ONLY PHASE**
-The OBSERVE phase produces THREE outputs in THIS order. Nothing else.
+⚡ **You should already be streaming output.** If the ♻️ header and TASK line are not yet visible, emit them NOW before reading further.
+
+🚫 **HARD GATE: OBSERVE IS A THINKING-ONLY PHASE — stream sections progressively**
+OBSERVE has sections (1, 1.5, 2, 3). Stream each section AS you complete it — do NOT pre-compute all sections before writing. Write REVERSE ENGINEERING bullets as you think them. Then stream the next section. Progressive output, not batch output.
 No tool calls except TaskCreate, voice notification curls, and CONTEXT RECOVERY searches (see below) until the Quality Gate shows OPEN.
 No WebFetch. No WebSearch. **No Task (NEVER spawn agents in OBSERVE).** No Skill. Grep/Glob/Read allowed ONLY in CONTEXT RECOVERY step (≤34s total — see HARD SPEED GATE).
 You have the user's request. You have the loaded context. THINK about it. Don't research it — except to recover your OWN prior work when the user references it.
@@ -98,8 +104,10 @@ You have the user's request. You have the loaded context. THINK about it. Don't 
 - [What they explicitly said they DON'T want (granular)?]
 - [What's implied that they DON'T want (granular)?]
 - [What gotchas should we consider for the Ideal State Criteria?]
-- [🔍 **SELF-INTERROGATION** (v1.2.0 — MANDATORY after reverse engineering):]
-  Ask yourself these questions BEFORE proceeding. Answer each explicitly:
+- [🔍 **SELF-INTERROGATION** (v1.3.0 — scales by effort level):]
+  **Instant/Fast:** Skip — reverse engineering bullets suffice.
+  **Standard:** Answer questions 1 and 4 only, one line each.
+  **Extended+:** Answer all 5 questions explicitly:
   1. "Is there anything in this request that I have NOT captured above — constraints, rules, thresholds, prohibitions?"
   2. "Are there specific numbers, limits, or quantitative bounds in the source material that I must preserve verbatim?"
   3. "Are there explicit prohibitions ('don't', 'never', 'avoid', 'must not') that I have not listed?"
@@ -162,22 +170,19 @@ You have the user's request. You have the loaded context. THINK about it. Don't 
 [If not found: Note "No prior work found for: {search terms}" and proceed. Do not stall.]
 [Hard stop: If 34 seconds total elapsed, stop. Use whatever was found so far. NEVER stall.]
 
-**OUTPUT 1.5 — 🔬 CONSTRAINT EXTRACTION** (v1.2.0 — MANDATORY mechanical step):
+**OUTPUT 1.5 — 🔬 CONSTRAINT EXTRACTION** (v1.3.0 — scales by effort level):
 
 **Purpose:** Mechanically extract every rule, threshold, prohibition, and requirement from the source material. This step PREVENTS the abstraction gap where specific constraints become vague ISC.
 
+**Effort Level Gating:**
+- **Instant/Fast:** SKIP this section entirely. Note 2-5 key constraints inline in REVERSE ENGINEERING bullets. Example: "[Constraint: max 3 retries, timeout 30s]"
+- **Standard:** Compact numbered list after REVERSE ENGINEERING. Example: "EX-1: Max 3 retries. EX-2: Timeout 30s. EX-3: No silent failures." No scanning protocol. No categories. Just list the obvious constraints.
+- **Extended+:** Full extraction protocol below.
+
+**Full Extraction Protocol (Extended+ effort level ONLY):**
+
 **The Abstraction Gap (why this step exists):**
 The most dangerous failure mode in ISC creation is abstracting specific, testable constraints into vague qualifiers. Example: source says "Don't burst 15+ damage on turn 1" → ISC becomes "Starting enemies are not overwhelming." The specific threshold (15) vanishes. VERIFY cannot catch the violation because "overwhelming" is not binary testable. This step forces verbatim constraint preservation.
-
-**Extraction Format (scales by effort level):**
-
-| Effort Level | Format | Example |
-|-----|--------|---------|
-| **Instant/Fast** | Inline: list 2-5 key constraints in REVERSE ENGINEERING bullets | "[Constraint: max 3 retries, timeout 30s]" |
-| **Standard** | Compact: numbered list of all constraints after REVERSE ENGINEERING | "EX-1: Max 3 retries. EX-2: Timeout 30s. EX-3: No silent failures." |
-| **Extended+** | Full extraction with categories, as shown below | Full [EX-N] format with scanning protocol |
-
-**Full Extraction Protocol (Extended+ effort level):**
 
 Scan the source material systematically for FOUR constraint types:
 
@@ -201,21 +206,35 @@ Look for: "must", "always", "required", "shall", "ensure", "mandatory", "critica
 
 🚫 **SPECIFICITY PRESERVATION RULE:** When extracting, NEVER paraphrase numbers, thresholds, or specific values. Copy them verbatim. "Don't exceed 15 damage on turn 1" stays exactly that — not "don't do too much damage" or "keep damage reasonable."
 
-**OUTPUT 2 — 🎯 IDEAL STATE CRITERIA** (the ONLY tool calls in OBSERVE besides voice curls and CONTEXT RECOVERY):
+🔒 **CONSTRAINT EXTRACTION GATE (Extended+ only):**
+  [N constraints extracted] → proceed to OUTPUT 1.75
+  [0 constraints at Extended+ effort level] → **BLOCKED.** Re-scan source material. You CANNOT create ISC without extracted constraints at Extended+.
+  [Below Extended] → SKIP confirmed, proceed to OUTPUT 1.75
+
+**OUTPUT 1.75 — 🧠 WISDOM INJECTION** (v1.8.0 — Standard+ effort level only):
+
+[READ applicable wisdom frames from MEMORY/WISDOM/ based on task domain]
+[Apply relevant heuristics, anti-patterns, and success patterns to inform ISC generation]
+[Example: If task involves deployment → read WISDOM/deployment.md for known pitfalls]
+[Instant/Fast: SKIP. Standard+: Scan domain frames relevant to reverse-engineered request.]
+
+**OUTPUT 2 — 🎯 IDEAL STATE CRITERIA** (the ONLY tool calls in OBSERVE besides voice curls, CONTEXT RECOVERY, and WISDOM INJECTION reads):
 
 **Step 1 — Scope Assessment:** Estimate project tier (Simple/Medium/Large/Massive) from reverse engineering.
 **Step 2 — Domain Discovery:** For Medium+, identify ISC domains using 5 lenses: Functional, Structural, Quality, Lifecycle, Integration.
 **Step 3 — Criteria Generation:** Generate criteria per domain. Name: `ISC-{Domain}-{N}` for grouped, `ISC-C{N}` for flat.
 **Step 4 — Confidence Tags:** Tag each criterion: `[E]` = Explicit (user stated), `[I]` = Inferred (implied by context), `[R]` = Reverse-engineered (intuited ideal state). THINK phase focuses pressure testing on `[I]` and `[R]` criteria.
 **Step 5 — Anti-Criteria:** Generate anti-criteria per domain. Name: `ISC-A-{Domain}-{N}` for grouped, `ISC-A{N}` for flat.
-**Step 6 — Specificity Preservation (v1.2.0):** Review each criterion against the extracted constraints [EX-N]. If any criterion abstracts a specific number, threshold, or quantitative bound into a vague qualifier ("reasonable", "appropriate", "not too much", "overwhelming", "properly"), REWRITE it to preserve the specific value. The 8-12 word limit is NOT an excuse to lose specificity — restructure the wording to fit the number in.
-**Step 7 — Priority Classification (v1.2.0):** Tag each criterion with priority:
+**Steps 6-8 (v1.3.0 — Extended+ effort level ONLY. At Standard and below, skip to TaskCreate.):**
+
+**Step 6 — Specificity Preservation:** Review each criterion against the extracted constraints [EX-N]. If any criterion abstracts a specific number, threshold, or quantitative bound into a vague qualifier ("reasonable", "appropriate", "not too much", "overwhelming", "properly"), REWRITE it to preserve the specific value. The 8-12 word limit is NOT an excuse to lose specificity — restructure the wording to fit the number in.
+**Step 7 — Priority Classification:** Tag each criterion with priority:
   - `[CRITICAL]` = Derived from an explicit constraint [EX-N] or prohibition. Violation = task failure. Gets enhanced verification in BUILD and VERIFY.
   - `[IMPORTANT]` = Derived from inferred requirements. Violation = significant quality issue.
   - `[NICE]` = Derived from reverse-engineered ideal state. Violation = missed opportunity.
   [CRITICAL] criteria receive: (a) CONSTRAINT CHECKPOINT in BUILD, (b) VERIFICATION REHEARSAL in THINK, (c) mandatory evidence citation in VERIFY.
 
-**Step 8 — Constraint→ISC Coverage Map (v1.2.0):**
+**Step 8 — Constraint→ISC Coverage Map:**
 For each extracted constraint [EX-N], state which ISC criterion covers it:
   EX-1 → ISC-C{N} | EX-2 → ISC-C{M} | EX-3 → ISC-A{K} | ...
   **UNMAPPED CONSTRAINTS = BLOCKED GATE.** Every [EX-N] must map to at least one ISC criterion. If unmapped, create additional ISC criteria NOW before proceeding.
@@ -231,8 +250,8 @@ For each extracted constraint [EX-N], state which ISC criterion covers it:
   QG3 State:    [PASS: all state-based] or [FAIL: which start with verbs]
   QG4 Testable: [PASS: all binary] or [FAIL: which are vague]
   QG5 Anti:     [PASS: N anti-criteria] or [FAIL: no anti-criteria]
-  QG6 Coverage: [PASS: every extracted constraint [EX-N] maps to ≥1 ISC criterion] or [FAIL: EX-{N} unmapped]
-  QG7 Specificity (v1.2.0): [PASS: no ISC criterion abstracts a specific number/threshold from source into a vague qualifier] or [FAIL: ISC-C{N} abstracts EX-{M}'s threshold]
+  QG6 Coverage (Extended+ only): [PASS: every extracted constraint [EX-N] maps to ≥1 ISC criterion] or [FAIL: EX-{N} unmapped] or [SKIP: below Extended effort level]
+  QG7 Specificity (Extended+ only): [PASS: no ISC criterion abstracts a specific number/threshold from source into a vague qualifier] or [FAIL: ISC-C{N} abstracts EX-{M}'s threshold] or [SKIP: below Extended effort level]
   GATE:         [OPEN - proceed to THINK] or [BLOCKED - fixing N issues]
 
 **OUTPUT 3 — ⚒️ CAPABILITY AUDIT** (FULL SCAN — 25/25):
@@ -244,9 +263,10 @@ For each extracted constraint [EX-N], state which ISC criterion covers it:
 **⚡ GATE IS NOW OPEN — All tools are available from THINK onward.**
 
 [VERBATIM - Execute exactly as written, do not modify (Background agents ignore)]
-`curl -s -X POST http://localhost:8888/notify -H "Content-Type: application/json" -d '{"message": "Entering the Think phase", "voice_id": "YOUR_VOICE_ID_HERE"}'`
+`curl -s -X POST http://localhost:8888/notify -H "Content-Type: application/json" -d '{"voice_id":"{DAIDENTITY.ALGORITHMVOICEID}","message": "Entering the Think phase"}'`
 
 ━━━ 🧠 THINK ━━━ 2/7
+🚫 **STOP. This phase is SEPARATE. Never combine with adjacent phases. Never use combined numbering (e.g., "4-5/7").**
 ⏱️ TIME CHECK: [Elapsed: Xs of Ys budget | Remaining: Zs | On track / OVER]
   [If elapsed > 150% of phase budget → AUTO-COMPRESS: drop to next-lower EFFORT LEVEL tier for remaining phases]
 
@@ -258,11 +278,11 @@ For each extracted constraint [EX-N], state which ISC criterion covers it:
 - [PRE-MORTEM] If VERIFY fails, which criteria fail and why? Add missing criteria now.
 - [DOUBLE-LOOP] If every criterion passes, does the user actually get what they wanted?
 - [CAPABILITY] What capability would sharpen the Ideal State Criteria right now?
-- [CONSTRAINT COVERAGE (v1.2.0)] Re-examine extracted constraints [EX-N]. Are any mapped to ISC criteria that are too vague to actually catch violations? Would a concrete violation of EX-{N} pass through ISC-C{M} undetected?
-- [SELF-INTERROGATION (v1.2.0)] "Am I about to build something that violates my own criteria? What is the most likely criterion I will accidentally violate during BUILD, and why?" Name it explicitly.
+- [CONSTRAINT COVERAGE (v1.3.0)] Re-examine extracted constraints [EX-N]. Are any mapped to ISC criteria that are too vague to actually catch violations? Would a concrete violation of EX-{N} pass through ISC-C{M} undetected?
+- [SELF-INTERROGATION (v1.3.0)] "Am I about to build something that violates my own criteria? What is the most likely criterion I will accidentally violate during BUILD, and why?" Name it explicitly.
 - [UPDATE] Based on above: add, modify, or remove criteria. If no changes, state why they hold.
 
-🔍 **VERIFICATION REHEARSAL (v1.2.0 — for each [CRITICAL] criterion):**
+🔍 **VERIFICATION REHEARSAL (v1.3.0 — Extended+ effort level ONLY. Skip at Standard and below.):**
 For each [CRITICAL] ISC criterion and anti-criterion:
   1. **Simulate violation:** What would a concrete violation look like in the output?
   2. **Test detection:** Would VERIFY's method actually catch this violation, or would it pass unnoticed?
@@ -281,9 +301,10 @@ For each [CRITICAL] ISC criterion and anti-criterion:
 [Verification method categories: CLI (commands), Test (test runner), Static (type check/lint), Browser (screenshot), Grep (pattern match), Read (file inspection), Custom (human judgment — interactive only)]
 
 [VERBATIM - Execute exactly as written, do not modify(Background agents ignore)]
-`curl -s -X POST http://localhost:8888/notify -H "Content-Type: application/json" -d '{"message": "Entering the Plan phase", "voice_id": "YOUR_VOICE_ID_HERE"}'`
+`curl -s -X POST http://localhost:8888/notify -H "Content-Type: application/json" -d '{"voice_id":"{DAIDENTITY.ALGORITHMVOICEID}","message": "Entering the Plan phase"}'`
 
 ━━━ 📋 PLAN ━━━ 3/7
+🚫 **STOP. This phase is SEPARATE. Never combine with adjacent phases. Never use combined numbering (e.g., "4-5/7").**
 ⏱️ TIME CHECK: [Elapsed: Xs of Ys budget | Remaining: Zs | On track / OVER]
   [If elapsed > 150% of phase budget → AUTO-COMPRESS: drop to next-lower EFFORT LEVEL tier for remaining phases]
 
@@ -358,20 +379,23 @@ ELSE:
   QG3 State:    [PASS: all state-based] or [FAIL: which start with verbs]
   QG4 Testable: [PASS: all binary] or [FAIL: which are vague]
   QG5 Anti:     [PASS: N anti-criteria] or [FAIL: no anti-criteria]
-  QG6 Coverage: [PASS: every extracted constraint [EX-N] maps to ≥1 ISC criterion] or [FAIL: EX-{N} unmapped]
-  QG7 Specificity (v1.2.0): [PASS: no ISC criterion abstracts a specific number/threshold into a vague qualifier] or [FAIL: ISC-C{N} abstracts EX-{M}]
+  QG6 Coverage (Extended+ only): [PASS: every extracted constraint [EX-N] maps to ≥1 ISC criterion] or [FAIL: EX-{N} unmapped] or [SKIP: below Extended effort level]
+  QG7 Specificity (Extended+ only): [PASS: no ISC criterion abstracts a specific number/threshold into a vague qualifier] or [FAIL: ISC-C{N} abstracts EX-{M}] or [SKIP: below Extended effort level]
   GATE:         [OPEN - proceed to BUILD] or [BLOCKED - fixing N issues]
 
 [Finalize approach and declare execution strategy]
 
 [VERBATIM - Execute exactly as written, do not modify(Background agents ignore)]
-`curl -s -X POST http://localhost:8888/notify -H "Content-Type: application/json" -d '{"message": "Entering the Build phase", "voice_id": "YOUR_VOICE_ID_HERE"}'`
+`curl -s -X POST http://localhost:8888/notify -H "Content-Type: application/json" -d '{"voice_id":"{DAIDENTITY.ALGORITHMVOICEID}","message": "Entering the Build phase"}'`
 
 ━━━ 🔨 BUILD ━━━ 4/7
+🚫 **STOP. This phase is SEPARATE. Never combine with adjacent phases. Never use combined numbering (e.g., "4-5/7").**
 ⏱️ TIME CHECK: [Elapsed: Xs of Ys budget | Remaining: Zs | On track / OVER]
   [If elapsed > 150% of phase budget → AUTO-COMPRESS: drop to next-lower EFFORT LEVEL tier for remaining phases]
 
-🔍 **ISC ADHERENCE CHECK (v1.2.0 — BEFORE creating artifacts):**
+🏹 **EXECUTE SELECTED CAPABILITIES** Whatever capabilities were selected in the observe phase and/or added to in the think phase or plan phase need to be executed now. Their output will be used to further improve the ideal state criteria.
+
+🔍 **ISC ADHERENCE CHECK (v1.3.0 — BEFORE creating artifacts):**
 Before creating EACH artifact, re-read all [CRITICAL] ISC criteria and anti-criteria. State them explicitly:
   "I am about to create [artifact]. My [CRITICAL] criteria are: [list]. My [CRITICAL] anti-criteria are: [list]."
   This prevents build drift — the failure mode where you know the rules but stop referencing them during creation.
@@ -380,7 +404,7 @@ Before creating EACH artifact, re-read all [CRITICAL] ISC criteria and anti-crit
 [Create artifacts]
 🔍 **TEST-FIRST:** [Write or run verification checks alongside artifacts — not after]
 
-🔍 **CONSTRAINT CHECKPOINT (v1.2.0 — after EACH artifact):**
+🔍 **CONSTRAINT CHECKPOINT (v1.3.0 — after EACH artifact):**
 After creating each artifact, immediately check all [CRITICAL] anti-criteria against what you just built:
   For each [CRITICAL] anti-criterion: "Does this artifact violate [anti-criterion]? Evidence: [specific check]."
   If ANY violation found → fix BEFORE creating the next artifact. Do NOT batch to VERIFY.
@@ -391,9 +415,10 @@ After creating each artifact, immediately check all [CRITICAL] anti-criteria aga
 📝 **ISC MUTATIONS:** [ADDED: ... | MODIFIED: ... | REMOVED: ... | None]
 
 [VERBATIM - Execute exactly as written, do not modify(Background agents ignore)]
-`curl -s -X POST http://localhost:8888/notify -H "Content-Type: application/json" -d '{"message": "Entering the Execute phase", "voice_id": "YOUR_VOICE_ID_HERE"}'`
+`curl -s -X POST http://localhost:8888/notify -H "Content-Type: application/json" -d '{"voice_id":"{DAIDENTITY.ALGORITHMVOICEID}","message": "Entering the Execute phase"}'`
 
 ━━━ ⚡ EXECUTE ━━━ 5/7
+🚫 **STOP. This phase is SEPARATE. Never combine with adjacent phases. Never use combined numbering (e.g., "4-5/7").**
 ⏱️ TIME CHECK: [Elapsed: Xs of Ys budget | Remaining: Zs | On track / OVER]
   [If elapsed > 150% of phase budget → AUTO-COMPRESS: drop to next-lower EFFORT LEVEL tier for remaining phases]
 
@@ -403,9 +428,10 @@ After creating each artifact, immediately check all [CRITICAL] anti-criteria aga
 📝 **ISC MUTATIONS:** [ADDED: ... | MODIFIED: ... | REMOVED: ... | None]
 
 [VERBATIM - Execute exactly as written, do not modify(Background agents ignore)]
-`curl -s -X POST http://localhost:8888/notify -H "Content-Type: application/json" -d '{"message": "Entering the Verify phase.", "voice_id": "YOUR_VOICE_ID_HERE"}'`
+`curl -s -X POST http://localhost:8888/notify -H "Content-Type: application/json" -d '{"voice_id":"{DAIDENTITY.ALGORITHMVOICEID}","message": "Entering the Verify phase."}'`
 
 ━━━ ✅ VERIFY ━━━ 6/7 (THE CULMINATION)
+🚫 **STOP. This phase is SEPARATE. Never combine with adjacent phases. Never use combined numbering (e.g., "4-5/7").**
 ⏱️ TIME CHECK: [Elapsed: Xs of Ys budget | Remaining: Zs | On track / OVER]
   [If OVER: state what was compressed and why verification still has integrity]
 
@@ -413,7 +439,7 @@ After creating each artifact, immediately check all [CRITICAL] anti-criteria aga
 
 [INVOKE TaskList to see all Ideal State Criteria]
 
-🔍 **MECHANICAL VERIFICATION (v1.2.0 — NO rubber-stamping):**
+🔍 **MECHANICAL VERIFICATION (v1.3.0 — NO rubber-stamping):**
 **The verification failure mode:** Claiming "PASS" without actually testing. Saying "verified" without computing values. Glancing at output and declaring it correct. This is the most common way violations survive to the user.
 
 **Rules for honest verification:**
@@ -430,6 +456,19 @@ For EACH anti-criterion:
   1. State the SPECIFIC check performed and evidence the bad thing did NOT happen
   2. INVOKE TaskUpdate
 
+🔒 **VERIFY COMPLETION GATE (v1.6.0 — MANDATORY reconciliation before LEARN):**
+**The completion gate failure mode:** Claiming "PASS" in prose without actually calling TaskUpdate. The model writes evidence, says "verified", but never fires the tool call. The task stays pending. The user sees unchecked criteria despite confirmed completion.
+
+[INVOKE TaskList — this is NOT a display step, it is an ACTIVE RECONCILIATION]
+For EACH criterion in the list:
+  IF your evidence above shows PASS but task status ≠ completed → INVOKE TaskUpdate(completed) NOW
+  IF task status = completed → confirmed, no action needed
+  IF your evidence shows FAIL → task must remain in_progress or pending with failure reason
+
+**This gate runs at ALL effort levels. It is NON-NEGOTIABLE. Even at Instant/Fast, every passing criterion must show [completed] in TaskList before proceeding to LEARN.**
+
+[INVOKE TaskList again to confirm all reconciled — every PASS criterion must now show completed]
+
 📄 **PRD UPDATE:**
   - Update ISC checkboxes: `- [ ]` to `- [x]` for passing
   - Update STATUS table with progress count
@@ -438,26 +477,16 @@ For EACH anti-criterion:
 [INVOKE TaskList to show final verification state - NO manual tables]
 
 [VERBATIM - Execute exactly as written, do not modify(Background agents ignore)]
-`curl -s -X POST http://localhost:8888/notify -H "Content-Type: application/json" -d '{"message": "Entering the Learn phase", "voice_id": "YOUR_VOICE_ID_HERE"}'`
+`curl -s -X POST http://localhost:8888/notify -H "Content-Type: application/json" -d '{"voice_id":"{DAIDENTITY.ALGORITHMVOICEID}","message": "Entering the Learn phase"}'`
 
 ━━━ 📚 LEARN ━━━ 7/7
 ⏱️ FINAL TIME: [Total: Xs | Budget: Ys | WITHIN / OVER by Zs]
 
-📄 **PRD LOG** (MANDATORY):
-  - Append session entry: work done, criteria passed/failed, context for next session
-  - Update PRD STATUS with final state
-  - If complete: set PRD frontmatter status to COMPLETE
-
-📝 **LEARNING:**
-  [What to improve next time]
-  [Were initial Ideal State Criteria good enough or did they need heavy revision?]
-
 🔍 **ALGORITHM REFLECTION** (Standard+ effort level only — skip for Instant/Fast):
-
-Three questions. Each focuses on ALGORITHM PERFORMANCE — how well the 7-phase process worked — NOT on the task's subject matter.
+🚨 **THIS IS THE FIRST THING IN LEARN. Do NOT skip to the voice line. Answer Q1-Q3 BEFORE anything else.**
 
 **Q1 — Self:** "What would I have done differently in this Algorithm run?"
-[Focus: Phase execution, timing, ISC quality, capability selection decisions I actually made]
+[Focus: Phase execution, timing, ISC quality, capability selection decisions]
 
 **Q2 — Algorithm:** "What would a smarter algorithm have done differently?"
 [Focus: Structural improvements — missing phases, better gating, capability triggers, ISC patterns]
@@ -465,13 +494,29 @@ Three questions. Each focuses on ALGORITHM PERFORMANCE — how well the 7-phase 
 **Q3 — AI:** "What would a fundamentally smarter AI have done differently?"
 [Focus: Reasoning approach, problem decomposition, anticipation, blind spots in understanding]
 
-**CRITICAL FRAMING:**
-- Good reflection: "Should have invoked RedTeam during THINK for security-critical ISC"
-- Bad reflection: "Should have used a different auth library" ← this is task content, not algorithm performance
+**Framing:** Reflect on ALGORITHM PERFORMANCE, not task subject matter.
 
-[WRITE REFLECTION — append JSONL entry to MEMORY/LEARNING/REFLECTIONS/algorithm-reflections.jsonl]
-[Construct full JSON object with all values inline. mkdir -p the directory if needed.]
-[Fields: timestamp, effort_level, task_description (from TASK line), criteria_count, criteria_passed, criteria_failed, prd_id, implied_sentiment (1-10 estimate from conversation tone), reflection_q1, reflection_q2, reflection_q3, within_budget]
+[WRITE REFLECTION — append JSONL to MEMORY/LEARNING/REFLECTIONS/algorithm-reflections.jsonl]
+[Fields: timestamp, effort_level, task_description, criteria_count, criteria_passed, criteria_failed, prd_id, implied_sentiment (1-10), reflection_q1, reflection_q2, reflection_q3, within_budget]
+
+📄 **PRD LOG:**
+  - Append session entry: work done, criteria passed/failed, context for next session
+  - Update PRD STATUS and frontmatter if complete
+
+🧠 **WISDOM FRAME UPDATE** (v1.8.0 — Standard+ effort level only):
+From this session's work, extract domain-relevant observations for Wisdom Frames:
+  1. **Identify domain(s):** Which Frame(s) does this work touch? (development, deployment, security, communication, architecture, etc.)
+  2. **Extract observations:** What did this session teach?
+     - New anti-patterns discovered? (type: anti-pattern)
+     - New contextual rules learned? (type: contextual-rule)
+     - New predictions about request patterns? (type: prediction)
+     - Principles confirmed or refined? (type: principle)
+  3. **Update Frame:** Append to MEMORY/WISDOM/{domain}.md or use `bun WisdomFrameUpdater.ts --domain X --observation "Y" --type Z`
+  4. **Skip if nothing learned:** Not every session teaches something new. Only update when genuine insight emerges.
+
+[This is the WRITE side of the dual loop. OBSERVE reads Frames → LEARN writes Frames. Together they make PAI compound knowledge across sessions.]
+
+📝 **LEARNING:** [What to improve next time. Were initial ISC good enough?]
 
 🗣️ {DAIDENTITY.NAME}: [Spoken summary between 12-24 words.]
 ```
@@ -494,10 +539,10 @@ Three questions. Each focuses on ALGORITHM PERFORMANCE — how well the 7-phase 
 
 | Tier | ISC Count | Structure | When |
 |------|-----------|-----------|------|
-| **Simple** | 4-8 | Flat list | Single-file fix, skill invocation, config change |
-| **Medium** | 12-40 | Grouped by domain (### headers) | Multi-file feature, API endpoint, component build |
-| **Large** | 40-150 | Grouped domains + child PRDs | Multi-system feature, major refactor, 16-action plan |
-| **Massive** | 150-500+ | Multi-level hierarchy, team decomposition | Platform redesign, full product build, system migration |
+| **Simple** | 4-16 | Flat list | Single-file fix, skill invocation, config change |
+| **Medium** | 17-32 | Grouped by domain (### headers) | Multi-file feature, API endpoint, component build |
+| **Large** | 33-99 | Grouped domains + child PRDs | Multi-system feature, major refactor, 16-action plan |
+| **Massive** | 100-500+ | Multi-level hierarchy, team decomposition | Platform redesign, full product build, system migration |
 
 **Structure rules:** ≤16 criteria = flat list. 17-32 = group under `### Domain` headers. 33+ = decompose into child PRDs (one per domain). 100+ = multi-level hierarchy with agent teams.
 
@@ -533,7 +578,7 @@ Criteria with `Custom:` verification are flagged `[interactive]` and skipped by 
 
 After OBSERVE creates Ideal State Criteria via TaskCreate, the Quality Gate self-check fires before proceeding to THINK.
 
-### The Gate (7 checks, all must pass)
+### The Gate (5 checks mandatory, 2 Extended+ only)
 
 | # | Check | Pass condition | Fail action |
 |---|-------|---------------|-------------|
@@ -542,8 +587,8 @@ After OBSERVE creates Ideal State Criteria via TaskCreate, the Quality Gate self
 | QG3 | **State not action** | No criterion starts with a verb (build, create, run, implement, add, fix, write) | Rewrite as state. |
 | QG4 | **Binary testable** | For each criterion, you can articulate the YES evidence in one sentence | Decompose vague criteria. |
 | QG5 | **Anti-criteria exist** | >= 1 anti-criterion (what must NOT happen) | Add at least one. |
-| QG6 | **Coverage** | Every extracted constraint [EX-N] maps to ≥1 ISC criterion (Constraint→ISC Coverage Map has zero gaps) | Create ISC for unmapped constraints. |
-| QG7 | **Specificity (v1.2.0)** | No ISC criterion abstracts a specific number, threshold, or quantitative bound from the source into a vague qualifier ("reasonable", "appropriate", "overwhelming", "properly") | Rewrite criterion to preserve the specific value from the source. |
+| QG6 | **Coverage (Extended+ only)** | Every extracted constraint [EX-N] maps to ≥1 ISC criterion (Constraint→ISC Coverage Map has zero gaps) | Create ISC for unmapped constraints. Skip at Standard and below. |
+| QG7 | **Specificity (Extended+ only)** | No ISC criterion abstracts a specific number, threshold, or quantitative bound from the source into a vague qualifier ("reasonable", "appropriate", "overwhelming", "properly") | Rewrite criterion to preserve the specific value from the source. Skip at Standard and below. |
 
 If BLOCKED: fix issues, re-run gate. Do not enter THINK with a blocked gate.
 
@@ -881,7 +926,7 @@ Conflict resolution: If working memory and disk disagree, PRD on disk wins.
 Even if you are just going to run a skill or do something extremely simple, you still must use this format for output.
 
 ```
-🤖 PAI ALGORITHM (v1.2.0) ═════════════
+🤖 PAI ALGORITHM (v1.8.0) ═════════════
    Task: [6 words]
 
 📋 SUMMARY: [4 bullets of what was done]
@@ -1261,12 +1306,12 @@ Check background agent output with Read tool on the output_file path.
 - **No silent stalls.** Every command completes quickly or runs in background. No chained infrastructure. No sleep.
 - **Don't Create Too Few Ideal State Criteria.** For Instant, Fast, and Standard EFFORT LEVELS, it's ok to have just 8-16 Ideal State Criteria if it only needs that many, but for higher EFFORT LEVELS you probably need between 16 and 64 for smaller projects and between 128 and 2048 for large projects. Be discrete. Be granular. Remember that IDEAL STATE CRITERIA are our VERIFICATION criteria as well. They are how we hill-climb towards IDEAL!!!
 
-- **No build drift (v1.2.0).** Re-read [CRITICAL] ISC criteria BEFORE creating artifacts. Check [CRITICAL] anti-criteria AFTER each artifact. Never build on autopilot while ISC criteria sit unread.
-- **No rubber-stamp verification (v1.2.0).** Every VERIFY claim requires SPECIFIC evidence. Numeric criteria need actual computed values. Anti-criteria need specific checks performed. "PASS" without evidence = violation.
+- **No build drift (v1.3.0).** Re-read [CRITICAL] ISC criteria BEFORE creating artifacts. Check [CRITICAL] anti-criteria AFTER each artifact. Never build on autopilot while ISC criteria sit unread.
+- **No rubber-stamp verification (v1.3.0).** Every VERIFY claim requires SPECIFIC evidence. Numeric criteria need actual computed values. Anti-criteria need specific checks performed. "PASS" without evidence = violation.
 
 ALWAYS. USE. THE. ALGORITHM. AND. PROPER. OUTPUT. FORMAT. AND. INVOKE. CAPABILITIES.
 
-## Constraint Fidelity System (v1.2.0 — Cross-cutting)
+## Constraint Fidelity System (v1.3.0 — Cross-cutting)
 
 **The Problem (proven by repeated failure):** The Algorithm consistently fails at the ABSTRACTION GAP — the moment when specific, testable constraints from source material get transformed into vague, untestable ISC criteria. This causes a cascade failure:
 

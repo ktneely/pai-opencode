@@ -7,15 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.0.0] - 2026-02-17
+## [2.0.0] - 2026-02-19
 
 ### Breaking Changes
 - Algorithm format changed (8 effort levels replace FULL/ITERATION/MINIMAL depth)
 - Start symbol changed from 🤖 to ♻︎
 - ISC naming convention updated to ISC-{Domain}-{N} with priority/confidence tags
-- SKILL.md completely rewritten for Algorithm v1.2.0
+- SKILL.md completely rewritten — Algorithm v1.2.0 → **v1.8.0** (upstream sync)
 
 ### Added
+
+#### v1.2.0 Base (2026-02-17)
 - **Constraint Extraction System** — Mechanical [EX-N] extraction before ISC
 - **Self-Interrogation** — 5 structured questions before BUILD
 - **Build Drift Prevention** — Re-read [CRITICAL] ISC before each artifact
@@ -34,11 +36,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **format-reminder handler** updated for 8-tier effort level system
 - **PRD directory structure** with templates and lifecycle management
 
+#### Upstream Sync v1.3.0–v1.8.0 (2026-02-19)
+Porting 14 upstream commits spanning Algorithm v1.3.0 through v1.8.0:
+
+- **Verify Completion Gate (v1.6.0)** — CRITICAL: Prevents "PASS" claims without actual TaskUpdate calls. NON-NEGOTIABLE at ALL effort levels.
+- **Phase Separation Enforcement (v1.6.0)** — "STOP" markers on THINK, PLAN, BUILD, EXECUTE, VERIFY phases
+- **Zero-Delay Output Section (v1.6.0)** — Instant output before any processing
+- **Self-Interrogation Effort Scaling (v1.3.0)** — Instant/Fast skip, Standard answers 1+4, Extended+ answers all 5
+- **Constraint Extraction Effort Scaling (v1.3.0)** — Gate added for effort levels below Standard
+- **Steps 6-8 Gated to Extended+ (v1.3.0)** — Constraint Fidelity System steps scale by effort
+- **QG6/QG7 Gated to Extended+ (v1.3.0)** — Quality gates scale by effort in OBSERVE and PLAN
+- **ISC Scale Tiers Updated (v1.3.0)** — Simple: 4-16, Medium: 17-32, Large: 33-99, Massive: 100-500+
+- **BUILD Capability Execution Substep (v1.8.0)** — Explicit capability execution within BUILD
+- **Wisdom Injection OUTPUT 1.75 (v1.8.0)** — Injects domain wisdom between Constraint Extraction and ISC
+- **Wisdom Frame Update in LEARN (v1.8.0)** — Captures new wisdom into domain frames
+- **Algorithm Reflection Moved First in LEARN (v1.8.0)** — Reflection before PRD LOG
+- **Wisdom Frames System** — `MEMORY/WISDOM/` directory with 5 seed domain frames (development, deployment, security, architecture, communication)
+- **WisdomFrameUpdater.ts** — CLI tool for managing wisdom frames (`--domain`, `--observation`, `--type`, `--list`, `--show`)
+- **Security Validator env var prefix fix** — Upstream #620: strips `export/set/declare/readonly` prefixes to prevent false positives
+- **Rating Capture 5/10 noise filter** — Ambiguous 5/10 ratings skip learning file generation (still tracked in JSONL)
+- **Symlink support in GenerateSkillIndex.ts** — `findSkillFiles()` follows symlinks to directories, handles broken symlinks gracefully
+- **SessionHarvester PAI_DIR rename** — `CLAUDE_DIR` → `PAI_DIR` with `process.env.PAI_DIR` fallback
+
 ### Changed
-- SKILL.md rewritten from Algorithm v0.2.25 to v1.2.0
+- SKILL.md rewritten from Algorithm v0.2.25 to **v1.8.0** (was v1.2.0)
 - Capability selection now uses 25-capability full scan (was Two-Pass)
 - ISC criteria now use domain-grouped naming convention
 - format-reminder handler enhanced with effort level detection
+- Constraint Fidelity System updated to v1.3.0
+- LEARN phase restructured: Algorithm Reflection → PRD LOG → Wisdom Frame Update → Learning → Voice
+- Voice curl commands now use `{DAIDENTITY.ALGORITHMVOICEID}` template variable
 
 ### Not Portable (Claude Code Only)
 - Agent Teams/Swarm (requires CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1)
@@ -436,19 +463,22 @@ This release brings full PAI 2.5 Algorithm compatibility and adds 5 new handlers
 
 ## Version Comparison
 
-| Feature | v1.0.0 | v1.1.0 | v1.2.0 | v1.2.1 | v1.3.0 |
-|---------|--------|--------|--------|--------|--------|
-| PAI Version | 2.4 | **2.5** | 2.5 | 2.5 | 2.5 |
-| Algorithm | Basic | **Full 7-phase** | Full 7-phase | Full 7-phase | Full 7-phase |
-| Handlers | 8 | **13** | 13 | 13 | 13 |
-| Agents | 14 | 14 | 14 | 18 | **15 (cleaned)** |
-| Dynamic Tier Routing | No | No | No | No | **Yes** |
-| Provider Profiles | No | No | No | **Yes (5)** | **Yes (6)** |
-| Multi-Provider Research | No | No | No | **Yes** | **Yes** |
-| Observability Dashboard | No | No | **Yes** | Yes | Yes |
-| Voice Notifications | No | **Yes** | Yes | Yes | Yes |
-| Sentiment Detection | No | **Yes** | Yes | Yes | Yes |
-| Image Optimization | No | No | No | No | **79% reduction** |
+| Feature | v1.0.0 | v1.1.0 | v1.2.0 | v1.2.1 | v1.3.0 | v2.0.0 |
+|---------|--------|--------|--------|--------|--------|--------|
+| PAI Version | 2.4 | **2.5** | 2.5 | 2.5 | 2.5 | **3.0** |
+| Algorithm | Basic | **Full 7-phase** | Full 7-phase | Full 7-phase | Full 7-phase | **v1.8.0** |
+| Handlers | 8 | **13** | 13 | 13 | 13 | 13 |
+| Agents | 14 | 14 | 14 | 18 | **15 (cleaned)** | 15 |
+| Dynamic Tier Routing | No | No | No | No | **Yes** | Yes |
+| Provider Profiles | No | No | No | **Yes (5)** | **Yes (6)** | Yes (6) |
+| Multi-Provider Research | No | No | No | **Yes** | **Yes** | Yes |
+| Observability Dashboard | No | No | **Yes** | Yes | Yes | Yes |
+| Voice Notifications | No | **Yes** | Yes | Yes | Yes | Yes |
+| Sentiment Detection | No | **Yes** | Yes | Yes | Yes | Yes |
+| Image Optimization | No | No | No | No | **79% reduction** | 79% reduction |
+| Wisdom Frames | No | No | No | No | No | **Yes (5 domains)** |
+| Verify Completion Gate | No | No | No | No | No | **Yes** |
+| Effort-Scaled Gates | No | No | No | No | No | **Yes** |
 
 ---
 
@@ -485,6 +515,7 @@ See `.opencode/voice-server/README.md` for full documentation.
 ---
 
 **Links:**
-- [PAI 2.5 Upstream](https://github.com/danielmiessler/Personal_AI_Infrastructure)
+- [PAI v3.0 Upstream](https://github.com/danielmiessler/Personal_AI_Infrastructure)
 - [OpenCode](https://github.com/anomalyco/opencode)
 - [ROADMAP.md](ROADMAP.md)
+- [Upstream Sync Spec](docs/specs/UPSTREAM-SYNC-v1.8.0-SPEC.md)

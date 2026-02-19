@@ -158,9 +158,10 @@ export async function captureRating(
 
     fileLog(`Rating captured: ${rating.score}/10`, "info");
 
-    // For low ratings (< 7), create a learning file
+    // For low ratings (< 7) AND not neutral (≠ 5), create a learning file
+    // 5/10 is "meh" — no actionable feedback, creates noise in LEARNING/ (upstream 84bbce8)
     let learned = false;
-    if (rating.score < 7 && rating.comment) {
+    if (rating.score < 7 && rating.score !== 5 && rating.comment) {
       learned = await createLearningFromRating(rating);
     }
 

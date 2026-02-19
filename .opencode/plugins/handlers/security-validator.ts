@@ -48,7 +48,13 @@ function extractCommand(input: PermissionInput | ToolInput): string | null {
 
   // Bash tool (handles both "bash" and "Bash")
   if (toolName === "bash" && typeof input.args?.command === "string") {
-    return input.args.command;
+    let command = input.args.command;
+
+    // Strip env var assignment prefixes to avoid false positives (upstream #620)
+    // e.g., "export AWS_SECRET=xyz" → "AWS_SECRET=xyz" so patterns match the value, not the keyword
+    command = command.replace(/^(export|set|declare|readonly)\s+/gm, '');
+
+    return command;
   }
 
   // Write tool - check for sensitive paths

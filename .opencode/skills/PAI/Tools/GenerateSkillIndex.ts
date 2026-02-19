@@ -10,7 +10,7 @@
  * Output: ~/.opencode/skills/skill-index.json
  */
 
-import { readdir, readFile, writeFile } from 'fs/promises';
+import { readdir, readFile, writeFile, stat } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 
@@ -52,7 +52,19 @@ async function findSkillFiles(dir: string): Promise<string[]> {
     for (const entry of entries) {
       const fullPath = join(dir, entry.name);
 
-      if (entry.isDirectory()) {
+      // Follow symlinks to directories (upstream 1d2fcb5)
+      let isDirectory = entry.isDirectory();
+      if (entry.isSymbolicLink()) {
+        try {
+          const stats = await stat(fullPath);
+          isDirectory = stats.isDirectory();
+        } catch {
+          // Broken symlink — skip silently
+          continue;
+        }
+      }
+
+      if (isDirectory) {
         // Skip hidden directories and node_modules
         if (entry.name.startsWith('.') || entry.name === 'node_modules') {
           continue;
@@ -64,7 +76,7 @@ async function findSkillFiles(dir: string): Promise<string[]> {
           skillFiles.push(skillMdPath);
         }
 
-        // Recurse into subdirectories (for nested skills)
+        // Recurse into subdirectories (including symlinked ones)
         const nestedFiles = await findSkillFiles(fullPath);
         skillFiles.push(...nestedFiles);
       }
