@@ -22,6 +22,60 @@ import {
   slugify,
 } from "../lib/paths";
 
+// ============================================================================
+// TRIVIAL MESSAGE FILTERING
+// ============================================================================
+
+/**
+ * Patterns for messages that should NOT create work sessions.
+ * Aligned with PAI Algorithm depth classification:
+ *   MINIMAL depth (greetings, ratings, acknowledgments) = no session.
+ */
+const TRIVIAL_PATTERNS = {
+  greetings:
+    /^(h(i|ey|ello|owdy)|yo|sup|guten\s*(morgen|tag|abend)|moin|servus|hallo|morning|evening)\b/i,
+  acknowledgments:
+    /^(ok(ay)?|thanks?|thx|got\s*it|sounds?\s*good|alright|sure|yep|yeah|yes|no|nope|klar|danke|passt|ja|nein|cool|nice|great|perfect|awesome)\b/i,
+  ratings: /^\d{1,2}\s*(\/\s*10)?(\s*[-–—]\s*.{0,80})?$/,
+  farewells:
+    /^(bye|goodbye|ciao|tsch[uü]ss?|see\s*you|good\s*night|gn|later)\b/i,
+};
+
+/** Minimum character length for a message to be considered meaningful work */
+const MIN_MEANINGFUL_LENGTH = 25;
+
+/**
+ * Check if a message is too trivial to warrant a work session.
+ *
+ * Returns true if the message should NOT create a session.
+ * Returns false if the message is meaningful work.
+ */
+export function isTrivialMessage(content: string): boolean {
+  const trimmed = content.trim();
+
+  // Empty or very short messages are trivial
+  if (trimmed.length < MIN_MEANINGFUL_LENGTH) {
+    // Exception: commands (/) and code snippets should still create sessions
+    if (trimmed.startsWith("/") || trimmed.startsWith("!") || trimmed.includes("```")) {
+      return false;
+    }
+    return true;
+  }
+
+  // Check against trivial patterns (even if longer than threshold)
+  for (const pattern of Object.values(TRIVIAL_PATTERNS)) {
+    if (pattern.test(trimmed)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// ============================================================================
+// WORK SESSION TYPES
+// ============================================================================
+
 /**
  * Work session metadata
  */

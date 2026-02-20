@@ -32,6 +32,7 @@ import {
   completeWorkSession,
   getCurrentSession,
   appendToThread,
+  isTrivialMessage,
 } from "./handlers/work-tracker";
 import { captureRating, detectRating } from "./handlers/rating-capture";
 import {
@@ -357,14 +358,15 @@ export const PaiUnified: Plugin = async (ctx) => {
 
         // === AUTO-WORK CREATION ===
         // Create work session on first user prompt if none exists
+        // Skip trivial messages (greetings, ratings, acknowledgments) — Issue #24
         const currentSession = getCurrentSession();
-        if (!currentSession) {
+        if (!currentSession && !isTrivialMessage(content)) {
           const workResult = await createWorkSession(content);
           if (workResult.success && workResult.session) {
             fileLog(`Work session started: ${workResult.session.id}`, "info");
           }
-        } else {
-          // Append to existing thread
+        } else if (currentSession) {
+          // Append to existing thread (only if session exists)
           await appendToThread(`**User:** ${content.substring(0, 200)}...`);
         }
 
@@ -638,8 +640,9 @@ export const PaiUnified: Plugin = async (ctx) => {
             emitUserMessage({ content_length: userText.length, has_rating: !!rating }).catch(() => {});
             
             // === AUTO-WORK CREATION ===
+            // Skip trivial messages (greetings, ratings, acknowledgments) — Issue #24
             const currentSession = getCurrentSession();
-            if (!currentSession && userText.length > 20) {
+            if (!currentSession && !isTrivialMessage(userText)) {
               const workResult = await createWorkSession(userText);
               if (workResult.success && workResult.session) {
                 fileLog(`Work session started: ${workResult.session.id}`, "info");
