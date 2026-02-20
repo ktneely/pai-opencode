@@ -1213,8 +1213,14 @@ async function main(): Promise<void> {
     print(`     ${c.gray}│${c.reset} to work with me.                                        ${c.gray}│${c.reset}`);
     print(`     ${c.gray}└──────────────────────────────────────────────────────────┘${c.reset}`);
     print('');
+    print(`  ${c.cyan}4.${c.reset} ${c.bold}Switch Providers Anytime:${c.reset}`);
+    print(`     Want to use OpenAI, Google, or a different provider later?`);
+    print('');
+    print(`     ${c.green}bun run .opencode/tools/switch-provider.ts --list${c.reset}     ${c.gray}# See all profiles${c.reset}`);
+    print(`     ${c.green}bun run .opencode/tools/switch-provider.ts openai${c.reset}     ${c.gray}# Switch to GPT${c.reset}`);
+    print('');
     print(`     For advanced configuration, see:`);
-    print(`     ${c.cyan}.opencode/ADVANCED-SETUP.md${c.reset}`);
+    print(`     ${c.cyan}docs/ADVANCED-SETUP.md${c.reset}`);
     print('');
   } else {
     print(`${c.red}${c.bold}✗ Installation has issues${c.reset}`);

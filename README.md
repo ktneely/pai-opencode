@@ -85,6 +85,28 @@ The wizard will:
 
 ---
 
+## Switch Providers Anytime
+
+The wizard installs with one preset, but you can switch to **any provider** after installation:
+
+```bash
+# See all available provider profiles
+bun run .opencode/tools/switch-provider.ts --list
+
+# Switch to OpenAI GPT models
+bun run .opencode/tools/switch-provider.ts openai
+
+# Switch to Ollama (local)
+bun run .opencode/tools/switch-provider.ts local
+
+# Check your current provider
+bun run .opencode/tools/switch-provider.ts --current
+```
+
+Available profiles: `anthropic`, `openai`, `zen-paid`, `zen` (free), `local` (Ollama). See [Advanced Setup](docs/ADVANCED-SETUP.md) for multi-provider research routing.
+
+---
+
 ## Deep Personalization (Recommended)
 
 After running the wizard, start OpenCode and paste this prompt for full personalization:
