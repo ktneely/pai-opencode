@@ -373,13 +373,91 @@ async function buildOpenCode(): Promise<boolean> {
       printWarning('Failed to set executable permissions');
     }
 
-    // Verify
-    const verifyResult = execCommand('opencode --version', { silent: true });
+    // Verify — use the FULL install path, not PATH-based lookup
+    // (user may not have ~/.local/bin in PATH yet)
+    const verifyResult = execCommand(`"${installPath}" --version`, { silent: true });
     if (verifyResult.success) {
-      printSuccess(`OpenCode ${verifyResult.output} installed`);
+      printSuccess(`OpenCode ${verifyResult.output} installed to ${installPath}`);
     } else {
-      printWarning('Installation may have succeeded but version check failed');
-      printInfo('If "opencode" is not in PATH, add ~/.local/bin to your PATH');
+      printWarning('Binary was copied but version check failed');
+      printInfo(`Tried: ${installPath} --version`);
+      printInfo('The binary may need different platform libraries or permissions.');
+    }
+
+    // Check if install directory is in PATH — if not, offer to fix it
+    const installDir = dirname(installPath);
+    const pathDirs = (process.env.PATH || '').split(':');
+    const isInPath = pathDirs.some(p => {
+      try { return realpathSync(p) === realpathSync(installDir); } catch { return p === installDir; }
+    });
+
+    if (!isInPath) {
+      printWarning(`${installDir} is NOT in your PATH`);
+      printInfo('The "opencode" command won\'t be found until you add it.');
+      print('');
+
+      // Detect shell config file
+      const shell = process.env.SHELL || '/bin/zsh';
+      const shellName = shell.split('/').pop() || 'zsh';
+      let shellConfig: string;
+
+      if (shellName === 'zsh') {
+        shellConfig = join(HOME, '.zshrc');
+      } else if (shellName === 'bash') {
+        // macOS uses .bash_profile for login shells, .bashrc for non-login
+        const bashProfile = join(HOME, '.bash_profile');
+        shellConfig = existsSync(bashProfile) ? bashProfile : join(HOME, '.bashrc');
+      } else if (shellName === 'fish') {
+        shellConfig = join(HOME, '.config', 'fish', 'config.fish');
+      } else {
+        shellConfig = join(HOME, `.${shellName}rc`);
+      }
+
+      const exportLine = shellName === 'fish'
+        ? `set -gx PATH "${installDir}" $PATH`
+        : `export PATH="${installDir}:$PATH"`;
+
+      const addChoice = await promptChoice(
+        `Add ${installDir} to your PATH in ${shellConfig}?`,
+        [
+          `Yes, add to ${shellConfig.replace(HOME, '~')} (Recommended)`,
+          'No, I\'ll do it manually',
+        ],
+        0
+      );
+
+      if (addChoice === 0) {
+        try {
+          const existingContent = existsSync(shellConfig)
+            ? readFileSync(shellConfig, 'utf-8')
+            : '';
+
+          // Only add if not already present
+          if (!existingContent.includes(installDir)) {
+            const addition = `\n# Added by PAI-OpenCode Wizard\n${exportLine}\n`;
+            writeFileSync(shellConfig, existingContent + addition);
+            printSuccess(`Added PATH entry to ${shellConfig.replace(HOME, '~')}`);
+            printInfo(`Run: source ${shellConfig.replace(HOME, '~')}  (or open a new terminal)`);
+          } else {
+            printSuccess(`${installDir} already referenced in ${shellConfig.replace(HOME, '~')}`);
+          }
+        } catch (err: any) {
+          printError(`Could not write to ${shellConfig}: ${err.message}`);
+          printInfo(`Add this line manually to ${shellConfig.replace(HOME, '~')}:`);
+          printInfo(`  ${exportLine}`);
+        }
+      } else {
+        printInfo(`Add this line to ${shellConfig.replace(HOME, '~')}:`);
+        printInfo(`  ${exportLine}`);
+        printInfo('Then restart your terminal or run: source ' + shellConfig.replace(HOME, '~'));
+      }
+    } else {
+      // PATH is fine — verify the command is actually findable via PATH too
+      const pathVerify = execCommand('opencode --version', { silent: true });
+      if (!pathVerify.success && verifyResult.success) {
+        printWarning('Binary works directly but "opencode" command not found via PATH');
+        printInfo('You may need to restart your terminal for PATH changes to take effect');
+      }
     }
 
     // Clean up
