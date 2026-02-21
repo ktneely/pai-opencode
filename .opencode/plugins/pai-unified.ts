@@ -23,6 +23,8 @@
  * @module pai-unified
  */
 
+import * as fs from "fs";
+import * as path from "path";
 import type { Plugin, Hooks } from "@opencode-ai/plugin";
 import { loadContext } from "./handlers/context-loader";
 import { validateSecurity } from "./handlers/security-validator";
@@ -32,6 +34,7 @@ import {
   completeWorkSession,
   getCurrentSession,
   appendToThread,
+  isTrivialMessage,
 } from "./handlers/work-tracker";
 import { captureRating, detectRating } from "./handlers/rating-capture";
 import {
@@ -102,6 +105,31 @@ function extractTextContent(message: any): string {
 
   // Fallback: stringify
   return String(message.content);
+}
+
+/**
+ * Append effort level to a session's META.yaml
+ *
+ * Adds effort_level and effort_budget fields to the session metadata.
+ * Called after work session creation (Phase 4 — Issue #24).
+ */
+async function appendEffortToMeta(
+  sessionPath: string,
+  level: string,
+  budget: string
+): Promise<void> {
+  const metaPath = path.join(sessionPath, "META.yaml");
+  try {
+    let content = await fs.promises.readFile(metaPath, "utf-8");
+    // Only append if not already present
+    if (!content.includes("effort_level:")) {
+      content = content.trimEnd() + `\neffort_level: ${level}\neffort_budget: ${budget}\n`;
+      await fs.promises.writeFile(metaPath, content);
+    }
+  } catch (error) {
+    // Non-blocking — session continues without effort metadata
+    throw error;
+  }
 }
 
 /**
@@ -357,15 +385,26 @@ export const PaiUnified: Plugin = async (ctx) => {
 
         // === AUTO-WORK CREATION ===
         // Create work session on first user prompt if none exists
+        // Skip trivial messages (greetings, ratings, acknowledgments) — Issue #24
         const currentSession = getCurrentSession();
-        if (!currentSession) {
+        if (!currentSession && !isTrivialMessage(content)) {
           const workResult = await createWorkSession(content);
           if (workResult.success && workResult.session) {
             fileLog(`Work session started: ${workResult.session.id}`, "info");
+
+            // === EFFORT LEVEL IN META (Phase 4 — Issue #24) ===
+            // Detect effort level and write to session META.yaml
+            try {
+              const effortResult = await detectEffortLevel(content);
+              await appendEffortToMeta(workResult.session.path, effortResult.level, effortResult.budget);
+              fileLog(`[EffortLevel] Written to META: ${effortResult.level} (${effortResult.budget})`, "info");
+            } catch (error) {
+              fileLogError("[EffortLevel] META write failed (non-blocking)", error);
+            }
           }
-        } else {
-          // Append to existing thread
-          await appendToThread(`**User:** ${content.substring(0, 200)}...`);
+        } else if (currentSession) {
+          // Append to existing thread (only if session exists)
+          await appendToThread(`**User:** ${content}`);
         }
 
         // === EXPLICIT RATING CAPTURE ===
@@ -573,6 +612,18 @@ export const PaiUnified: Plugin = async (ctx) => {
               } catch (error) {
                 fileLogError("[Capture] Response capture failed (non-blocking)", error);
               }
+
+              // === ASSISTANT THREAD CAPTURE (Phase 2 — Issue #24) ===
+              // Append full assistant response to THREAD.md for session completeness
+              try {
+                const currentSess = getCurrentSession();
+                if (currentSess) {
+                  await appendToThread(`**Assistant:** ${responseText}`);
+                  fileLog(`[Thread] Assistant response appended (${responseText.length} chars)`, "debug");
+                }
+              } catch (error) {
+                fileLogError("[Thread] Assistant capture failed (non-blocking)", error);
+              }
             }
           }
         }
@@ -638,14 +689,24 @@ export const PaiUnified: Plugin = async (ctx) => {
             emitUserMessage({ content_length: userText.length, has_rating: !!rating }).catch(() => {});
             
             // === AUTO-WORK CREATION ===
+            // Skip trivial messages (greetings, ratings, acknowledgments) — Issue #24
             const currentSession = getCurrentSession();
-            if (!currentSession && userText.length > 20) {
+            if (!currentSession && !isTrivialMessage(userText)) {
               const workResult = await createWorkSession(userText);
               if (workResult.success && workResult.session) {
                 fileLog(`Work session started: ${workResult.session.id}`, "info");
+
+                // === EFFORT LEVEL IN META (Phase 4 — Issue #24) ===
+                try {
+                  const effortResult = await detectEffortLevel(userText);
+                  await appendEffortToMeta(workResult.session.path, effortResult.level, effortResult.budget);
+                  fileLog(`[EffortLevel] Written to META: ${effortResult.level} (${effortResult.budget})`, "info");
+                } catch (error) {
+                  fileLogError("[EffortLevel] META write failed (non-blocking)", error);
+                }
               }
             } else if (currentSession) {
-              await appendToThread(`**User:** ${userText.substring(0, 200)}...`);
+              await appendToThread(`**User:** ${userText}`);
             }
           }
         }

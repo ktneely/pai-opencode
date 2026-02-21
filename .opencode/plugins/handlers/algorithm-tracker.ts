@@ -13,6 +13,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import { getStateDir } from "../lib/paths";
+import { updateISC } from "./work-tracker";
 
 /** Algorithm phases in order */
 const PHASES = [
@@ -166,6 +167,20 @@ export async function trackAlgorithmState(
           `[AlgorithmTracker] ISC: ${state.criteriaCompleted}/${state.criteriaCount}`,
           "info"
         );
+
+        // === ISC BRIDGE (Phase 3 — Issue #24) ===
+        // Write criteria to the active work session's ISC.json
+        try {
+          const criteria = todos.map((t: any) => ({
+            description: t.content || t.description || "",
+            status: t.status || "pending",
+            priority: t.priority || "medium",
+          }));
+          await updateISC(criteria);
+          fileLog(`[AlgorithmTracker] ISC.json updated with ${criteria.length} criteria`, "info");
+        } catch (error) {
+          fileLogError("[AlgorithmTracker] ISC bridge failed (non-blocking)", error);
+        }
       }
     }
 

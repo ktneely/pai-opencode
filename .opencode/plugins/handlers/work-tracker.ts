@@ -22,6 +22,60 @@ import {
   slugify,
 } from "../lib/paths";
 
+// ============================================================================
+// TRIVIAL MESSAGE FILTERING
+// ============================================================================
+
+/**
+ * Patterns for messages that should NOT create work sessions.
+ * Aligned with PAI Algorithm depth classification:
+ *   MINIMAL depth (greetings, ratings, acknowledgments) = no session.
+ */
+const TRIVIAL_PATTERNS = {
+  greetings:
+    /^(h(i|ey|ello|owdy)|yo|sup|guten\s*(morgen|tag|abend)|moin|servus|hallo|morning|evening)\b/i,
+  acknowledgments:
+    /^(ok(ay)?|thanks?|thx|got\s*it|sounds?\s*good|alright|sure|yep|yeah|yes|no|nope|klar|danke|passt|ja|nein|cool|nice|great|perfect|awesome)\b/i,
+  ratings: /^\d{1,2}\s*(\/\s*10)?(\s*[-–—]\s*.{0,80})?$/,
+  farewells:
+    /^(bye|goodbye|ciao|tsch[uü]ss?|see\s*you|good\s*night|gn|later)\b/i,
+};
+
+/** Minimum character length for a message to be considered meaningful work */
+const MIN_MEANINGFUL_LENGTH = 25;
+
+/**
+ * Check if a message is too trivial to warrant a work session.
+ *
+ * Returns true if the message should NOT create a session.
+ * Returns false if the message is meaningful work.
+ */
+export function isTrivialMessage(content: string): boolean {
+  const trimmed = content.trim();
+
+  // Empty or very short messages are trivial
+  if (trimmed.length < MIN_MEANINGFUL_LENGTH) {
+    // Exception: commands (/) and code snippets should still create sessions
+    if (trimmed.startsWith("/") || trimmed.startsWith("!") || trimmed.includes("```")) {
+      return false;
+    }
+    return true;
+  }
+
+  // Check against trivial patterns (even if longer than threshold)
+  for (const pattern of Object.values(TRIVIAL_PATTERNS)) {
+    if (pattern.test(trimmed)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// ============================================================================
+// WORK SESSION TYPES
+// ============================================================================
+
 /**
  * Work session metadata
  */
@@ -224,10 +278,14 @@ export async function appendToThread(content: string): Promise<void> {
 }
 
 /**
- * Update ISC.json
+ * Update ISC.json with criteria from the Algorithm's TaskCreate/TodoWrite.
+ *
+ * Called by algorithm-tracker.ts when ISC criteria are created/updated.
+ * Bridges the gap between the Algorithm's working memory (TodoWrite) and
+ * the persistent work session (ISC.json on disk).
  */
 export async function updateISC(
-  criteria: { description: string; status: string }[]
+  criteria: { description: string; status: string; priority?: string }[]
 ): Promise<void> {
   const sessionPath = await getCurrentWorkPath();
   if (!sessionPath) return;
@@ -235,7 +293,17 @@ export async function updateISC(
   const iscPath = path.join(sessionPath, "ISC.json");
 
   try {
-    const isc = { criteria, anti_criteria: [], updated_at: new Date().toISOString() };
+    // Separate criteria from anti-criteria based on ISC naming convention
+    const regular = criteria.filter((c) => !c.description.includes("ISC-A"));
+    const anti = criteria.filter((c) => c.description.includes("ISC-A"));
+
+    const isc = {
+      criteria: regular,
+      anti_criteria: anti,
+      total: criteria.length,
+      completed: criteria.filter((c) => c.status === "completed").length,
+      updated_at: new Date().toISOString(),
+    };
     await fs.promises.writeFile(iscPath, JSON.stringify(isc, null, 2));
   } catch (error) {
     fileLogError("Failed to update ISC.json", error);
