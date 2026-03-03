@@ -12,6 +12,8 @@
 
 > **v2.0 Release** — PAI v3.0 / Algorithm v1.8.0 with 8 effort levels, Verify Completion Gate, Wisdom Frames, 25-capability audit, PRD system, and 39 skills. See [CHANGELOG.md](CHANGELOG.md).
 
+> **🎯 Scope Note:** PAI-OpenCode is a **community port** of PAI to OpenCode. For the future vision (Voice-to-Voice, Ambient AI, OMI integration), see **[Open Arc](https://github.com/jeremaiah-ai/openark)**. [Read the Scope Boundary →](docs/SCOPE-BOUNDARY.md)
+
 ---
 
 ## What is this?
@@ -54,6 +56,35 @@ PAI-OpenCode is the complete port of **Daniel Miessler's Personal AI Infrastruct
 ✅ Community-driven, open-source foundation
 
 > **Note:** Dynamic per-task model routing is built by the PAI-OpenCode agent system on top of OpenCode's multi-provider support. Other AI coding tools either lock you to one provider (Claude Code, Copilot) or let you switch manually (Cursor, Aider) — but none route different models to the same agent automatically based on task complexity.
+
+---
+
+## 📋 Scope: What PAI-OpenCode Is (and Isn't)
+
+**PAI-OpenCode is a community contribution** — focused, minimal, "as little as necessary."
+
+### ✅ What It IS
+
+| Feature | Description |
+|---------|-------------|
+| **Core PAI Port** | Algorithm v3.7.0, Skills, TELOS on OpenCode |
+| **OpenCode-Native** | Lazy Loading, Model Tiers, Events, MCP integration |
+| **Developer Tool** | Infrastructure for power users and developers |
+| **Community-Driven** | Open source, documented, maintainable |
+| **Minimal Context** | ~20KB core, not 233KB static loading |
+
+### ❌ What It Is NOT (See [Open Arc](https://github.com/jeremaiah-ai/openark))
+
+| Excluded Feature | Why Excluded | Belongs To |
+|------------------|--------------|------------|
+| **Voice-to-Voice** | Custom orchestration beyond core PAI | Open Arc |
+| **OMI Ambient AI** | Hardware integration, product layer | Open Arc |
+| **Branded UX** | End-user product experience | Open Arc |
+| **SaaS Infrastructure** | User management, billing | Open Arc |
+
+**The Rule:** If it's an OpenCode-native feature that improves PAI → **PAI-OpenCode**. If it's a new product abstraction → **Open Arc**.
+
+**Read more:** [`docs/SCOPE-BOUNDARY.md`](docs/SCOPE-BOUNDARY.md)
 
 ---
 

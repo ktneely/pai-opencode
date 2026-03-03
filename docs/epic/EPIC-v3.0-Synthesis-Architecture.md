@@ -1,21 +1,28 @@
-# Epic: PAI-OpenCode v3.0 — The Synthesis Architecture
+# Epic: PAI-OpenCode v3.0 — The Community Port
 
 **Status:** Planning  
 **Branch:** `v3.0-rearchitecture`  
 **Target:** PAI-OpenCode v3.0.0 Release  
-**Philosophy:** Not a port, but a synthesis — PAI's principles merged with OpenCode's unique capabilities
+**Philosophy:** Community contribution — PAI's core on OpenCode, minimal and focused  
+**Scope Boundary:** See `docs/SCOPE-BOUNDARY.md` — Voice/OMI/Ambient AI features belong to **Open Arc** (separate project)
 
 ---
 
 ## 🎯 Vision Statement
 
-> *"Take the concept of the PAI system — the Algorithm, lazy loading, Euphoric Surprise — and synthesize it with the capabilities and possibilities that OpenCode as a software platform brings us."*
+> *"Take the PAI system — the Algorithm, the Skills, the philosophy — and port it cleanly to OpenCode, leveraging OpenCode's native capabilities."*
 
-**PAI-OpenCode v3.0** is not a clone of Daniel Miessler's PAI. It is a **new synthesis** that:
-- Preserves PAI's core philosophy (Algorithm, Skills, Euphoric Surprise)
-- Leverages OpenCode's unique strengths (Dynamic Model Tiers, Lazy Loading, MCP Ecosystem)
-- Establishes its own identity as an OpenCode-First Ambient AI System
-- Integrates with the broader Jeremiah Nexus ecosystem (Warrior App, Server instances, OMI)
+**PAI-OpenCode v3.0** is a **community contribution**, not a commercial product:
+- ✅ Preserves PAI's core (Algorithm, Skills, Euphoric Surprise)
+- ✅ Leverages OpenCode-native features (Model Tiers, Lazy Loading, MCP, Events)
+- ✅ Stays focused: "as little as necessary"
+- ❌ Does NOT include: Voice-to-Voice, OMI Ambient AI, Product UX (see **Open Arc**)
+
+**Two Projects, Clear Separation:**
+| Project | Purpose | Scope |
+|---------|---------|-------|
+| **PAI-OpenCode** | Community port | Core PAI on OpenCode |
+| **Open Arc** (jeremaiah.ai) | Commercial product | Voice, Ambient AI, Brand UX |
 
 ---
 
@@ -271,11 +278,11 @@ Based on [opencode.ai/docs](https://opencode.ai/docs/) and GitHub research:
 ### Core Principles
 
 1. **Algorithm-First** — The 7-phase ISC system is PAI's DNA. Preserve at all costs.
-2. **OpenCode-Native** — Use what's there: Model tiers, lazy loading, events.
+2. **OpenCode-Native** — Use what's there: Model tiers, lazy loading, events, MCP.
 3. **MCP-Extensible** — Skills as MCP servers, dynamic discovery.
 4. **Minimal Context** — Only load what's needed (Algorithm + TELOS = ~20KB, not 233KB).
-5. **Voice-Ready** — Architecture for future Voice-to-Voice (WebSocket streaming).
-6. **Ambient AI** — Integration with OMI, Warrior App, Jeremiah Nexus.
+5. **Community Focus** — "As little as necessary" — resist scope creep into product territory.
+6. **Clear Boundaries** — Voice, Ambient AI, OMI = Open Arc (separate project).
 
 ---
 
@@ -742,39 +749,26 @@ PAI-OpenCode processes user input and executes system commands. Without protecti
 
 ---
 
-### WP6: Voice & Ambient AI Foundation
-**Status:** LOW-MEDIUM PRIORITY  
-**Effort:** 4-6 hours  
-**Dependencies:** WP1 (core working)  
-**Branch:** `v3.0-wp6-voice`
+### ~~WP6: Voice & Ambient AI Foundation~~ → **MOVED TO OPEN ARC**
 
-**Goal:** Architecture for future Voice-to-Voice (NOT full implementation)
+**Status:** ❌ EXCLUDED FROM PAI-OpenCode v3.0  
+**New Home:** [github.com/jeremaiah-ai/openark](https://github.com/jeremaiah-ai/openark)  
+**Decision Date:** 2026-03-03  
+**Decision Rationale:** Scope separation — PAI-OpenCode is community port, Open Arc is product vision
 
-**Tasks:**
-1. **Refactor VoiceServer for WebSocket-ready architecture**
-   - Current: HTTP-based TTS
-   - Add WebSocket endpoints (prep for streaming)
-   - Don't implement full V2V yet!
-2. **Design OMI integration points**
-   - Document how PAI-OpenCode ↔ OMI integration works
-   - Define message formats
-3. **Create Voice-to-Voice roadmap** (document, not code)
-   - Phase 1: WebSocket TTS (immediate)
-   - Phase 2: Local TTS on M4 Macs (future)
-   - Phase 3: Full V2V (distant future)
-4. Ensure VoiceServer works with current setup
+**Why This Was Removed:**
+- Voice-to-Voice is **product feature**, not core PAI port
+- OMI Ambient AI integration is **commercial product territory**
+- PAI-OpenCode must stay focused: "as little as necessary"
+- Open Arc will contain: Voice architecture, OMI integration, Brand UX, End-user features
 
-**Key Insight:** Prepare architecture, don't build full V2V yet!
+**Original Scope (now Open Arc):**
+- WebSocket-ready VoiceServer architecture
+- OMI integration points and message formats
+- Voice-to-Voice roadmap (3 phases)
+- Future V2V implementation
 
-**Output:**
-- WebSocket-ready VoiceServer
-- OMI integration design doc
-- V2V roadmap (3 phases)
-
-**Verification:**
-- Voice notifications work (existing)
-- WebSocket endpoints ready
-- Architecture documented
+**Reference:** See `docs/SCOPE-BOUNDARY.md` for complete boundary definition
 
 ---
 
@@ -853,23 +847,24 @@ PAI-OpenCode processes user input and executes system commands. Without protecti
 
 ---
 
-## 🔄 Revised Work Package Dependencies
+## 🔄 Revised Work Package Dependencies (Scoped for Community Port)
 
 ```
 WP1 (Algorithm + Model Tiers)
     │
-    ├──► WP2 (Lazy Context) ──► WP3 (Event Plugins) ──► WP3.5 (Security) ──► WP8 (Testing/Release)
+    ├──► WP2 (Lazy Context) ──► WP3 (Event Plugins) ──► WP3.5 (Security) ──► WP7 (Migration) ──► WP8 (Testing/Release)
     │                                                         │
     │                                                         └──► Security logging integration
     │
-    ├──► WP4 (Skills) ──► WP5 (MCP Config)
-    │
-    └──► WP6 (Voice) ──► WP7 (Migration) ──► WP8
+    └──► WP4 (Skills) ──► WP5 (MCP Config)
+         │
+         └──► (WP6 was here: MOVED to Open Arc — see SCOPE-BOUNDARY.md)
 ```
 
-**Critical Path:** WP1 → WP2 → WP3 → **WP3.5** → WP8  
+**Critical Path:** WP1 → WP2 → WP3 → **WP3.5** → WP7 → WP8  
 **Security is Critical:** WP3.5 added to critical path  
-**Parallel Work:** WP4, WP5, WP6 (after WP1)  
+**Parallel Work:** WP4, WP5 (after WP1)  
+**Open Arc (separate):** Voice-to-Voice, OMI Ambient AI — NOT in PAI-OpenCode  
 **Final Steps:** WP7 → WP8
 
 ---
@@ -884,13 +879,14 @@ WP1 (Algorithm + Model Tiers)
 | **WP3.5** | **4-6h** | **23-33h** | **Prompt Injection Protection** |
 | WP4 | 8-10h | 31-43h (parallel) | Skill Hierarchy |
 | WP5 | 4-6h | 35-49h (parallel) | MCP Configuration |
-| WP6 | 4-6h | 39-55h (parallel) | Voice Foundation |
-| WP7 | 6-8h | 45-63h | Migration & Installer |
-| WP8 | 6-10h | 51-73h | Testing & Release |
+| WP6 | ~~4-6h~~ | ~~MOVED~~ | ~~Voice Foundation~~ → **See Open Arc** |
+| WP7 | 6-8h | 41-57h | Migration & Installer |
+| WP8 | 6-10h | 47-67h | Testing & Release |
 
-**Total Critical Path:** 51-73 hours  
-**With Parallel Work:** 6-9 weeks (1 person)  
-**With Multiple Agents:** 3-4 weeks
+**Total Critical Path:** 47-67 hours (reduced from 73h by removing Open Arc scope)  
+**With Parallel Work:** 5-8 weeks (1 person)  
+**With Multiple Agents:** 2-3 weeks  
+**Scope Note:** Voice-to-Voice and Ambient AI (OMI) moved to Open Arc — see `docs/SCOPE-BOUNDARY.md`
 
 ---
 
