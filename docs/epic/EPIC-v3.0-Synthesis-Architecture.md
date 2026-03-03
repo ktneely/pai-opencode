@@ -564,15 +564,20 @@ interface VoiceConfig {
    - Target: Single `plugins/pai-core.ts`
 2. **USE OpenCode native events:**
    - `session.created` → Load minimal bootstrap context
-   - `tool.execute.before` → Security validation (replace PreToolUse hook)
+   - `tool.execute.before` → Security validation + **Prompt Injection detection**
    - `session.compacted` → Extract learnings to MEMORY
    - `message.updated` → Work tracking / ratings
-3. **REMOVE hook emulation layer**
+3. **ADD Prompt Injection Protection:**
+   - Detect common injection patterns (ignore previous instructions, system prompt leaks, etc.)
+   - Sanitize user input before processing
+   - Use `tool.execute.before` to validate prompts
+   - Log suspicious patterns for review
+4. **REMOVE hook emulation layer**
    - Delete hook compatibility code
    - Use native TypeScript events
-4. Update `plugins/pai-core.ts` with event handlers
+5. Update `plugins/pai-core.ts` with event handlers
 
-**Key Insight:** Don't emulate hooks - use native OpenCode events!
+**Key Insight:** Don't emulate hooks - use native OpenCode events! Add Prompt Injection defense as core security feature.
 
 **Output:**
 - `plugins/pai-core.ts` (unified, ~300 lines)
@@ -582,6 +587,84 @@ interface VoiceConfig {
 - Security validation runs on tool calls
 - Context loads at session start
 - Learnings extracted on compaction
+
+---
+
+### WP3.5: Security Hardening (Prompt Injection Protection)
+**Status:** HIGH PRIORITY (Security Critical)  
+**Effort:** 4-6 hours  
+**Dependencies:** WP3 (plugin system ready)  
+**Branch:** `v3.0-wp3-security`
+
+**Goal:** Harden PAI-OpenCode against Prompt Injection and adversarial attacks
+
+**Context:**
+PAI-OpenCode processes user input and executes system commands. Without protection, malicious prompts could:
+- Extract system prompts (prompt leaking)
+- Override instructions (ignore previous commands)
+- Trigger dangerous tool executions
+- Manipulate context and memory
+
+**Tasks:**
+1. **Implement Prompt Injection Detection:**
+   ```typescript
+   const INJECTION_PATTERNS = [
+     /ignore previous (instructions|commands)/i,
+     /ignore all (prior|previous|above) (instructions|commands|context)/i,
+     /system prompt|system instructions/i,
+     /you are (now|from now on) \w+/i,
+     /new (role|personality|identity):/i,
+     /(pretend|act as if|imagine) you (are|were)/i,
+     /DAN|jailbreak|\"mode\"/i,
+     /<\|system|assistant|user\|>/i,  // Role markers
+   ];
+   
+   function detectPromptInjection(input: string): {
+     detected: boolean;
+     confidence: number;
+     pattern: string;
+   }
+   ```
+
+2. **Add Input Sanitization Layer:**
+   - Sanitize before LLM processing
+   - Escape special characters
+   - Remove/replace dangerous sequences
+   - Maintain audit log of sanitization
+
+3. **Implement Output Guardrails:**
+   - Detect system prompt leakage in responses
+   - Block responses containing sensitive patterns
+   - Alert on suspicious output patterns
+
+4. **Use PromptInjection Skill for Testing:**
+   - Regular penetration testing with PromptInjection skill
+   - Test against known jailbreak techniques
+   - Validate defenses with red-team exercises
+
+5. **Security Event Logging:**
+   - Log all injection attempts
+   - Track sanitization actions
+   - Generate security reports
+
+**Integration:**
+- Add to `plugins/pai-core.ts` as `promptInjectionGuard(event)`
+- Hook into `tool.execute.before` and `message.received` events
+- Configure sensitivity levels in settings
+
+**Key Insight:** Defense in depth - detect + sanitize + log + test regularly!
+
+**Output:**
+- Prompt injection detection module
+- Input sanitization layer
+- Security logging system
+- Regular testing protocol
+
+**Verification:**
+- PromptInjection skill tests pass (blocked)
+- Known jailbreaks fail
+- No false positives on legitimate input
+- Audit logs complete
 
 ---
 
@@ -775,35 +858,43 @@ interface VoiceConfig {
 ```
 WP1 (Algorithm + Model Tiers)
     │
-    ├──► WP2 (Lazy Context) ──► WP3 (Event Plugins)
-    │                              │
-    │                              └──► WP8 (Testing/Release)
+    ├──► WP2 (Lazy Context) ──► WP3 (Event Plugins) ──► WP3.5 (Security) ──► WP8 (Testing/Release)
+    │                                                         │
+    │                                                         └──► Security logging integration
     │
     ├──► WP4 (Skills) ──► WP5 (MCP Config)
     │
     └──► WP6 (Voice) ──► WP7 (Migration) ──► WP8
 ```
 
-**Critical Path:** WP1 → WP2 → WP3 → WP8  
+**Critical Path:** WP1 → WP2 → WP3 → **WP3.5** → WP8  
+**Security is Critical:** WP3.5 added to critical path  
 **Parallel Work:** WP4, WP5, WP6 (after WP1)  
-**Final Step:** WP7 → WP8
+**Final Steps:** WP7 → WP8
 
 ---
 
-## 🚫 What We're DROPPING
+## 📊 Revised Effort & Timeline
 
-| Feature | Reason | Alternative |
-|---------|--------|-------------|
-| **StatusLine** | OpenCode TUI limitation | Voice notifications |
-| **Agent Swarms** | Not in OpenCode | Task tool with subagents |
-| **Static 233KB Context** | Inefficient | Lazy loading |
-| **Skill Packs** | Legacy structure | MCP-first skills |
-| **Fixed Model per Agent** | Suboptimal | Dynamic Model Tiers |
-| **Hook Emulation** | Technical debt | Native OpenCode events |
+| WP | Effort | Cumulative | Deliverable |
+|----|--------|------------|-------------|
+| WP1 | 8-12h | 8-12h | Algorithm v3.7.0 + Model Tiers |
+| WP2 | 6-8h | 14-20h | Lazy Context (~20KB) |
+| WP3 | 5-7h | 19-27h | Event-Driven Plugins |
+| **WP3.5** | **4-6h** | **23-33h** | **Prompt Injection Protection** |
+| WP4 | 8-10h | 31-43h (parallel) | Skill Hierarchy |
+| WP5 | 4-6h | 35-49h (parallel) | MCP Configuration |
+| WP6 | 4-6h | 39-55h (parallel) | Voice Foundation |
+| WP7 | 6-8h | 45-63h | Migration & Installer |
+| WP8 | 6-10h | 51-73h | Testing & Release |
+
+**Total Critical Path:** 51-73 hours  
+**With Parallel Work:** 6-9 weeks (1 person)  
+**With Multiple Agents:** 3-4 weeks
 
 ---
 
-## 🎓 What We're ADDING (New)
+## 🛡️ Security-First Architecture
 
 | Feature | Source | Value |
 |---------|--------|-------|
@@ -811,6 +902,9 @@ WP1 (Algorithm + Model Tiers)
 | **Lazy Context Loading** | OpenCode-native | Fast session start |
 | **MCP Skill Discovery** | OpenCode-native | Dynamic extensibility |
 | **Event-Driven Architecture** | OpenCode-native | Cleaner code |
+| **Prompt Injection Protection** | **Security Layer** | Defense against adversarial attacks |
+| **Input Sanitization** | **Security Layer** | Pre-processing protection |
+| **Security Event Logging** | **Security Layer** | Audit trail & monitoring |
 | **Voice-to-Voice Ready** | Future | Ambient AI foundation |
 | **OMI Integration** | Jeremiah Nexus | Wearable AI companion |
 
