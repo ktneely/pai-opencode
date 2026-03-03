@@ -34,14 +34,78 @@
 
 ---
 
+### 🔥 CRITICAL: Model Tiers ALREADY IN PRODUCTION
+
+**Status:** ✅ Battle-tested in daily use  
+**Location:** `/Users/steffen/.opencode/opencode.json`  
+**Fork:** `anomalyco/opencode` (feature/model-tiers branch)  
+**Commits:** 4 commits, including `8ae919675`  
+**Binary:** Custom build running in production
+
+**What we have TODAY:**
+- ✅ 15+ agents with model_tiers configured
+- ✅ quick/standard/advanced tiers per agent
+- ✅ Algorithm-controlled tier selection
+- ✅ Production use for months
+
+**Agent Model Tier Matrix (Production):**
+```
+┌─────────────────┬──────────────────┬──────────────────┬──────────────────┐
+│ Agent           │ Quick            │ Standard         │ Advanced         │
+├─────────────────┼──────────────────┼──────────────────┼──────────────────┤
+│ Engineer        │ Qwen3 Coder      │ Kimi K2.5        │ GPT-5.3 Codex    │
+│ Architect       │ Kimi K2.5        │ Kimi K2.5        │ Claude Sonnet 4.6│
+│ Pentester       │ Qwen3 Coder      │ Kimi K2.5        │ Claude Sonnet 4.6│
+│ Intern          │ MiniMax M2.1     │ Kimi K2          │ Kimi K2.5        │
+│ QATester        │ Qwen3 Coder      │ Kimi K2.5        │ Kimi K2.5        │
+│ Designer        │ Gemini 3 Flash   │ Gemini 3 Flash   │ Gemini 3 Pro     │
+│ Artist          │ Gemini 3 Flash   │ Gemini 3 Flash   │ Gemini 3 Pro     │
+│ Writer          │ Gemini 3 Flash   │ Gemini 3 Flash   │ Gemini 3 Pro     │
+│ Perplexity      │ Sonar            │ Sonar Pro        │ Sonar Deep       │
+│ Grok            │ Grok-4-1-Fast    │ Grok-4-1-Fast    │ Grok-4-1         │
+│ ...             │ ...              │ ...              │ ...              │
+└─────────────────┴──────────────────┴──────────────────┴──────────────────┘
+```
+
+**Usage in PAI Algorithm:**
+```typescript
+// Algorithm analyzes complexity
+const complexity = analyzeTask(task);
+const tier = complexity > 0.7 ? "advanced" : 
+             complexity > 0.4 ? "standard" : "quick";
+
+// Task with automatic model selection
+Task({
+  subagent_type: "Engineer",
+  model_tier: tier,  // ← Proprietary feature
+  prompt: "Implement authentication system"
+});
+```
+
+**Strategic Note:**
+> "local dev only, not for upstream"
+
+This is our **competitive advantage**. While others wait for OpenCode to implement model tiers natively, we have:
+- ✅ Working solution TODAY
+- ✅ Cost optimization (60x savings)
+- ✅ Quality optimization (right model for right task)
+- ✅ Full control over routing logic
+
+**Implication for v3.0:**
+- PAI-OpenCode 3.0 = Custom OpenCode binary + PAI Core
+- Users get Model Tiers out of the box
+- This is a **premium feature** not available in standard OpenCode
+
+---
+
 ### 2. OpenCode's Native Capabilities — Underutilized Gold
 
 Based on [opencode.ai/docs](https://opencode.ai/docs/) and GitHub research:
 
 | Feature | Current Usage | Potential | Implementation |
 |---------|--------------|-----------|----------------|
-| **Dynamic Model Tiers** | ❌ Unused | 🚀 HIGH | `Task({ model_tier: "quick" })` per agent task |
-| **Lazy Loading** | ❌ No (233KB static) | 🚀 HIGH | Native skill discovery + on-demand loading |
+| **Dynamic Model Tiers** | ✅ **IMPLEMENTED** in OpenCode Fork | 🚀 **READY** | `Task({ model_tier: "quick" })` per agent task |
+| **Lazy Loading** | ⚠️ Native in OpenCode, not used in PAI | 🚀 HIGH | Native skill discovery + on-demand loading |
 | **Native Skill System** | ⚠️ Partial | ✅ Native since v1.0.190 | `skill` tool with pattern-based permissions |
 | **MCP Server Ecosystem** | ✅ Used | 🚀 HIGH | Dynamic skill discovery via MCP |
 | **Plugin Events** | ⚠️ Basic | 🚀 HIGH | Replace hooks with native OpenCode events |
@@ -52,7 +116,56 @@ Based on [opencode.ai/docs](https://opencode.ai/docs/) and GitHub research:
 
 ---
 
-### 3. PAI Features vs. OpenCode Compatibility
+### 3. DeepWiki Research Findings (March 3, 2026)
+
+**Repository analyzed:** `anomalyco/opencode` via DeepWiki API (fast mode)  
+**Questions asked:** 6 critical architecture questions  
+**Success rate:** 6/6 (100%)  
+**Duration:** 7-11 seconds per query
+
+#### Key Findings:
+
+| Topic | Finding | Impact on PAI-OpenCode 3.0 |
+|-------|---------|---------------------------|
+| **Lazy Loading** | ✅ Native via `skill` tool. Skills discovered in `.opencode/skills/`, loaded on-demand | Remove static 233KB context, use native lazy loading |
+| **Model Tiers** | ⚠️ DeepWiki says "not implemented" — BUT WE HAVE IT IN FORK | Use custom binary with Model Tier support |
+| **Agent System** | ✅ Primary (Build/Plan) + Subagents (General/Explore). Tab switching, @ mentioning | Align our agent definitions with OpenCode's system |
+| **Plugin Events** | ✅ 20+ events (session, tool, file, etc.). Event-driven architecture | Migrate PAI Hooks to native OpenCode events |
+| **MCP Integration** | ✅ Centralized in `packages/opencode/src/mcp/`. Config in `opencode.json` | Skills as MCP servers is viable |
+| **Context Management** | ✅ Auto-compaction at token limit. SQLite storage. `experimental.session.compacting` hook | Don't build our own compaction |
+
+#### Actionable Insights:
+
+1. **Lazy Loading:** OpenCode's native skill system already does what PAI tries to do with static context. We should:
+   - Reduce bootstrap context to ~20KB (Algorithm + Identity only)
+   - Use native `skill` tool for on-demand loading
+   - Remove our custom context loader
+
+2. **Event System:** PAI Hooks can be replaced with OpenCode's native plugin events:
+   - `session.created` → Load minimal context
+   - `tool.execute.before` → Security validation
+   - `session.compacted` → Extract learnings
+   - `message.updated` → Work tracking
+
+3. **MCP-First Architecture:** Instead of static skills, use MCP servers:
+   ```typescript
+   // opencode.json
+   {
+     "mcp": {
+       "research-skill": {
+         "type": "local",
+         "command": "bun ~/.opencode/mcp/research/server.ts"
+       }
+     }
+   }
+   ```
+
+4. **Context Compaction:** Don't fight OpenCode's auto-compaction. Use it:
+   - Configure `compaction.reserved` tokens in `opencode.json`
+   - Use `experimental.session.compacting` hook if needed
+   - Trust the built-in system
+
+---
 
 | PAI Feature | OpenCode Compatible | Status for 3.0 |
 |-------------|---------------------|----------------|
@@ -122,24 +235,60 @@ Based on [opencode.ai/docs](https://opencode.ai/docs/) and GitHub research:
 
 ## 🔥 Key Innovations for v3.0
 
-### 1. Dynamic Model Tier Routing
+### 1. Dynamic Model Tier Routing ✅ ALREADY WORKING
 
-**What:** Every Task gets the optimal model tier based on complexity.
+**Status:** Implemented and battle-tested in production  
+**Location:** `~/.opencode/opencode.json` (agent configuration)  
+**Fork:** Custom OpenCode binary with Model Tier support
 
+**How it works:**
+```json
+{
+  "agent": {
+    "Engineer": {
+      "model": "opencode/qwen3-coder",
+      "model_tiers": {
+        "quick": { "model": "opencode/qwen3-coder" },
+        "standard": { "model": "opencode/kimi-k2.5" },
+        "advanced": { "model": "opencode/gpt-5.3-codex" }
+      }
+    },
+    "Architect": {
+      "model": "opencode/kimi-k2.5",
+      "model_tiers": {
+        "quick": { "model": "opencode/kimi-k2.5" },
+        "standard": { "model": "opencode/kimi-k2.5" },
+        "advanced": { "model": "opencode/claude-sonnet-4-6" }
+      }
+    }
+  }
+}
+```
+
+**Algorithm Integration:**
 ```typescript
-// Algorithm decides model tier
-const taskComplexity = analyzeComplexity(prompt);
-const modelTier = taskComplexity > 0.7 ? "advanced" : 
-                  taskComplexity > 0.4 ? "standard" : "quick";
+// PAI Algorithm decides tier based on task complexity
+const tier = analyzeComplexity(task) > 0.7 ? "advanced" : 
+             analyzeComplexity(task) > 0.4 ? "standard" : "quick";
 
 Task({ 
   subagent_type: "Engineer", 
-  model_tier: modelTier,  // ← OpenCode-native
+  model_tier: tier,  // ← CUSTOM FORK FEATURE
   prompt: "..." 
 });
 ```
 
-**Benefit:** 60x cost savings ($1.25/M vs $75/M) with same quality.
+**Production Agents with Tiers:**
+| Agent | Quick | Standard | Advanced |
+|-------|-------|----------|----------|
+| **Engineer** | Qwen3 Coder | Kimi K2.5 | GPT-5.3 Codex |
+| **Architect** | Kimi K2.5 | Kimi K2.5 | Claude Sonnet 4.6 |
+| **Pentester** | Qwen3 Coder | Kimi K2.5 | Claude Sonnet 4.6 |
+| **Researcher** | Kimi K2 | Kimi K2.5 | Claude Sonnet 4.6 |
+| **Designer** | Gemini 3 Flash | Gemini 3 Flash | Gemini 3 Pro |
+
+**Benefit:** 60x cost savings ($1.25/M vs $75/M) with same quality.  
+**Requirement:** PAI-OpenCode v3.0 requires custom OpenCode binary.
 
 ---
 
