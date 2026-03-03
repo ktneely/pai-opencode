@@ -1,69 +1,69 @@
-# CI/CD Setup Guide für PAI-OpenCode
+# CI/CD Setup Guide for PAI-OpenCode
 
-> Professionelle Entwicklungs-Workflows: CI/CD, CodeRabbit AI Review, Branch Protection und automatisches Upstream-Monitoring
+> Professional development workflows: CI/CD, CodeRabbit AI Review, Branch Protection, and automatic upstream monitoring
 
-## Übersicht
+## Overview
 
-Dieses Setup implementiert den gleichen Professionalitäts-Standard wie Warrior AI Solutions (Weston):
+This setup implements the same professionalism standard as Warrior AI Solutions (Weston):
 
-| Komponente | Status | Zweck |
-|------------|--------|-------|
-| **CI Workflow** | ✅ Aktiv | Lint, Typecheck, Secret Scan bei jedem PR |
-| **CodeRabbit** | ⚙️ Konfiguriert | AI Code Review auf alle PRs |
-| **OpenCode Action** | ✅ Aktiv | `/opencode` Kommandos in Issues/PRs |
-| **Upstream Sync** | ✅ Aktiv | Tägliche Überwachung der Forks |
-| **Branch Protection** | 🔧 Manuell | In GitHub Settings zu aktivieren |
+| Component | Status | Purpose |
+|-----------|--------|---------|
+| **CI Workflow** | ✅ Active | Lint, Typecheck, Secret Scan on every PR |
+| **CodeRabbit** | ⚙️ Configured | AI Code Review on all PRs |
+| **OpenCode Action** | ✅ Active | `/opencode` commands in Issues/PRs |
+| **Upstream Sync** | ✅ Active | Daily monitoring of forks |
+| **Branch Protection** | 🔧 Manual | To be activated in GitHub Settings |
 
 ---
 
-## Schnellstart
+## Quick Start
 
-### 1. CodeRabbit Installieren (One-Time)
+### 1. Install CodeRabbit (One-Time)
 
-1. Gehe zu https://app.coderabbit.ai
-2. Logge dich mit deinem GitHub Account ein
-3. Installiere CodeRabbit auf deinem GitHub Account
-4. Wähle das `Steffen025/pai-opencode` Repository
+1. Go to https://app.coderabbit.ai
+2. Log in with your GitHub Account
+3. Install CodeRabbit on your GitHub Account
+4. Select the `Steffen025/pai-opencode` repository
 
-**CodeRabbit ist jetzt aktiv** — es reviewt automatisch alle PRs basierend auf `.coderabbit.yaml`.
+**CodeRabbit is now active** — it automatically reviews all PRs based on `.coderabbit.yaml`.
 
-### 2. GitHub Secrets Konfigurieren
+### 2. Configure GitHub Secrets
 
-Gehe zu **Settings → Secrets and variables → Actions** und füge hinzu:
+Go to **Settings → Secrets and variables → Actions** and add:
 
-| Secret | Wert | Benötigt für |
-|--------|------|--------------|
+| Secret | Value | Required for |
+|--------|-------|--------------|
 | `UPSTREAM_SYNC_TOKEN` | GitHub Personal Access Token | Upstream Sync Workflows |
 
-**Token erstellen:**
+**Create Token:**
 1. https://github.com/settings/tokens → Generate new token (classic)
 2. Scopes: `repo` (full control) + `issues` (write)
-3. Kopiere den Token und speichere als `UPSTREAM_SYNC_TOKEN`
+3. Copy the token and save as `UPSTREAM_SYNC_TOKEN`
 
-**Optional (für OpenCode Agent):**
-| Secret | Wert | Benötigt für |
-|--------|------|--------------|
-| `OPENCODE_API_KEY` | Dein OpenCode/Zen API Key | OpenCode Action |
+**Optional (for OpenCode Agent):**
+| Secret | Value | Required for |
+|--------|-------|--------------|
+| `OPENCODE_API_KEY` | Your OpenCode/Zen API Key | OpenCode Action |
 
-### 3. Branch Protection Aktivieren (Manuell)
+### 3. Activate Branch Protection (Manual)
 
-Gehe zu **Settings → Branches → Branch protection rules**:
+Go to **Settings → Branches → Branch protection rules**:
 
-#### Für `dev` Branch:
+#### For `dev` Branch:
 ```
 ☑️ Require a pull request before merging
 ☑️ Require status checks to pass
-   - Suche nach: "CI — Lint, Typecheck, Secrets"
+   - Search for: "CI — Lint, Typecheck, Secrets"
 ☑️ Restrict pushes that create files larger than 100 MB
-☐ Do not allow bypassing the above settings (für jetzt unchecked lassen)
+☐ Do not allow bypassing the above settings (leave unchecked for now)
 ```
 
-#### Für `main` Branch:
+#### For `main` Branch:
 ```
 ☑️ Require a pull request before merging
-☑️ Require approvals: 1 (oder 0 wenn du alleine arbeitest)
+☑️ Require approvals: 1 (or 0 if you work alone)
 ☑️ Require status checks to pass
-   - Suche nach: "CI — Lint, Typecheck, Secrets"
+   - Search for: "CI — Lint, Typecheck, Secrets"
 ☑️ Dismiss stale PR approvals when new commits are pushed
 ☑️ Do not allow force pushes
 ☑️ Do not allow deletions
@@ -71,45 +71,45 @@ Gehe zu **Settings → Branches → Branch protection rules**:
 
 ---
 
-## Workflows im Detail
+## Workflows in Detail
 
 ### CI Workflow (`.github/workflows/ci.yml`)
 
-**Trigger:** PRs zu `dev`/`main`, pushes zu `dev`/`main`
+**Trigger:** PRs to `dev`/`main`, pushes to `dev`/`main`
 
 **Jobs:**
-1. **Bun Setup** — `oven-sh/setup-bun@v2` (⚠️ **NICHT npm!**)
+1. **Bun Setup** — `oven-sh/setup-bun@v2` (⚠️ **NOT npm!**)
 2. **Dependencies** — `bun install`
-3. **Typecheck** — `bunx tsc --noEmit` (nur wenn `tsconfig.json` existiert)
-4. **Biome Check** — `bunx @biomejs/biome check .` (nur wenn `biome.json` existiert)
-5. **Secret Scan** — grep für `sk-*, api_key, client_secret, password, token`
-6. **Tests** — `bun test` (nur wenn `.test.ts` Dateien existieren)
+3. **Typecheck** — `bunx tsc --noEmit` (only if `tsconfig.json` exists)
+4. **Biome Check** — `bunx @biomejs/biome check .` (only if `biome.json` exists)
+5. **Secret Scan** — grep for `sk-*, api_key, client_secret, password, token`
+6. **Tests** — `bun test` (only if `.test.ts` files exist)
 
-**Constraint Check:** Kein `npm install`, `npm ci`, oder `npm run` in diesem Workflow!
+**Constraint Check:** No `npm install`, `npm ci`, or `npm run` in this workflow!
 
 ### CodeRabbit (`.coderabbit.yaml`)
 
-**Konfiguration:**
-- **Profile:** `chill` (nicht zu aggressiv für AI-generierten Code)
-- **Sprache:** Deutsch
-- **Auto-Review:** Auf PRs targeting `dev` oder `main`
-- **Path Instructions:** Spezifische Regeln für:
+**Configuration:**
+- **Profile:** `chill` (not too aggressive for AI-generated code)
+- **Language:** English
+- **Auto-Review:** On PRs targeting `dev` or `main`
+- **Path Instructions:** Specific rules for:
   - `.opencode/skills/**` — PAI Skills Format
-  - `.opencode/agents/**` — Agent Definitionen
+  - `.opencode/agents/**` — Agent Definitions
   - `Tools/**` — CLI Tools (Bun-only)
-  - `skill-packs/**` — Modulare Skill Packs
-  - `docs/**` — Dokumentation
+  - `skill-packs/**` — Modular Skill Packs
+  - `docs/**` — Documentation
 
 ### OpenCode Action (`.github/workflows/opencode.yml`)
 
-**Trigger:** Kommentare mit `/opencode` oder `/oc`
+**Trigger:** Comments containing `/opencode` or `/oc`
 
 **Usage:**
 ```
-# In einem Issue oder PR Kommentar:
+# In an Issue or PR comment:
 /opencode Update the README with new features
 
-# Oder kurz:
+# Or short:
 /oc Fix the broken link in docs
 ```
 
@@ -117,40 +117,40 @@ Gehe zu **Settings → Branches → Branch protection rules**:
 
 #### PAI Sync (`.github/workflows/upstream-sync-pai.yml`)
 
-**Schedule:** Täglich 08:00 UTC
+**Schedule:** Daily at 08:00 UTC
 
-**Überwacht:** `danielmiessler/Personal_AI_Infrastructure`
+**Monitors:** `danielmiessler/Personal_AI_Infrastructure`
 
-**Aktionen:**
-1. Vergleicht deinen Fork mit Upstream
-2. Erstellt Issue wenn neue Commits verfügbar:
+**Actions:**
+1. Compares your fork with upstream
+2. Creates issue when new commits available:
    - Label: `upstream-sync`, `pai`, `automated`
-   - Enthält: Commit-Liste, Links, Checkboxen für Aktionen
-3. Erstellt Issue wenn neues Release:
+   - Contains: Commit list, links, action checkboxes
+3. Creates issue when new release:
    - Label: `upstream-sync`, `pai`, `release`, `automated`
-   - Enthält: Release Notes, Links, Breaking Changes Check
+   - Contains: Release notes, links, breaking changes check
 
 #### OpenCode Sync (`.github/workflows/upstream-sync-opencode.yml`)
 
-**Schedule:** Täglich 08:30 UTC (30min nach PAI)
+**Schedule:** Daily at 08:30 UTC (30min after PAI)
 
-**Überwacht:** `anomalyco/opencode`
+**Monitors:** `anomalyco/opencode`
 
-**Aktionen:** Gleiches Pattern wie PAI Sync, aber:
+**Actions:** Same pattern as PAI Sync, but:
 - Label: `upstream-sync`, `opencode`
-- Zusätzliche Hinweise zu SDK/Action Änderungen
+- Additional hints for SDK/Action changes
 
 ---
 
-## Entwicklungs-Workflow
+## Development Workflow
 
-### Für dich (Steffen):
+### For you (Steffen):
 
 ```bash
-# 1. Feature Branch erstellen (von dev)
-git checkout -b feature/neue-funktion origin/dev
+# 1. Create feature branch (from dev)
+git checkout -b feature/new-feature origin/dev
 
-# 2. Änderungen machen
+# 2. Make changes
 # ... edit files ...
 
 # 3. Commit (Conventional Commits)
@@ -162,91 +162,91 @@ git commit -m "feat(skills): Add new Cloudflare skill
 Closes #42"
 
 # 4. Push
-git push origin feature/neue-funktion
+git push origin feature/new-feature
 
-# 5. PR erstellen (target: dev)
-# - CI läuft automatisch
-# - CodeRabbit reviewed automatisch
-# - Wenn CI grün → Merge to dev
+# 5. Create PR (target: dev)
+# - CI runs automatically
+# - CodeRabbit reviews automatically
+# - When CI green → Merge to dev
 
-# 6. Release (manuell)
-# Wenn dev stabil: PR dev→main erstellen
-# - Eigene Review + Approval
-# - Merge triggers kein Deployment (PAI ist Template, kein Service)
+# 6. Release (manual)
+# When dev is stable: create PR dev→main
+# - Self review + Approval
+# - Merge triggers no deployment (PAI is a template, not a service)
 ```
 
-### Für OpenCode AI Agent:
+### For OpenCode AI Agent:
 
 ```
-# In einem PR Kommentar:
+# In a PR comment:
 /opencode Review this PR for PAI v3.0 compliance
 
-# Oder:
+# Or:
 /oc Add error handling to the migration tool
 ```
 
 ---
 
-## Anti-Patterns (WAS NICHT passieren soll)
+## Anti-Patterns (WHAT SHOULD NOT happen)
 
-| ❌ Anti-Pattern | ✅ Korrekt |
+| ❌ Anti-Pattern | ✅ Correct |
 |----------------|----------|
-| `npm install` in Workflows | `bun install` |
-| `eslint` oder `prettier` | `biome check .` |
-| Direkte commits zu `main` | PR via `dev` Branch |
-| Force push zu geschützten Branches | Nie erlaubt |
-| Manuelles Upstream checken | Automatische Issues |
+| `npm install` in workflows | `bun install` |
+| `eslint` or `prettier` | `biome check .` |
+| Direct commits to `main` | PR via `dev` branch |
+| Force push to protected branches | Never allowed |
+| Manual upstream checking | Automatic issues |
 
 ---
 
 ## Troubleshooting
 
-### CI schlägt fehl: "No tsconfig.json"
-→ Normal wenn noch kein TypeScript konfiguriert. Füge `tsconfig.json` hinzu oder Workflow passt sich an.
+### CI fails: "No tsconfig.json"
+→ Normal if no TypeScript configured yet. Add `tsconfig.json` or workflow adapts.
 
-### CodeRabbit reviewed nicht
-→ Prüfe:
-1. CodeRabbit App installiert? (https://app.coderabbit.ai)
-2. `.coderabbit.yaml` im Root?
-3. PR target ist `dev` oder `main`?
+### CodeRabbit doesn't review
+→ Check:
+1. CodeRabbit App installed? (https://app.coderabbit.ai)
+2. `.coderabbit.yaml` in root?
+3. PR target is `dev` or `main`?
 
-### Upstream Sync erstellt keine Issues
-→ Prüfe:
-1. `UPSTREAM_SYNC_TOKEN` Secret gesetzt?
-2. Token hat `repo` und `issues` scopes?
-3. Workflow manuell triggern (Actions Tab → workflow_dispatch)
+### Upstream Sync doesn't create issues
+→ Check:
+1. `UPSTREAM_SYNC_TOKEN` secret set?
+2. Token has `repo` and `issues` scopes?
+3. Manually trigger workflow (Actions Tab → workflow_dispatch)
 
-### Secret Scan false positives
-→ Wenn legitime Strings gematcht werden (z.B. `sk-` in Dateinamen):
-1. Kommentar mit `# pragma: allowlist secret`
-2. Oder: Scan-Regex in CI anpassen
+### Secret scan false positives
+→ If legitimate strings are matched (e.g., `sk-` in filenames):
+1. Comment with `# pragma: allowlist secret`
+2. Or: Adjust scan regex in CI
 
 ---
 
-## Vergleich: Warrior AI Solutions vs. PAI-OpenCode
+## Comparison: Warrior AI Solutions vs. PAI-OpenCode
 
 | Feature | Warrior AI (Weston) | PAI-OpenCode |
 |---------|---------------------|--------------|
-| **CI** | ✅ Lint, Typecheck, Test, Secrets | ✅ Gleiches Pattern |
+| **CI** | ✅ Lint, Typecheck, Test, Secrets | ✅ Same pattern |
 | **CodeRabbit** | ✅ Pro Tier (2 seats) | ✅ Free Tier |
 | **OpenCode Action** | ✅ Self-hosted runner | ✅ GitHub-hosted |
 | **Branch Protection** | 2 approvers (dev+main) | 1 approver (personal) |
-| **Self-hosted Runner** | ✅ Vultr | ❌ Nicht nötig |
-| **Upstream Sync** | ❌ Nicht implementiert | ✅ Automatisch |
+| **Self-hosted Runner** | ✅ Vultr | ❌ Not needed |
+| **Upstream Sync** | ❌ Not implemented | ✅ Automatic |
 
-**Key Difference:** Warrior AI hat Enterprise-Features (self-hosted, 2 approvers), PAI-OpenCode ist optimiert für persönliche/OSS-Nutzung.
-
----
-
-## Nächste Schritte
-
-1. ✅ CodeRabbit installieren
-2. ✅ Secrets konfigurieren
-3. ✅ Branch Protection aktivieren
-4. ⏳ Warte auf ersten Upstream Sync (morgen 08:00/08:30 UTC)
-5. ⏳ Optional: `biome.json` und `tsconfig.json` hinzufügen für volle CI-Nutzung
+**Key Difference:** Warrior AI has enterprise features (self-hosted, 2 approvers), PAI-OpenCode is optimized for personal/OSS usage.
 
 ---
 
-*Dokumentation erstellt: 2026-03-03*
-*Basierend auf Warrior AI Solutions Patterns*
+## Next Steps
+
+1. ✅ Install CodeRabbit
+2. ✅ Configure secrets
+3. ✅ Activate branch protection
+4. ⏳ Wait for first upstream sync (tomorrow 08:00/08:30 UTC)
+5. ⏳ Optional: Add `biome.json` and `tsconfig.json` for full CI usage
+
+---
+
+*Documentation created: 2026-03-03*
+*Based on Warrior AI Solutions patterns*

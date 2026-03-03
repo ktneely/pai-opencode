@@ -1,192 +1,384 @@
 name: Upstream Sync — PAI (Daniel Miessler)
 
-# Dieser Workflow überwacht danielmiessler/Personal_AI_Infrastructure
-# und erstellt Issues wenn neue Commits oder Releases verfügbar sind
+# DIESER WORKFLOW INFORMIERT NUR - ER SYNCED NICHT AUTOMATISCH
+# 
+# Warum: PAI-OpenCode ist ein komplexer Port, kein einfacher Fork.
+# Automatisches Mergen würde die OpenCode-Architektur zerstören.
+#
+# Stattdessen: Wir erstellen informierende Issues mit:
+# - Liste der upstream Änderungen
+# - Analyse was portiert werden muss
+# - Checkliste für manuelle Übertragung
+#
+# Der Workflow erstellt KEINE automatischen PRs - das würde:
+# - .opencode/ löschen (existiert nicht upstream)
+# - Plugin-Architektur überschreiben (Hooks ≠ Plugins)
+# - Dual-File Config zerstören (opencode.json + settings.json)
 
 on:
   schedule:
     # Täglich um 8:00 UTC (9:00 CET / 10:00 CEST)
     - cron: "0 8 * * *"
   
-  # Manuelles Triggern für Tests
+  # Manuelles Triggern für sofortige Checks
   workflow_dispatch:
-    inputs:
-      force_check:
-        description: "Force sync check (ignore cache)"
-        type: boolean
-        default: false
 
 env:
   UPSTREAM_OWNER: danielmiessler
   UPSTREAM_REPO: Personal_AI_Infrastructure
-  # Dein Fork auf GitHub - ACHTUNG: Anpassen!
-  # Aktuell: daniel-miesler-pie (oder was auch immer dein GitHub Username/Fork Name ist)
-  FORK_REPO: Steffen025/daniel-miesler-pie
+  # WICHTIG: Das ist dein FORK auf GitHub (nicht der lokale Pfad!)
+  FORK_REPO: Steffen025/Personal_AI_Infrastructure
 
 jobs:
   check-upstream:
-    name: Check PAI Upstream
+    name: Check PAI Upstream & Create Info Issue
     runs-on: ubuntu-latest
-    
+    permissions:
+      issues: write
+      
     steps:
-      - name: Checkout fork
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.FORK_REPO }}
-          token: ${{ secrets.UPSTREAM_SYNC_TOKEN }}
-          fetch-depth: 0  # Full history für Vergleich
+          fetch-depth: 1
 
-      - name: Fetch upstream
-        run: |
-          git remote add upstream https://github.com/${{ env.UPSTREAM_OWNER }}/${{ env.UPSTREAM_REPO }}.git
-          git fetch upstream --tags
-
-      - name: Check for new commits
-        id: check_commits
-        run: |
-          # Vergleiche upstream/main mit origin/main
-          NEW_COMMITS=$(git log HEAD..upstream/main --oneline --no-merges | head -20)
-          COMMIT_COUNT=$(echo "$NEW_COMMITS" | grep -c . || true)
-          
-          if [ -z "$NEW_COMMITS" ]; then
-            echo "commits_behind=0" >> $GITHUB_OUTPUT
-            echo "No new commits found"
-          else
-            echo "commits_behind=$COMMIT_COUNT" >> $GITHUB_OUTPUT
-            echo "new_commits<<EOF" >> $GITHUB_OUTPUT
-            echo "$NEW_COMMITS" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-            echo "Found $COMMIT_COUNT new commits"
-          fi
+      - name: Fetch upstream commit history
+        id: upstream_check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const upstreamOwner = process.env.UPSTREAM_OWNER;
+            const upstreamRepo = process.env.UPSTREAM_REPO;
+            const forkRepo = process.env.FORK_REPO;
+            
+            // Get latest upstream commit
+            const { data: upstreamCommits } = await github.rest.repos.listCommits({
+              owner: upstreamOwner,
+              repo: upstreamRepo,
+              sha: 'main',
+              per_page: 20
+            });
+            
+            // Get latest fork commit
+            const [forkOwner, forkRepoName] = forkRepo.split('/');
+            try {
+              const { data: forkCommits } = await github.rest.repos.listCommits({
+                owner: forkOwner,
+                repo: forkRepoName,
+                sha: 'main',
+                per_page: 1
+              });
+              
+              const forkLatest = forkCommits[0].sha;
+              const upstreamLatest = upstreamCommits[0].sha;
+              
+              // Compare to find new commits
+              const { data: comparison } = await github.rest.repos.compareCommits({
+                owner: upstreamOwner,
+                repo: upstreamRepo,
+                base: forkLatest,
+                head: upstreamLatest
+              });
+              
+              const newCommits = comparison.commits;
+              
+              if (newCommits.length === 0) {
+                core.setOutput('has_updates', 'false');
+                console.log('✅ Fork is up to date with upstream');
+              } else {
+                core.setOutput('has_updates', 'true');
+                core.setOutput('commit_count', newCommits.length.toString());
+                core.setOutput('fork_latest', forkLatest.substring(0, 7));
+                core.setOutput('upstream_latest', upstreamLatest.substring(0, 7));
+                
+                // Format commit list
+                const commitList = newCommits.slice(0, 15).map(c => {
+                  const msg = c.commit.message.split('\n')[0];
+                  const author = c.author?.login || 'unknown';
+                  return '- ' + c.sha.substring(0, 7) + ' ' + msg + ' — @' + author;
+                }).join('\n');
+                
+                core.setOutput('commit_list', commitList);
+                
+                // Detect changed components from commit messages
+                const filesChanged = new Set();
+                newCommits.forEach(c => {
+                  const msg = c.commit.message.toLowerCase();
+                  if (msg.includes('skill')) filesChanged.add('Skills');
+                  if (msg.includes('algorithm')) filesChanged.add('Algorithm');
+                  if (msg.includes('hook')) filesChanged.add('Hooks');
+                  if (msg.includes('memory')) filesChanged.add('Memory');
+                  if (msg.includes('tool')) filesChanged.add('Tools');
+                  if (msg.includes('security')) filesChanged.add('Security');
+                  if (msg.includes('agent')) filesChanged.add('Agents');
+                  if (msg.includes('plugin')) filesChanged.add('Plugins');
+                });
+                
+                core.setOutput('components_changed', Array.from(filesChanged).join(', ') || 'General');
+                
+                console.log('🔄 Found ' + newCommits.length + ' new commits upstream');
+              }
+            } catch (error) {
+              core.setOutput('has_updates', 'error');
+              core.setOutput('error_message', error.message);
+              console.log('⚠️ Error checking fork:', error.message);
+            }
 
       - name: Check for new releases
-        id: check_releases
+        id: release_check
         uses: actions/github-script@v7
         with:
           script: |
             const upstreamOwner = process.env.UPSTREAM_OWNER;
             const upstreamRepo = process.env.UPSTREAM_REPO;
             
-            // Get latest upstream release
             try {
-              const { data: upstreamRelease } = await github.rest.repos.getLatestRelease({
+              const { data: latestRelease } = await github.rest.repos.getLatestRelease({
                 owner: upstreamOwner,
                 repo: upstreamRepo
               });
               
-              // Check if we have an issue for this release already
-              const { data: issues } = await github.rest.issues.listForRepo({
+              // Check if we already have an issue for this release
+              const { data: existingIssues } = await github.rest.issues.listForRepo({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                labels: 'upstream-sync,pai',
+                labels: 'upstream-sync,pai,release',
                 state: 'open'
               });
               
-              const existingIssue = issues.find(issue => 
-                issue.title.includes(`PAI ${upstreamRelease.tag_name}`)
+              const releaseIssueExists = existingIssues.some(issue => 
+                issue.title.includes('PAI ' + latestRelease.tag_name)
               );
               
-              if (!existingIssue) {
+              if (!releaseIssueExists) {
                 core.setOutput('new_release', 'true');
-                core.setOutput('release_tag', upstreamRelease.tag_name);
-                core.setOutput('release_name', upstreamRelease.name);
-                core.setOutput('release_url', upstreamRelease.html_url);
-                core.setOutput('release_body', upstreamRelease.body || 'No release notes');
+                core.setOutput('release_tag', latestRelease.tag_name);
+                core.setOutput('release_name', latestRelease.name);
+                core.setOutput('release_url', latestRelease.html_url);
+                const notes = latestRelease.body?.substring(0, 2000) || 'No release notes';
+                core.setOutput('release_notes', notes);
+                core.setOutput('release_date', latestRelease.published_at);
+                
+                console.log('🎉 New release detected: ' + latestRelease.tag_name);
               } else {
                 core.setOutput('new_release', 'false');
               }
             } catch (error) {
-              // No releases exist yet
               core.setOutput('new_release', 'false');
+              console.log('ℹ️ No releases found');
             }
 
-      - name: Create sync issue (commits)
-        if: steps.check_commits.outputs.commits_behind != '0'
+      - name: Create info issue (commits)
+        if: steps.upstream_check.outputs.has_updates == 'true'
         uses: actions/github-script@v7
         with:
           script: |
-            const commitCount = '${{ steps.check_commits.outputs.commits_behind }}';
-            const newCommits = `${{ steps.check_commits.outputs.new_commits }}`;
+            const commitCount = '${{ steps.upstream_check.outputs.commit_count }}';
+            const commitList = `${{ steps.upstream_check.outputs.commit_list }}`;
+            const components = '${{ steps.upstream_check.outputs.components_changed }}';
+            const forkLatest = '${{ steps.upstream_check.outputs.fork_latest }}';
+            const upstreamLatest = '${{ steps.upstream_check.outputs.upstream_latest }}';
             
-            const title = `[Upstream Sync] PAI — ${commitCount} neue Commits verfügbar`;
+            const title = '[Upstream Sync] PAI ' + commitCount + ' neue Commits — Manuelle Portierung erforderlich';
             
-            const bodyParts = [
-              '## 🔁 Upstream Sync Benachrichtigung',
+            const compareUrl = 'https://github.com/danielmiessler/Personal_AI_Infrastructure/compare/' + forkLatest + '...' + upstreamLatest;
+            
+            const bodyLines = [
+              '## 🔁 Upstream Änderung erkannt',
               '',
               '**Repository:** danielmiessler/Personal_AI_Infrastructure',
-              `**Status:** ${commitCount} Commits hinter dem Original`,
+              '**Zeitraum:** Seit deinem Fork (' + forkLatest + ') → upstream (' + upstreamLatest + ')',
+              '**Anzahl:** ' + commitCount + ' Commits',
+              '**Potenzielle Änderungen:** ' + components,
               '',
-              '### Neue Commits',
-              '```',
-              newCommits,
-              '```',
+              '### ⚠️ WICHTIG: Kein automatisches Mergen möglich',
               '',
-              '### Aktionen erforderlich',
-              '- [ ] Commits reviewen: https://github.com/danielmiessler/Personal_AI_Infrastructure/compare/main...HEAD',
-              '- [ ] PAI-OpenCode prüfen ob Änderungen relevant sind',
-              '- [ ] Falls ja: Fork aktualisieren und PAI-OpenCode updaten',
+              'PAI-OpenCode ist ein **komplexer Architektur-Port**, kein einfacher Fork:',
+              '- `.claude/` → `.opencode/` (Verzeichnis-Umbenennung)',
+              '- Hooks → Plugins (fundamental andere Architektur)',
+              '- Single-config → Dual-config (settings.json + opencode.json)',
+              '',
+              '**Automatisches Mergen würde PAI-OpenCode zerstören!**',
               '',
               '---',
-              '*Automatisch erstellt von Upstream Sync Workflow*'
+              '',
+              '### 📋 Neue Commits (Top 15)',
+              '',
+              commitList,
+              '',
+              '[Alle Commits ansehen](' + compareUrl + ')',
+              '',
+              '---',
+              '',
+              '### 🎯 Portierungs-Checkliste',
+              '',
+              '**WICHTIG:** Nicht alles muss portiert werden!',
+              '',
+              '| Komponente | Portieren? | Aufwand | Dateien/Anpassungen |',
+              '|------------|-----------|---------|-------------------|',
+              '| **Skills** | ✅ Ja, wenn neue/aktualisiert | 🟢 Gering | Kopieren nach `.opencode/skills/`, Pfade anpassen |',
+              '| **Algorithm (SKILL.md)** | ✅ Ja | 🔴 Hoch | Core-Algorithmus in `skills/PAI/SKILL.md` — manuell übertragen |',
+              '| **Agents** | ⚠️ Prüfen | 🟡 Mittel | Nur wenn neue Agenten-Typen, sonst OpenCode-Agents nutzen |',
+              '| **Tools** | ✅ Ja, wenn neue | 🟢 Gering | Kopieren nach `Tools/`, Pfade anpassen |',
+              '| **Hooks** | ❌ Nein | — | Nicht portierbar — wir haben Plugins (ADR-001) |',
+              '| **Memory** | ⚠️ Prüfen | 🟡 Mittel | Nur wenn neue MEMORY-Features, struktur gleich |',
+              '| **Security Patterns** | ✅ Ja, wenn aktualisiert | 🟡 Mittel | In `plugins/handlers/security-validator.ts` übernehmen |',
+              '| **Config Schema** | ⚠️ Prüfen | 🟡 Mittel | Nur PAI-relevante Felder, OpenCode-Config bleibt |',
+              '',
+              '---',
+              '',
+              '### 🔍 Analyse-Leitfaden',
+              '',
+              '1. **Commits durchsehen:** [Vergleichsansicht öffnen](' + compareUrl + ')',
+              '2. **Skills identifizieren:** Neue Skills? Aktualisierte SKILL.md Dateien?',
+              '3. **Algorithm-Version prüfen:** Ist `skills/PAI/SKILL.md` geändert? (Algorithm Update)',
+              '4. **Security-Updates:** Neue DANGEROUS_PATTERNS in Hooks?',
+              '5. **Tools prüfen:** Neue TypeScript-Tools in `Tools/`?',
+              '',
+              '---',
+              '',
+              '### 🛠️ Portierungs-Prozess',
+              '',
+              'Wenn du portieren möchtest:',
+              '',
+              '1. **Lokalen PAI-OpenCode Repo öffnen:**',
+              '   ```bash',
+              '   cd /Users/steffen/workspace/github.com/Steffen025/pai-opencode',
+              '   ```',
+              '',
+              '2. **Upstream PAI lokal pullen (Referenz):**',
+              '   ```bash',
+              '   cd /Users/steffen/workspace/github.com/danielmiessler/Personal_AI_Infrastructure',
+              '   git fetch upstream',
+              '   git log --oneline HEAD..upstream/main -- .claude/skills/',
+              '   ```',
+              '',
+              '3. **Skills portieren (falls neue/aktualisiert):**',
+              '   ```bash',
+              '   cp -r /Users/steffen/workspace/github.com/danielmiessler/Personal_AI_Infrastructure/.claude/skills/NEW_SKILL \\\',
+              '         /Users/steffen/workspace/github.com/Steffen025/pai-opencode/.opencode/skills/',
+              '   ```',
+              '',
+              '4. **Pfade anpassen (.claude/ → .opencode/):**',
+              '   ```bash',
+              '   find .opencode/skills/NEW_SKILL -type f -exec sed -i \'\' \'s|~/.claude|${process.env.PAI_DIR}|g\' {} \\;',
+              '   ```',
+              '',
+              '5. **Algorithm aktualisieren (falls geändert):**',
+              '   - `skills/PAI/SKILL.md` manuell vergleichen',
+              '   - Neue Phasen/Features in Algorithmus übertragen',
+              '   - OpenCode-spezifische Anpassungen bewahren',
+              '',
+              '6. **Testen:**',
+              '   ```bash',
+              '   bunx @biomejs/biome check .',
+              '   opencode',
+              '   ```',
+              '',
+              '7. **Commit & PR:**',
+              '   - Branch: `upstream-sync/pai-vX.X.X`',
+              '   - Commit: `feat(sync): Port PAI vX.X.X skills + algorithm updates`',
+              '',
+              '---',
+              '',
+              '### 📚 Dokumentation',
+              '',
+              '- **Migration Guide:** `docs/MIGRATION.md`',
+              '- **ADRs:** `docs/architecture/adr/`',
+              '  - ADR-001: Hooks → Plugins',
+              '  - ADR-002: Directory Structure',
+              '  - ADR-003: Skills Unchanged',
+              '- **Converter Tool:** `Tools/pai-to-opencode-converter.ts`',
+              '',
+              '---',
+              '',
+              '*Automatisch erstellt von Upstream Sync Workflow*',
+              '*Workflow: `.github/workflows/upstream-sync-pai.yml`*'
             ];
-            const body = bodyParts.join('\n');
+            
+            const body = bodyLines.join('\n');
             
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: title,
               body: body,
-              labels: ['upstream-sync', 'pai', 'automated']
+              labels: ['upstream-sync', 'pai', 'manual-port-required', 'automated']
             });
+            
+            console.log('✅ Created info issue: ' + title);
 
-      - name: Create sync issue (release)
-        if: steps.check_releases.outputs.new_release == 'true'
+      - name: Create release issue
+        if: steps.release_check.outputs.new_release == 'true'
         uses: actions/github-script@v7
         with:
           script: |
-            const releaseTag = '${{ steps.check_releases.outputs.release_tag }}';
-            const releaseName = '${{ steps.check_releases.outputs.release_name }}';
-            const releaseUrl = '${{ steps.check_releases.outputs.release_url }}';
-            const releaseBody = `${{ steps.check_releases.outputs.release_body }}`;
+            const releaseTag = '${{ steps.release_check.outputs.release_tag }}';
+            const releaseName = '${{ steps.release_check.outputs.release_name }}';
+            const releaseUrl = '${{ steps.release_check.outputs.release_url }}';
+            const releaseNotes = '${{ steps.release_check.outputs.release_notes }}';
+            const releaseDate = '${{ steps.release_check.outputs.release_date }}';
             
-            const title = `[Release] PAI ${releaseTag} verfügbar — ${releaseName}`;
+            const title = '[Release] PAI ' + releaseTag + ' verfügbar — ' + releaseName;
             
-            const bodyParts = [
-              '## 🎉 Neues Upstream Release',
+            const bodyLines = [
+              '## 🎉 Neues PAI Release',
               '',
-              '**Repository:** danielmiessler/Personal_AI_Infrastructure',
-              `**Version:** ${releaseTag}`,
-              `**Name:** ${releaseName}`,
+              '**Version:** ' + releaseTag,
+              '**Name:** ' + releaseName,
+              '**Datum:** ' + releaseDate,
               '',
-              '### Release Notes',
-              releaseBody,
+              '### Release Notes (Auszug)',
               '',
-              '### Links',
-              `- [Release ansehen](${releaseUrl})`,
-              `- [Commits seit letztem Release](https://github.com/danielmiessler/Personal_AI_Infrastructure/compare/${releaseTag}...main)`,
+              releaseNotes,
               '',
-              '### Aktionen erforderlich',
-              '- [ ] Release Notes lesen und relevante Änderungen identifizieren',
-              '- [ ] Prüfen ob PAI-OpenCode aktualisiert werden muss',
-              '- [ ] Falls Breaking Changes: PAI-OpenCode Migration planen',
+              '### 🔗 Links',
+              '',
+              '- [Vollständige Release Notes](' + releaseUrl + ')',
+              '- [Commits seit letztem Release](https://github.com/danielmiessler/Personal_AI_Infrastructure/releases)',
               '',
               '---',
+              '',
+              '### ⚠️ Portierungs-Hinweis',
+              '',
+              'Dies ist ein **Release**, nicht nur ein Commit. Das bedeutet:',
+              '- Wichtige Änderungen zusammengefasst',
+              '- Möglicherweise Breaking Changes',
+              '- Neue Features stabilisiert',
+              '',
+              '**Empfohlene Aktion:**',
+              '1. Release Notes sorgfältig lesen',
+              '2. Auf Breaking Changes prüfen',
+              '3. Geplante Portierung in Roadmap aufnehmen',
+              '',
+              '---',
+              '',
               '*Automatisch erstellt von Upstream Sync Workflow*'
             ];
-            const body = bodyParts.join('\n');
+            
+            const body = bodyLines.join('\n');
             
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: title,
               body: body,
-              labels: ['upstream-sync', 'pai', 'release', 'automated']
+              labels: ['upstream-sync', 'pai', 'release', 'manual-port-required', 'automated']
             });
+            
+            console.log('✅ Created release issue: ' + title);
 
       - name: Summary
         if: always()
         run: |
-          echo "=== Upstream Sync Summary ==="
-          echo "Commits behind: ${{ steps.check_commits.outputs.commits_behind }}"
-          echo "New release: ${{ steps.check_releases.outputs.new_release }}"
-          echo "============================="
+          echo "========================================"
+          echo "UPSTREAM SYNC SUMMARY"
+          echo "========================================"
+          echo "New commits: ${{ steps.upstream_check.outputs.has_updates == 'true' && 'YES' || 'No' }}"
+          echo "Count: ${{ steps.upstream_check.outputs.commit_count }}"
+          echo "New release: ${{ steps.release_check.outputs.new_release == 'true' && 'YES' || 'No' }}"
+          echo "Components: ${{ steps.upstream_check.outputs.components_changed }}"
+          echo "========================================"
+          echo ""
+          echo "⚠️  REMEMBER: This workflow only INFORMS."
+          echo "    Manual porting required for PAI-OpenCode!"
