@@ -62,20 +62,30 @@ jobs:
           # Search in common code directories
           SEARCH_DIRS="Tools .opencode skill-packs"
           
+          echo "🔍 Scanning for hardcoded secrets..."
           FOUND=0
           for dir in $SEARCH_DIRS; do
             if [ -d "$dir" ]; then
-              # Filter out process.env references (environment variable lookups, not hardcoded secrets)
-              # Also exclude .env.example files (templates, not real secrets)
-              # Also exclude node_modules directories (dependencies, not our code)
-              if grep -rEin "sk-[a-zA-Z0-9._-]{20,}|(api[_-]?key|client[_-]?secret|password|token)[[:space:]]*[:=][[:space:]]*['\"]?[a-zA-Z0-9._-]{20,}['\"]?" "$dir" --include="*.ts" --include="*.js" --include="*.json" --exclude-dir="node_modules" 2>/dev/null | grep -vi "process.env" | grep -vi ".env.example" | grep -q .; then
-                FOUND=1
+              echo "  Scanning $dir..."
+              # Find potential secrets
+              RESULT=$(grep -rEin "sk-[a-zA-Z0-9._-]{20,}|(api[_-]?key|client[_-]?secret|password|token)[[:space:]]*[:=][[:space:]]*['\"]?[a-zA-Z0-9._-]{20,}['\"]?" "$dir" --include="*.ts" --include="*.js" --include="*.json" --exclude-dir="node_modules" 2>/dev/null || true)
+              
+              if [ -n "$RESULT" ]; then
+                # Filter out process.env references (environment variable lookups, not hardcoded secrets)
+                FILTERED=$(echo "$RESULT" | grep -vi "process\.env" | grep -vi "\.env\.example" || true)
+                
+                if [ -n "$FILTERED" ]; then
+                  echo "❌ Potential hardcoded secret found in $dir:"
+                  echo "$FILTERED"
+                  FOUND=1
+                fi
               fi
             fi
           done
           
           if [ $FOUND -eq 1 ]; then
-            echo "❌ Potential hardcoded secret found!"
+            echo ""
+            echo "❌ Secret scan failed! Please remove hardcoded secrets or use environment variables."
             exit 1
           fi
           
