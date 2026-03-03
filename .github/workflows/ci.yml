@@ -67,7 +67,8 @@ jobs:
             if [ -d "$dir" ]; then
               # Filter out process.env references (environment variable lookups, not hardcoded secrets)
               # Also exclude .env.example files (templates, not real secrets)
-              if grep -rEin "sk-[a-zA-Z0-9._-]{20,}|(api[_-]?key|client[_-]?secret|password|token)[[:space:]]*[:=][[:space:]]*['\"]?[a-zA-Z0-9._-]{20,}['\"]?" "$dir" --include="*.ts" --include="*.js" --include="*.json" 2>/dev/null | grep -vi "process.env" | grep -vi ".env.example" | grep -q .; then
+              # Also exclude node_modules directories (dependencies, not our code)
+              if grep -rEin "sk-[a-zA-Z0-9._-]{20,}|(api[_-]?key|client[_-]?secret|password|token)[[:space:]]*[:=][[:space:]]*['\"]?[a-zA-Z0-9._-]{20,}['\"]?" "$dir" --include="*.ts" --include="*.js" --include="*.json" --exclude-dir="node_modules" 2>/dev/null | grep -vi "process.env" | grep -vi ".env.example" | grep -q .; then
                 FOUND=1
               fi
             fi
