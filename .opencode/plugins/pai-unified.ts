@@ -77,6 +77,46 @@ import {
 import { clearLog, fileLog, fileLogError } from "./lib/file-logger";
 
 /**
+ * MESSAGE DEDUPLICATION CACHE
+ *
+ * Prevents double-processing of user messages between "chat.message" and "message.updated" events.
+ * Uses a short-lived in-memory cache keyed by message content hash.
+ *
+ * Issue: Both "chat.message" and "message.updated" fire for the same user message,
+ * causing duplicate side-effects (detectRating, createWorkSession, appendToThread, etc.)
+ *
+ * Solution: Each handler checks this cache before processing. If message was recently
+ * processed, skip to avoid double writes.
+ */
+const messageDedupeCache = new Map<string, number>();
+const MESSAGE_DEDUPE_TTL_MS = 5000; // 5 seconds - enough for both events to fire
+
+/**
+ * Check if a message was recently processed (deduplication)
+ */
+function wasMessageRecentlyProcessed(content: string): boolean {
+	const hash = `${content.length}:${content.substring(0, 100)}`; // Simple hash
+	const now = Date.now();
+	const lastProcessed = messageDedupeCache.get(hash);
+
+	if (lastProcessed && now - lastProcessed < MESSAGE_DEDUPE_TTL_MS) {
+		return true; // Recently processed - skip
+	}
+
+	// Mark as processed
+	messageDedupeCache.set(hash, now);
+
+	// Cleanup old entries (prevent memory leak)
+	for (const [key, timestamp] of messageDedupeCache.entries()) {
+		if (now - timestamp > MESSAGE_DEDUPE_TTL_MS * 2) {
+			messageDedupeCache.delete(key);
+		}
+	}
+
+	return false;
+}
+
+/**
  * Extract text content from message
  *
  * OpenCode v1.1.x can provide message.content as:
@@ -114,7 +154,13 @@ async function readFileSafe(filePath: string): Promise<string | null> {
 		await fs.promises.access(filePath);
 		return await fs.promises.readFile(filePath, "utf-8");
 	} catch (error) {
-		return null;
+		// Distinguish file-not-found from real I/O errors
+		const nodeError = error as NodeJS.ErrnoException;
+		if (nodeError.code === "ENOENT") {
+			return null; // File not found - expected case
+		}
+		// Real I/O error - rethrow for caller to handle
+		throw error;
 	}
 }
 
@@ -128,7 +174,7 @@ async function readFileSafe(filePath: string): Promise<string | null> {
  *
  * Target: ~15KB (not 2KB - must know the user!)
  */
-async function loadMinimalBootstrap(): Promise<string> {
+async function loadMinimalBootstrap(): Promise<string | null> {
 	try {
 		const cwd = process.cwd();
 		const paiDir = path.join(cwd, ".opencode", "PAI");
@@ -258,6 +304,12 @@ export const PaiUnified: Plugin = async (ctx) => {
 					}).catch(() => {});
 				} else {
 					fileLog("Context injection skipped: empty bootstrap", "warn");
+					// Emit context load failure
+					emitContextLoaded({
+						files_loaded: 0,
+						total_size: 0,
+						success: false,
+					}).catch(() => {});
 				}
 			} catch (error) {
 				fileLogError("Context injection failed", error);
@@ -512,6 +564,16 @@ export const PaiUnified: Plugin = async (ctx) => {
 
 				// Only process user messages
 				if (role !== "user") return;
+
+				// === DEDUPLICATION CHECK ===
+				// Prevent double-processing between "chat.message" and "message.updated"
+				if (wasMessageRecentlyProcessed(content)) {
+					fileLog(
+						`[chat.message] Skipping duplicate message: ${content.substring(0, 50)}...`,
+						"debug",
+					);
+					return;
+				}
 
 				fileLog(
 					`[chat.message] User: ${content.substring(0, 100)}...`,
@@ -850,6 +912,16 @@ export const PaiUnified: Plugin = async (ctx) => {
 
 					// Process user message if we found it
 					if (userText && userText.trim().length > 0) {
+						// === DEDUPLICATION CHECK ===
+						// Prevent double-processing between "chat.message" and "message.updated"
+						if (wasMessageRecentlyProcessed(userText)) {
+							fileLog(
+								`[message.updated] Skipping duplicate message: ${userText.substring(0, 50)}...`,
+								"debug",
+							);
+							return; // Skip this event
+						}
+
 						fileLog(
 							`[USER MESSAGE] Content: "${userText.substring(0, 100)}..."`,
 							"info",

@@ -360,11 +360,14 @@ PAI-OpenCode's design is documented through **Architecture Decision Records (ADR
 | [ADR-005](docs/architecture/adr/ADR-005-configuration-dual-file-approach.md) | Dual Config Files | PAI settings.json + OpenCode opencode.json |
 | [ADR-006](docs/architecture/adr/ADR-006-security-validation-preservation.md) | Security Patterns Preserved | Critical security validation unchanged |
 | [ADR-007](docs/architecture/adr/ADR-007-memory-system-structure-preserved.md) | Memory Structure Preserved | File-based MEMORY/ system unchanged |
+| [ADR-008](docs/architecture/adr/ADR-008-opencode-bash-workdir-parameter.md) | Bash workdir Parameter | Critical platform difference for multi-repo workflows |
 
 **Key Principles:**
 - **Preserve PAI's design** where possible
 - **Adapt to OpenCode** where necessary
 - **Document every change** in ADRs
+
+**Platform Differences:** See [PLATFORM-DIFFERENCES.md](docs/PLATFORM-DIFFERENCES.md) for a comprehensive guide to Claude Code vs OpenCode differences.
 
 ---
 
@@ -375,6 +378,7 @@ PAI-OpenCode's design is documented through **Architecture Decision Records (ADR
 | [CHANGELOG.md](CHANGELOG.md) | Version history and release notes |
 | [docs/WHAT-IS-PAI.md](docs/WHAT-IS-PAI.md) | PAI fundamentals explained |
 | [docs/OPENCODE-FEATURES.md](docs/OPENCODE-FEATURES.md) | OpenCode unique features |
+| [docs/PLATFORM-DIFFERENCES.md](docs/PLATFORM-DIFFERENCES.md) | Claude Code vs OpenCode differences |
 | [docs/PLUGIN-SYSTEM.md](docs/PLUGIN-SYSTEM.md) | Plugin architecture (20 handlers) |
 | [docs/PAI-ADAPTATIONS.md](docs/PAI-ADAPTATIONS.md) | Changes from PAI v3.0 |
 | [docs/MIGRATION.md](docs/MIGRATION.md) | Migration from Claude Code PAI |

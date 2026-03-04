@@ -55,7 +55,7 @@ Loaded at every session start:
 | User Identity | ~3-8KB | ABOUTME, TELOS, DAIDENTITY (if exists) |
 | **Total** | **~12-17KB** | Minimal Useful |
 
-**Note:** The Algorithm essence covers 95% of use cases. For Extended/Advanced/Deep effort requiring detailed ISC decomposition, the full Algorithm v3.7.0 (383 lines) loads on-demand via `skill_find("Algorithm")` or by reading `PAI/Algorithm/v3.7.0.md`.
+**Note:** The Algorithm essence covers 95% of use cases. For Extended/Advanced/Deep effort requiring detailed ISC decomposition, the full Algorithm v3.7.0 (383 lines) loads on-demand via `skill_find("Algorithm")` or by reading `.opencode/PAI/Algorithm/v3.7.0.md`.
 
 ### 2. Skill Discovery & Loading (On-Demand)
 

@@ -11,7 +11,7 @@
 | **Bootstrap Size** | ~36KB | ~12-17KB | **53-67%** |
 | **Loading Strategy** | Eager (everything upfront) | Lazy (on-demand) | - |
 | **Session Start Time** | Slower (more data) | Faster (minimal data) | **~50%** |
-| **Skill Discovery** | Pre-loaded | Lazy-loaded | - |
+| **Skill Discovery** | Pre-loaded | Pre-loaded (Discovery Index), skill content lazy-loaded | - |
 
 ---
 
@@ -125,7 +125,7 @@ await skill_use(algorithmSkill.name);  // Loads full 383-line Algorithm
 |-------|------------------------|------|
 | **Research** | "Research", "investigate" | `skills/Research/SKILL.md` |
 | **Agents** | "Agents", "spawn agent" | `skills/Agents/SKILL.md` |
-| **Algorithm** | "Algorithm details", "full algorithm" | `PAI/Algorithm/v3.7.0.md` |
+| **Algorithm** | "Algorithm details", "full algorithm" | `.opencode/PAI/Algorithm/v3.7.0.md` |
 ```
 
 **Purpose:** System knows what skills exist without loading their content

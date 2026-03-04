@@ -32,6 +32,7 @@ Architecture Decision Records document **WHY** we made specific technical choice
 | [ADR-005](ADR-005-configuration-dual-file-approach.md) | Configuration - Dual File Approach | ✅ Accepted | Platform Convention |
 | [ADR-006](ADR-006-security-validation-preservation.md) | Security Validation Pattern Preservation | ✅ Accepted | Security |
 | [ADR-007](ADR-007-memory-system-structure-preserved.md) | Memory System Structure Preserved | ✅ Accepted | Compatibility |
+| [ADR-008](ADR-008-opencode-bash-workdir-parameter.md) | OpenCode Bash workdir Parameter | ✅ Accepted | Platform Adaptation |
 
 ---
 
@@ -41,6 +42,7 @@ Architecture Decision Records document **WHY** we made specific technical choice
 Decisions about translating Claude Code patterns to OpenCode platform.
 - ADR-001: Hooks → Plugins
 - ADR-004: File-based logging
+- ADR-008: Bash workdir parameter
 
 ### Platform Convention
 Decisions about following OpenCode conventions vs PAI patterns.
@@ -173,5 +175,5 @@ Potential topics for future documentation:
 
 ---
 
-*Last Updated: 2026-01-25*
-*ADRs Created: 7*
+*Last Updated: 2026-03-05*
+*ADRs Created: 8*
