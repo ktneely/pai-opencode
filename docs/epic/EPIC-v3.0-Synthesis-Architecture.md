@@ -309,10 +309,14 @@ Based on [opencode.ai/docs](https://opencode.ai/docs/) and GitHub research:
 │   ├── Security/                 # Infosec skills
 │   └── ...                       # Other categories
 │
-├── agents/                       # OpenCode-native agents
-│   ├── build.md                  # Default with model_tier routing
-│   ├── plan.md                   # Planning agent
-│   └── custom/                   # PAI-specific agents
+├── agents/                       # PAI 4.0.3 Agent personalities (Algorithm, Architect, Engineer, Pentester, etc.)
+│   ├── Algorithm.md              # PAI Algorithm specialist
+│   ├── Architect.md              # System architecture
+│   ├── Engineer.md               # Principal engineering
+│   ├── Pentester.md              # Penetration testing
+│   ├── PerplexityResearcher.md   # Perplexity web research
+│   ├── QATester.md               # Quality assurance
+│   └── ...                       # 14 total agents from PAI 4.0.3
 │
 ├── plugins/
 │   └── pai-core.ts              # Unified plugin (simplified)
@@ -569,20 +573,35 @@ interface VoiceConfig {
 1. **Consolidate 6 existing plugins into 1 unified plugin**
    - Current: pai-context-loader, pai-security, pai-work-tracking, etc.
    - Target: Single `plugins/pai-core.ts`
-2. **USE OpenCode native events:**
+2. **Port remaining PAI 4.0.3 Hooks to OpenCode events:**
+   - ✅ Already ported: `context-loader.ts`, `security-validator.ts`, `voice-notification.ts`, `integrity-check.ts`, `rating-capture.ts`, `update-counts.ts`
+   - ❌ **Still missing (port from PAI 4.0.3):**
+     - `PRDSync.hook.ts` → Sync PRD frontmatter to work.json
+     - `LearningPatternSynthesis.hook.ts` → Extract patterns from sessions
+     - `RelationshipMemory.hook.ts` → Track user relationships
+     - `SessionCleanup.hook.ts` → Cleanup on session end
+     - `UpdateTabTitle.hook.ts` → Update terminal tab titles
+     - `LastResponseCache.hook.ts` → Cache last response for continuity
+     - `WorkCompletionLearning.hook.ts` → Capture completion learnings
+     - `AgentExecutionGuard.hook.ts` → Guard agent executions
+     - `QuestionAnswered.hook.ts` → Track answered questions
+     - `ResponseTabReset.hook.ts` → Reset response tabs
+     - `SetQuestionTab.hook.ts` → Set question tabs
+     - `SkillGuard.hook.ts` → Protect skill executions
+3. **USE OpenCode native events:**
    - `session.created` → Load minimal bootstrap context
    - `tool.execute.before` → Security validation + **Prompt Injection detection**
    - `session.compacted` → Extract learnings to MEMORY
    - `message.updated` → Work tracking / ratings
-3. **ADD Prompt Injection Protection:**
+4. **ADD Prompt Injection Protection:**
    - Detect common injection patterns (ignore previous instructions, system prompt leaks, etc.)
    - Sanitize user input before processing
    - Use `tool.execute.before` to validate prompts
    - Log suspicious patterns for review
-4. **REMOVE hook emulation layer**
+5. **REMOVE hook emulation layer**
    - Delete hook compatibility code
    - Use native TypeScript events
-5. Update `plugins/pai-core.ts` with event handlers
+6. Update `plugins/pai-core.ts` with event handlers
 
 **Key Insight:** Don't emulate hooks - use native OpenCode events! Add Prompt Injection defense as core security feature.
 
@@ -749,26 +768,37 @@ PAI-OpenCode processes user input and executes system commands. Without protecti
 
 ---
 
-### ~~WP6: Voice & Ambient AI Foundation~~ → **MOVED TO OPEN ARC**
+### WP6: VoiceServer Foundation (TTS Core)
 
-**Status:** ❌ EXCLUDED FROM PAI-OpenCode v3.0  
-**New Home:** [github.com/jeremaiah-ai/openark](https://github.com/jeremaiah-ai/openark)  
-**Decision Date:** 2026-03-03  
-**Decision Rationale:** Scope separation — PAI-OpenCode is community port, Open Arc is product vision
+**Status:** MEDIUM PRIORITY  
+**Effort:** 4-6 hours  
+**Dependencies:** WP1-5 complete  
+**Branch:** `v3.0-wp6-voiceserver`
 
-**Why This Was Removed:**
-- Voice-to-Voice is **product feature**, not core PAI port
-- OMI Ambient AI integration is **commercial product territory**
-- PAI-OpenCode must stay focused: "as little as necessary"
-- Open Arc will contain: Voice architecture, OMI integration, Brand UX, End-user features
+**Goal:** Port PAI 4.0.3 VoiceServer for TTS notifications (NOT Voice-to-Voice)
 
-**Original Scope (now Open Arc):**
-- WebSocket-ready VoiceServer architecture
-- OMI integration points and message formats
-- Voice-to-Voice roadmap (3 phases)
-- Future V2V implementation
+**Clarification:**
+- ✅ **PAI-OpenCode:** Native VoiceServer (TTS, status, basic notifications)
+- ❌ **Open Arc:** Voice-to-Voice, WebSocket Streaming, Real-time processing
 
-**Reference:** See `docs/SCOPE-BOUNDARY.md` for complete boundary definition
+**Tasks:**
+1. **Port VoiceServer from PAI 4.0.3:**
+   - `VoiceServer/server.ts` - TTS server
+   - `VoiceServer/start.sh`, `stop.sh`, `restart.sh`
+   - `voices.json` - Voice configuration  
+   - `pronunciations.json` - Custom pronunciations
+2. **Integrate with OpenCode plugin events:**
+   - `voice-notification.ts` handler (already exists)
+   - Trigger on session events, task completion
+3. **Update for OpenCode compatibility:**
+   - Port from Claude voice_id to OpenCode voice_id
+   - Ensure local TTS works (macOS say, Google TTS, 11labs)
+
+**Output:**
+- `.opencode/PAI/VoiceServer/` (core TTS)
+- Voice notifications working in Algorithm phases
+
+**Note:** Voice-to-Voice/WebSocket remains in Open Arc — see `docs/SCOPE-BOUNDARY.md`
 
 ---
 
