@@ -362,7 +362,8 @@ switch (command) {
     }
     const validStatuses = ['pending', 'in_progress', 'passing', 'failing', 'blocked'];
     let statusArg: Feature['status'] | undefined = undefined;
-    if (args[3]) {
+    // Only treat args[3] as status if it exists and is not a flag
+    if (args[3] && !args[3].startsWith('-')) {
       if (!validStatuses.includes(args[3])) {
         console.error(`❌ Invalid status: ${args[3]}`);
         console.error(`   Valid statuses: ${validStatuses.join(', ')}`);
