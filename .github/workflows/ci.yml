@@ -68,7 +68,8 @@ jobs:
             if [ -d "$dir" ]; then
               echo "  Scanning $dir..."
               # Find potential secrets (include YAML configs)
-              RESULT=$(grep -rEin "sk-[a-zA-Z0-9._-]{20,}|(api[_-]?key|client[_-]?secret|password|token)[[:space:]]*[:=][[:space:]]*['\"]?[a-zA-Z0-9._-]{20,}['\"]?" "$dir" --include="*.ts" --include="*.js" --include="*.json" --include="*.yaml" --include="*.yml" --exclude-dir="node_modules" 2>/dev/null | grep -v "BountyPrograms.json" || true)
+              # Filter: exclude example strings in documentation, BountyPrograms, test data
+              RESULT=$(grep -rEin "sk-[a-zA-Z0-9._-]{20,}|(api[_-]?key|client[_-]?secret|password|token)[[:space:]]*[:=][[:space:]]*['\"]?[a-zA-Z0-9._-]{20,}['\"]?" "$dir" --include="*.ts" --include="*.js" --include="*.json" --include="*.yaml" --include="*.yml" --exclude-dir="node_modules" 2>/dev/null | grep -v "BountyPrograms.json" | grep -vi "EXAMPLES OF GOOD\|EXAMPLES OF BAD\|claimed-task-complete-when\|ignored-explicit-python\|assistant-deleted-users\|overwrote-working-code\|asked-clarifying-question" || true)
               
               if [ -n "$RESULT" ]; then
                 # Filter out process.env references (environment variable lookups, not hardcoded secrets)
