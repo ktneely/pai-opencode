@@ -9,8 +9,8 @@
  *   bun run ~/.claude/PAI/Tools/SessionProgress.ts <command> [options]
  */
 
-import { existsSync, readFileSync, writeFileSync, readdirSync } from 'fs';
-import { join } from 'path';
+import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
 
 interface Decision {
   timestamp: string;
@@ -47,6 +47,10 @@ interface SessionProgress {
 const PROGRESS_DIR = join(process.env.HOME || '', '.claude', 'MEMORY', 'STATE', 'progress');
 
 function getProgressPath(project: string): string {
+  // Validate project name to prevent path traversal
+  if (!/^[A-Za-z0-9_-]+$/.test(project)) {
+    throw new Error(`Invalid project name: ${project}. Only alphanumeric, underscore, and hyphen allowed.`);
+  }
   return join(PROGRESS_DIR, `${project}-progress.json`);
 }
 
@@ -58,7 +62,10 @@ function loadProgress(project: string): SessionProgress | null {
 
 function saveProgress(progress: SessionProgress): void {
   progress.updated = new Date().toISOString();
-  writeFileSync(getProgressPath(progress.project), JSON.stringify(progress, null, 2));
+  const path = getProgressPath(progress.project);
+  // Ensure directory exists before writing
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify(progress, null, 2));
 }
 
 // Commands

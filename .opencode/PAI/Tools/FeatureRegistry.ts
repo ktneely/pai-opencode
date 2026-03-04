@@ -58,6 +58,10 @@ interface FeatureRegistry {
 const REGISTRY_DIR = join(process.env.HOME || '', '.claude', 'MEMORY', 'progress');
 
 function getRegistryPath(project: string): string {
+  // Validate project name to prevent path traversal
+  if (!/^[A-Za-z0-9_-]+$/.test(project)) {
+    throw new Error(`Invalid project name: ${project}. Only alphanumeric, underscore, and hyphen allowed.`);
+  }
   return join(REGISTRY_DIR, `${project}-features.json`);
 }
 
