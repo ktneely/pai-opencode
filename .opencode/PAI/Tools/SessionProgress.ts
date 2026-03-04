@@ -11,6 +11,14 @@
 
 import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
+import { homedir } from 'os';
+
+// Validate home directory
+const HOME = homedir() || process.env.HOME;
+if (!HOME) {
+  console.error("❌ Error: Cannot determine home directory");
+  process.exit(1);
+}
 
 interface Decision {
   timestamp: string;
@@ -44,7 +52,7 @@ interface SessionProgress {
 }
 
 // Progress files are now in STATE/progress/ (consolidated from MEMORY/PROGRESS/)
-const PROGRESS_DIR = join(process.env.HOME || '', '.claude', 'MEMORY', 'STATE', 'progress');
+const PROGRESS_DIR = join(HOME, '.claude', 'MEMORY', 'STATE', 'progress');
 
 function getProgressPath(project: string): string {
   // Validate project name to prevent path traversal
@@ -148,9 +156,14 @@ function addBlocker(project: string, blocker: string, resolution?: string): void
     resolution: resolution || null
   });
 
-  progress.status = 'blocked';
+  // Only set status to blocked if no resolution provided
+  if (!resolution) {
+    progress.status = 'blocked';
+  }
+  // If resolution provided, keep current status (don't override)
+  
   saveProgress(progress);
-  console.log(`Added blocker: ${blocker}`);
+  console.log(`Added blocker: ${blocker}${resolution ? ' (with resolution)' : ''}`);
 }
 
 function setNextSteps(project: string, steps: string[]): void {
@@ -252,20 +265,24 @@ function listActive(): void {
   console.log(`\nActive Progress Files:\n`);
 
   for (const file of files) {
-    const progress = JSON.parse(readFileSync(join(PROGRESS_DIR, file), 'utf-8')) as SessionProgress;
-    const statusIcon = {
-      active: '🔵',
-      completed: '✅',
-      blocked: '🔴'
-    }[progress.status];
+    try {
+      const progress = JSON.parse(readFileSync(join(PROGRESS_DIR, file), 'utf-8')) as SessionProgress;
+      const statusIcon = {
+        active: '🔵',
+        completed: '✅',
+        blocked: '🔴'
+      }[progress.status];
 
-    console.log(`${statusIcon} ${progress.project} (${progress.status})`);
-    console.log(`   Updated: ${new Date(progress.updated).toLocaleDateString()}`);
-    console.log(`   Work items: ${progress.work_completed.length}`);
-    if (progress.next_steps.length > 0) {
-      console.log(`   Next: ${progress.next_steps[0]}`);
+      console.log(`${statusIcon} ${progress.project} (${progress.status})`);
+      console.log(`   Updated: ${new Date(progress.updated).toLocaleDateString()}`);
+      console.log(`   Work items: ${progress.work_completed.length}`);
+      if (progress.next_steps.length > 0) {
+        console.log(`   Next: ${progress.next_steps[0]}`);
+      }
+      console.log('');
+    } catch (error) {
+      console.warn(`⚠️  Warning: Could not parse ${file}:`, error instanceof Error ? error.message : String(error));
     }
-    console.log('');
   }
 }
 
@@ -297,11 +314,12 @@ switch (command) {
     break;
 
   case 'decision':
-    if (!args[1] || !args[2]) {
+    if (!args[1] || !args[2] || !args[3]) {
       console.error('Usage: session-progress decision <project> "<decision>" "<rationale>"');
+      console.error('   All three arguments are required');
       process.exit(1);
     }
-    addDecision(args[1], args[2], args[3] || '');
+    addDecision(args[1], args[2], args[3]);
     break;
 
   case 'work':

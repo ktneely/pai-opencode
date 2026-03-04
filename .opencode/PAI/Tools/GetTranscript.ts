@@ -8,8 +8,8 @@
  *   bun ~/.claude/skills/Videotranscript/Tools/GetTranscript.ts <youtube-url> --save <output-file>
  *
  * Examples:
- *   bun ~/.claude/skills/Videotranscript/Tools/GetTranscript.ts "https://www.youtube.com/watch?v=abc123"
- *   bun ~/.claude/skills/Videotranscript/Tools/GetTranscript.ts "https://youtu.be/abc123" --save transcript.txt
+ *   bun ~/.claude/skills/Videotranscript/Tools/GetTranscript.ts "https://www.youtube.com/watch?v=A1b2C3d4E5F"
+ *   bun ~/.claude/skills/Videotranscript/Tools/GetTranscript.ts "https://youtu.be/A1b2C3d4E5F" --save transcript.txt
  *
  * @author PAI System
  * @version 1.0.0
@@ -40,6 +40,9 @@ function validateYouTubeUrl(url: string): { isValid: boolean; videoId?: string; 
     if (parsedUrl.hostname === 'youtu.be') {
       // Short URL format: youtu.be/VIDEO_ID
       videoId = parsedUrl.pathname.slice(1); // Remove leading /
+    } else if (parsedUrl.pathname.startsWith('/shorts/')) {
+      // Shorts format: youtube.com/shorts/VIDEO_ID
+      videoId = parsedUrl.pathname.split('/shorts/')[1]?.split('/')[0]; // Get ID after /shorts/
     } else {
       // Standard format: youtube.com/watch?v=VIDEO_ID
       videoId = parsedUrl.searchParams.get('v');

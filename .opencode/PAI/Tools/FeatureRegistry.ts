@@ -20,6 +20,16 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { homedir } from 'os';
+
+// Validate home directory
+const HOME = homedir() || process.env.HOME;
+if (!HOME) {
+  console.error("❌ Error: Cannot determine home directory");
+  process.exit(1);
+}
+
+const REGISTRY_DIR = join(HOME, '.claude', 'MEMORY', 'progress');
 
 interface TestStep {
   step: string;
@@ -54,8 +64,6 @@ interface FeatureRegistry {
     blocked: number;
   };
 }
-
-const REGISTRY_DIR = join(process.env.HOME || '', '.claude', 'MEMORY', 'progress');
 
 function getRegistryPath(project: string): string {
   // Validate project name to prevent path traversal
@@ -189,8 +197,8 @@ function updateFeature(
     if (status === 'passing') {
       feature.completed_at = new Date().toISOString();
     } else {
-      // Clear completed_at when status changes away from passing
-      delete (feature as Partial<Feature>).completed_at;
+      // Set completed_at to null when status changes away from passing (schema compliance)
+      (feature as Partial<Feature>).completed_at = null;
     }
   }
 
@@ -353,7 +361,15 @@ switch (command) {
       process.exit(1);
     }
     const validStatuses = ['pending', 'in_progress', 'passing', 'failing', 'blocked'];
-    const statusArg = validStatuses.includes(args[3]) ? args[3] as Feature['status'] : undefined;
+    let statusArg: Feature['status'] | undefined = undefined;
+    if (args[3]) {
+      if (!validStatuses.includes(args[3])) {
+        console.error(`❌ Invalid status: ${args[3]}`);
+        console.error(`   Valid statuses: ${validStatuses.join(', ')}`);
+        process.exit(1);
+      }
+      statusArg = args[3] as Feature['status'];
+    }
     const noteIdx = args.indexOf('--note');
     const noteArg = noteIdx > -1 ? args[noteIdx + 1] : undefined;
     updateFeature(args[1], args[2], statusArg, noteArg);

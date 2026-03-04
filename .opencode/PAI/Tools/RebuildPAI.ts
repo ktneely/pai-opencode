@@ -3,7 +3,7 @@
 /**
  * RebuildPAI.ts - Assembles SKILL.md from Components/
  *
- * Usage: bun ~/.claude/PAI/Tools/RebuildPAI.ts
+ * Usage: bun ~/.opencode/PAI/Tools/RebuildPAI.ts
  *
  * Reads all .md files from Components/, sorts by numeric prefix,
  * concatenates them, and writes to SKILL.md with build timestamp
@@ -102,6 +102,13 @@ function loadAlgorithm(): string {
 }
 
 // Get all .md files, sorted by numeric prefix
+// Check COMPONENTS_DIR exists
+if (!existsSync(COMPONENTS_DIR)) {
+  console.error(`❌ Error: Components directory not found: ${COMPONENTS_DIR}`);
+  console.error("   Make sure the directory exists and contains component .md files");
+  process.exit(1);
+}
+
 const components = readdirSync(COMPONENTS_DIR)
   .filter(f => f.endsWith(".md"))
   .sort((a, b) => {
@@ -123,17 +130,27 @@ const algorithmContent = loadAlgorithm();
 for (const file of components) {
   let content = readFileSync(join(COMPONENTS_DIR, file), "utf-8");
 
-  // Inject timestamp into frontmatter component
+  // Inject timestamp into frontmatter component (robust with regex fallback)
   if (file === "00-frontmatter.md") {
-    content = content.replace(
-      "  Build:  bun ~/.claude/PAI/Tools/RebuildPAI.ts",
-      `  Build:  bun ~/.claude/PAI/Tools/RebuildPAI.ts\n  Built:  ${timestamp}`
-    );
+    // Try to find and replace Build: line, add Built: after it
+    const buildMatch = content.match(/(Build:\s*[^\n]+)/);
+    if (buildMatch) {
+      content = content.replace(
+        buildMatch[0],
+        `${buildMatch[0]}\n  Built:  ${timestamp}`
+      );
+    } else {
+      // Fallback: warn if pattern not found
+      console.warn("⚠️  Could not find 'Build:' line in 00-frontmatter.md, skipping timestamp injection");
+    }
+    // Update path references to use .opencode
+    content = content.replace(/~\/\.claude\/PAI/g, "~/.opencode/PAI");
   }
 
-  // Inject versioned algorithm
+  // Inject versioned algorithm (global replace for all occurrences)
   if (content.includes("{{ALGORITHM_VERSION}}")) {
-    content = content.replace("{{ALGORITHM_VERSION}}", algorithmContent);
+    // Use replaceAll for global replacement, fallback to split/join for older runtimes
+    content = content.replaceAll("{{ALGORITHM_VERSION}}", algorithmContent);
   }
 
   output += content;
