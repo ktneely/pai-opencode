@@ -1,6 +1,6 @@
-# PAI Bootstrap — Minimal Nützlich
+# PAI Bootstrap — Minimal Useful
 
-> **Core context loaded at session start.** ~15KB: Algorithm essence + Steering Rules + User Identity (if exists). Skills load on-demand.
+> **Core context loaded at session start.** ~7KB: Algorithm essence + Steering Rules + User Identity (if exists) + Skill Discovery Index. Skills load on-demand.
 
 ---
 
@@ -66,12 +66,12 @@ Your personal context (loaded when files exist):
 
 **CRITICAL: Skill Discovery Registry**
 
-Das System muss wissen, welche Skills existieren, um sie nachladen zu können:
+The system must know which skills exist to load them:
 
-### Verfügbare Skills (Discovery Index)
+### Available Skills (Discovery Index)
 
-| Skill | Trigger (wann laden) | Pfad |
-|-------|---------------------|------|
+| Skill | Trigger (when to load) | Path |
+|-------|------------------------|------|
 | **Research** | "Research", "investigate", "find information" | `skills/Research/SKILL.md` |
 | **Agents** | "Agents", "spawn agent", "subagent" | `skills/Agents/SKILL.md` |
 | **Council** | "Council", "debate", "discuss", "perspectives" | `skills/Council/SKILL.md` |
@@ -100,8 +100,8 @@ Das System muss wissen, welche Skills existieren, um sie nachladen zu können:
 
 ### Agent Types (via Task Tool)
 
-| Agent | Verwendung | Invocation |
-|-------|-----------|------------|
+| Agent | Usage | Invocation |
+|-------|-------|------------|
 | **Algorithm** | ISC-specialized work | `Task: subagent_type=Algorithm` |
 | **Engineer** | Build, implement, code | `Task: subagent_type=Engineer` |
 | **Architect** | Design, structure, system thinking | `Task: subagent_type=Architect` |
@@ -122,27 +122,27 @@ Das System muss wissen, welche Skills existieren, um sie nachladen zu können:
 ### Skill Discovery Pattern
 
 ```typescript
-// 1. User Input analysieren auf Skill-Trigger
+// 1. Analyze user input for skill triggers
 const userInput = "Research this topic for me";
 
-// 2. Passenden Skill aus Registry identifizieren
+// 2. Identify matching skill from Discovery Index
 // Trigger "Research" → Skill: Research
 
-// 3. Skill nachladen
+// 3. Load the skill
 const skill = await skill_find("Research");
 if (skill) {
   await skill_use(skill.id);
-  // Skill ist jetzt verfügbar
+  // Skill is now available
 }
 ```
 
-**Wichtig:** Ohne diese Registry weiß das System nicht, dass es z.B. "Research" oder "Agents" gibt!
+**Important:** Without this registry, the system doesn't know that "Research" or "Agents" exist!
 
 ---
 
 ## Context Routing
 
-- **Immediate:** This bootstrap (~15KB)
+- **Immediate:** This bootstrap (~7KB)
 - **On-demand:** Skills via `skill_find`/`skill_use`
 - **User context:** Auto-loaded if files exist in `PAI/USER/`
 - **System docs:** Lazy load from `PAI/` when referenced
