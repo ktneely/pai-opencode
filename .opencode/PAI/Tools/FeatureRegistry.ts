@@ -188,6 +188,9 @@ function updateFeature(
     }
     if (status === 'passing') {
       feature.completed_at = new Date().toISOString();
+    } else {
+      // Clear completed_at when status changes away from passing
+      delete (feature as Partial<Feature>).completed_at;
     }
   }
 
@@ -329,8 +332,18 @@ switch (command) {
     }
     const descIdx = args.indexOf('--description');
     const desc = descIdx > -1 ? args[descIdx + 1] : '';
+    
+    // Validate priority
     const prioIdx = args.indexOf('--priority');
-    const prio = prioIdx > -1 ? args[prioIdx + 1] as 'P1' | 'P2' | 'P3' : 'P2';
+    let prio: 'P1' | 'P2' | 'P3' = 'P2'; // Default
+    if (prioIdx > -1) {
+      const prioValue = args[prioIdx + 1];
+      if (prioValue === 'P1' || prioValue === 'P2' || prioValue === 'P3') {
+        prio = prioValue;
+      } else {
+        console.error(`❌ Invalid priority: ${prioValue}. Must be P1, P2, or P3. Using default P2.`);
+      }
+    }
     addFeature(args[1], args[2], desc, prio);
     break;
 

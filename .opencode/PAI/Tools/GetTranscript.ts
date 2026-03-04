@@ -104,9 +104,19 @@ if (!validation.isValid || !validation.videoId) {
 // Reconstruct clean URL for fabric
 const cleanUrl = `https://www.youtube.com/watch?v=${validation.videoId}`;
 
-// Check for --save option
+// Check for --save option with validation
 const saveIndex = args.indexOf('--save');
-const outputFile = saveIndex !== -1 ? args[saveIndex + 1] : null;
+let outputFile: string | null = null;
+
+if (saveIndex !== -1) {
+  // Validate that --save has a following non-flag argument
+  if (saveIndex + 1 >= args.length || args[saveIndex + 1].startsWith('-')) {
+    console.error('❌ Error: Missing file path after --save');
+    console.error('   Usage: bun GetTranscript.ts <youtube-url> --save <output-file>');
+    process.exit(1);
+  }
+  outputFile = args[saveIndex + 1];
+}
 
 // Extract transcript using fabric with safe args array
 console.log(`📺 Extracting transcript from: ${cleanUrl}`);

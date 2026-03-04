@@ -57,7 +57,12 @@ function getProgressPath(project: string): string {
 function loadProgress(project: string): SessionProgress | null {
   const path = getProgressPath(project);
   if (!existsSync(path)) return null;
-  return JSON.parse(readFileSync(path, 'utf-8'));
+  try {
+    return JSON.parse(readFileSync(path, 'utf-8'));
+  } catch (error) {
+    console.error(`❌ Error parsing progress file for ${project}:`, error instanceof Error ? error.message : String(error));
+    return null;
+  }
 }
 
 function saveProgress(progress: SessionProgress): void {

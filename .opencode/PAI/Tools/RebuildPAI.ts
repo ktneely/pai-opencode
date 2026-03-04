@@ -9,15 +9,23 @@
  * concatenates them, and writes to SKILL.md with build timestamp
  */
 
-import { readdirSync, readFileSync, writeFileSync } from "fs";
+import { readdirSync, readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
+import { homedir } from "os";
 
-const HOME = process.env.HOME!;
-const PAI_DIR = join(HOME, ".claude/PAI");
+// Validate home directory
+const HOME = homedir() || process.env.HOME;
+if (!HOME) {
+  console.error("❌ Error: Cannot determine home directory");
+  process.exit(1);
+}
+
+// Use .opencode/ paths (correct for PAI-OpenCode)
+const PAI_DIR = join(HOME, ".opencode/PAI");
 const COMPONENTS_DIR = join(PAI_DIR, "Components");
-const ALGORITHM_DIR = join(COMPONENTS_DIR, "Algorithm");
+const ALGORITHM_DIR = join(PAI_DIR, "Algorithm");
 const OUTPUT_FILE = join(PAI_DIR, "SKILL.md");
-const SETTINGS_PATH = join(HOME, ".claude/settings.json");
+const SETTINGS_PATH = join(HOME, ".opencode/settings.json");
 
 /**
  * Load identity variables from settings.json for template resolution
@@ -75,10 +83,21 @@ function getTimestamp(): string {
 // Load versioned algorithm
 function loadAlgorithm(): string {
   const latestFile = join(ALGORITHM_DIR, "LATEST");
+  
+  if (!existsSync(latestFile)) {
+    throw new Error(`LATEST file not found: ${latestFile}`);
+  }
+  
   let version = readFileSync(latestFile, "utf-8").trim();
   // Remove .md extension if present to avoid "v3.7.0.md.md"
   version = version.replace(/\.md$/i, '');
+  
   const algorithmFile = join(ALGORITHM_DIR, `${version}.md`);
+  
+  if (!existsSync(algorithmFile)) {
+    throw new Error(`Algorithm file not found: ${algorithmFile} (version: ${version})`);
+  }
+  
   return readFileSync(algorithmFile, "utf-8");
 }
 
