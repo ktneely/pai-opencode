@@ -107,20 +107,85 @@ function extractTextContent(message: any): string {
 }
 
 /**
- * Load minimal bootstrap context
+ * Read a file safely, returning null if not found
+ */
+function readFileSafe(filePath: string): string | null {
+	try {
+		if (!fs.existsSync(filePath)) {
+			return null;
+		}
+		return fs.readFileSync(filePath, "utf-8");
+	} catch (error) {
+		return null;
+	}
+}
+
+/**
+ * Load minimal bootstrap context — WP2: Minimal Nützlich
  *
- * WP2: Lazy Loading - Only load ~20KB bootstrap at session start.
- * Full skills load on-demand via OpenCode skill tool.
+ * Loads:
+ * 1. MINIMAL_BOOTSTRAP.md (core Algorithm + Steering Rules)
+ * 2. System AISTEERINGRULES.md (if exists)
+ * 3. User Identity files (ABOUTME, TELOS, DAIDENTITY) if exist
+ *
+ * Target: ~15KB (not 2KB - must know the user!)
  */
 async function loadMinimalBootstrap(): Promise<string> {
 	try {
 		const cwd = process.cwd();
-		const bootstrapPath = path.join(cwd, ".opencode", "PAI", "MINIMAL_BOOTSTRAP.md");
+		const paiDir = path.join(cwd, ".opencode", "PAI");
+		const bootstrapPath = path.join(paiDir, "MINIMAL_BOOTSTRAP.md");
 
 		if (!fs.existsSync(bootstrapPath)) {
 			fileLog("MINIMAL_BOOTSTRAP.md not found, using fallback", "warn");
 			return "# PAI Bootstrap\nMinimal context loaded.";
 		}
+
+		const contextParts: string[] = [];
+
+		// 1. Core bootstrap
+		const bootstrapContent = fs.readFileSync(bootstrapPath, "utf-8");
+		contextParts.push(`--- PAI BOOTSTRAP ---\n${bootstrapContent}`);
+
+		// 2. System Steering Rules (if exists)
+		const systemSteeringPath = path.join(paiDir, "AISTEERINGRULES.md");
+		const systemSteering = readFileSafe(systemSteeringPath);
+		if (systemSteering) {
+			contextParts.push(`--- System Steering Rules ---\n${systemSteering}`);
+			fileLog("Loaded System AISTEERINGRULES.md");
+		}
+
+		// 3. User Identity Files (if exist) — CRITICAL: Must know the user!
+		const userDir = path.join(paiDir, "USER");
+		const userFiles = [
+			{ file: "ABOUTME.md", label: "User Profile" },
+			{ file: "TELOS/TELOS.md", label: "Life Goals" },
+			{ file: "DAIDENTITY.md", label: "AI Identity" },
+			{ file: "AISTEERINGRULES.md", label: "User Steering Rules" },
+		];
+
+		let userContextLoaded = 0;
+		for (const { file, label } of userFiles) {
+			const filePath = path.join(userDir, file);
+			const content = readFileSafe(filePath);
+			if (content) {
+				contextParts.push(`--- ${label} ---\n${content}`);
+				fileLog(`Loaded USER/${file}`);
+				userContextLoaded++;
+			}
+		}
+
+		// Combine all context
+		const fullContext = contextParts.join("\n\n");
+		const size = Buffer.byteLength(fullContext, "utf-8");
+		fileLog(`Bootstrap loaded: ${size} bytes (${userContextLoaded} user files)`);
+
+		return `<system-reminder>\nPAI CONTEXT (Lazy Loading Bootstrap)\n\n${fullContext}\n\n---\nSkills load on-demand via OpenCode skill tool. User context auto-loaded if exists.\n</system-reminder>`;
+	} catch (error) {
+		fileLogError("Failed to load minimal bootstrap", error);
+		return "# PAI Bootstrap\nError loading context.";
+	}
+}
 
 		const content = fs.readFileSync(bootstrapPath, "utf-8");
 		const size = Buffer.byteLength(content, "utf-8");

@@ -1,66 +1,100 @@
-# Minimal PAI Bootstrap
+# PAI Bootstrap — Minimal Nützlich
 
-> Lazy-loading context system for PAI-OpenCode. Core identity + routing only (~20KB). Skills load on-demand via OpenCode native `skill` tool.
+> **Core context loaded at session start.** ~15KB: Algorithm essence + Steering Rules + User Identity (if exists). Skills load on-demand.
 
 ---
 
-## What Loads at Session Start (Bootstrap)
+## The Algorithm (v3.7.0 Essence)
 
-This minimal context (~20KB) loads immediately:
+**Goal:** Euphoric Surprise — 9-10 ratings.
 
-1. **Algorithm Core** - How PAI works (OBSERVE→THINK→PLAN→BUILD→EXECUTE→VERIFY→LEARN)
-2. **Identity Marker** - Who you are (minimal reference)
-3. **Routing Logic** - How to load additional context on-demand
+**Method:** CURRENT STATE → IDEAL STATE via verifiable criteria (ISC).
 
-## What Loads On-Demand (Lazy)
+**7 Phases:** OBSERVE → THINK → PLAN → BUILD → EXECUTE → VERIFY → LEARN
+
+**Key Rules:**
+- ISC before work (8-12 words, binary testable)
+- Phases are discrete (never merge)
+- All capabilities are skills (actually invoke them)
+- Voice curls at every phase (main agent only)
+- Direct tools before agents (Grep/Glob/Read <2s)
+
+See full Algorithm: `PAI/Algorithm/v3.7.0.md`
+
+---
+
+## AI Steering Rules — System
+
+**Surgical fixes only.** Make precise, targeted corrections. Never delete/gut/rearchitect components as a "fix".
+
+**Never assert without verification.** Don't say "it is X" without checking with tools. Evidence required.
+
+**First principles over bolt-ons.** Understand → Simplify → Reduce → Add (last resort).
+
+**Build ISC from every request.** Decompose into verifiable criteria before executing.
+
+**Ask before destructive actions.** Deletes, force pushes, production deploys — always ask first.
+
+**Read before modifying.** Understand existing code, imports, and patterns first.
+
+**One change when debugging.** Isolate, verify, proceed.
+
+**Minimal scope.** Only change what was asked. No bonus refactoring.
+
+**Plan means stop.** "Create a plan" = present and STOP. No execution without approval.
+
+**Identity.** First person ("I"), user by name (never "the user").
+
+See full rules: `PAI/AISTEERINGRULES.md`
+
+---
+
+## User Identity
+
+Your personal context (loaded when files exist):
+
+| File | Purpose | Loaded |
+|------|---------|--------|
+| `PAI/USER/ABOUTME.md` | Your background, expertise, goals | ✅ If exists |
+| `PAI/USER/TELOS/TELOS.md` | Life goals, mission, values | ✅ If exists |
+| `PAI/USER/DAIDENTITY.md` | AI assistant name, personality | ✅ If exists |
+| `PAI/USER/AISTEERINGRULES.md` | Personal behavior rules | ✅ If exists |
+
+---
+
+## Lazy Loading — On-Demand Skills
 
 Everything else loads via OpenCode `skill` tool when referenced:
 
 | When User Says | Skill Loaded |
 |----------------|--------------|
 | "Research this topic" | Research SKILL.md |
-| "Extract wisdom from video" | KnowledgeExtraction SKILL.md |
-| "Create a skill for X" | CreateSkill SKILL.md |
 | "Agents discuss this" | Agents SKILL.md |
 | "Use Council" | Council SKILL.md |
+| "Create skill for X" | CreateSkill SKILL.md |
 | "Build CLI tool" | CreateCLI SKILL.md |
-| "Process this document" | Documents SKILL.md |
+| "Process document" | Documents SKILL.md |
+| "Security scan" | WebAssessment SKILL.md |
 
 ## Using the Skill Tool
 
-OpenCode provides native lazy loading:
-
 ```typescript
-// In your plugin or handler:
-const skill = await skill_find("Research");  // Find skill by name
-await skill_use(skill.id);                    // Load skill context
+// Find and use a skill
+const skill = await skill_find("Research");
+await skill_use(skill.id);
 ```
 
-**Do NOT** load all skills at session start. Load only when needed.
-
-## User Identity
-
-Your personal context lives in `.opencode/PAI/USER/`:
-
-| File | Purpose |
-|------|---------|
-| `ABOUTME.md` | Your background and expertise |
-| `TELOS/TELOS.md` | Your life goals and mission |
-| `DAIDENTITY.md` | Your AI assistant configuration |
-
-These are loaded on-demand via the skill system, not at session start.
+Skills auto-discover from `.opencode/skills/<name>/SKILL.md`.
 
 ---
 
 ## Context Routing
 
-See full routing documentation: `CONTEXT_ROUTING.md`
-
-Quick reference:
-- **Immediate:** Algorithm, minimal identity
+- **Immediate:** This bootstrap (~15KB)
 - **On-demand:** Skills via `skill_find`/`skill_use`
-- **User context:** Via lazy loading from `PAI/USER/`
+- **User context:** Auto-loaded if files exist in `PAI/USER/`
+- **System docs:** Lazy load from `PAI/` when referenced
 
 ---
 
-*This is the minimal bootstrap. Everything else loads when needed.*
+*This is the minimal useful bootstrap. Everything else loads when needed.*
