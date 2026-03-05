@@ -11,7 +11,7 @@ description: Investigation and research skills. USE WHEN investigate, research p
 
 | Skill | Purpose | Trigger |
 |-------|---------|---------|
-| **OSINT** | Open source intelligence gathering | "OSINT", "due diligence", "background check", "research person" |
+| **OSINT** | Open-source intelligence gathering | "OSINT", "due diligence", "background check", "research person" |
 | **PrivateInvestigator** | Ethical people-finding | "find person", "locate", "reconnect", "people search" |
 
 ## When to Use
@@ -19,7 +19,7 @@ description: Investigation and research skills. USE WHEN investigate, research p
 - Due diligence and background checks
 - Company intelligence gathering
 - People finding and reconnection
-- Open source research
+- Open-source research
 - Ethical investigation
 
 ## Category Philosophy

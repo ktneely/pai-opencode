@@ -53,7 +53,7 @@ The following files were updated to reflect new skill locations:
 
 ## Files Changed
 
-- 124 files changed in total
+- 127 files changed in total
 - 5 skills moved into 3 new categories
 - 3 new category-level SKILL.md files created
 - 6 files with path references updated
