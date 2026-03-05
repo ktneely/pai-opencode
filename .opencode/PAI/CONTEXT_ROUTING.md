@@ -132,4 +132,31 @@ The bootstrap contains a compact table:
 
 ---
 
+## OpenCode Platform Notes
+
+**CRITICAL: Bash workdir Parameter**
+
+OpenCode's `bash()` tool spawns a **NEW shell process** for each call. The `cd` command has **NO persistent effect** across tool invocations.
+
+```typescript
+// WRONG — cd has no effect on next command
+bash({ command: "cd /path/to/repo" })
+bash({ command: "git status" })  // Runs in Instance.directory, NOT /path/to/repo!
+
+// CORRECT — explicit workdir
+bash({ 
+  command: "git status", 
+  workdir: "/path/to/repo" 
+})
+```
+
+**The Rule:** When working OUTSIDE Instance.directory:
+1. NEVER use `cd` expecting it to persist
+2. ALWAYS use `workdir` parameter for the target directory
+3. Each bash call is INDEPENDENT — no state carries over
+
+**Full Platform Guide:** See `docs/PLATFORM-DIFFERENCES.md` for comprehensive Claude Code vs OpenCode differences.
+
+---
+
 *Part of PAI-OpenCode v3.0 Context Modernization (WP2)*
