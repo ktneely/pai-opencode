@@ -8,7 +8,7 @@
 
 ## Der Plan
 
-```
+```text
 PR #37 (feature/wp3-categories-a)
 ├── Phase 1: WP3-A (COMMITTED ✅)
 │   ├── ContentAnalysis/ (ExtractWisdom)

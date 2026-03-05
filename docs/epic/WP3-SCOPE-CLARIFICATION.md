@@ -67,7 +67,7 @@ Basierend auf der PAI 4.0.3 Referenz haben wir **11 Kategorien** zu implementier
 ## Vorschlag: Part B Implementation
 
 ### Option 1: Security-Only (Quick Win)
-```
+```text
 WP3-B-Security:
 - Create Security/ category
 - Move 5 security-related skills
@@ -76,7 +76,7 @@ WP3-B-Security:
 ```
 
 ### Option 2: All Easy Categories
-```
+```text
 WP3-B-Remaining:
 - Security/ (5 skills)
 - Research/ (1 skill)
@@ -88,7 +88,7 @@ WP3-B-Remaining:
 ```
 
 ### Option 3: Separate PRs per Category
-```
+```text
 WP3-B1: Security/
 WP3-B2: Research/
 WP3-B3: Scraping/
