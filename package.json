@@ -3,6 +3,11 @@
   "version": "2.0.0",
   "description": "Personal AI Infrastructure for OpenCode (based on PAI v3.0, Algorithm v1.8.0)",
   "type": "module",
+  "scripts": {
+    "skills:index": "bun run .opencode/skills/PAI/Tools/GenerateSkillIndex.ts",
+    "skills:validate": "bun run .opencode/skills/PAI/Tools/ValidateSkillStructure.ts",
+    "skills:check": "bun run .opencode/skills/PAI/Tools/ValidateSkillStructure.ts && bun run .opencode/skills/PAI/Tools/GenerateSkillIndex.ts"
+  },
   "dependencies": {
     "diff": "^8.0.3",
     "yaml": "^2.8.2"
