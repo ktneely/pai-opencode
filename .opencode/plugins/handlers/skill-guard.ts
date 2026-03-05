@@ -30,11 +30,46 @@ export function isBlockedSkill(skillName: string): boolean {
 }
 
 /**
+ * Find skill directory (supports both flat and hierarchical structures)
+ * Searches: skills/SkillName/ and skills/Category/SkillName/
+ */
+function findSkillDir(skillName: string): string | null {
+  const skillsDir = path.join(getOpenCodeDir(), "skills");
+  
+  // Try flat structure first (backward compatibility)
+  const flatPath = path.join(skillsDir, skillName);
+  if (fs.existsSync(flatPath)) {
+    return flatPath;
+  }
+  
+  // Try hierarchical structure - search all categories
+  try {
+    const categories = fs.readdirSync(skillsDir, { withFileTypes: true })
+      .filter(d => d.isDirectory())
+      .map(d => d.name);
+    
+    for (const category of categories) {
+      const categoryPath = path.join(skillsDir, category);
+      const nestedSkillPath = path.join(categoryPath, skillName);
+      if (fs.existsSync(nestedSkillPath)) {
+        return nestedSkillPath;
+      }
+    }
+  } catch {
+    // Fall through to return null
+  }
+  
+  return null;
+}
+
+/**
  * Extract USE WHEN triggers from a skill's SKILL.md
  */
 function extractTriggers(skillName: string): string | null {
   try {
-    const skillDir = path.join(getOpenCodeDir(), "skills", skillName);
+    const skillDir = findSkillDir(skillName);
+    if (!skillDir) return null;
+    
     const skillPath = path.join(skillDir, "SKILL.md");
 
     if (!fs.existsSync(skillPath)) return null;
@@ -81,16 +116,16 @@ export async function validateSkillInvocation(
       };
     }
 
-    // Check skill exists
-    const skillDir = path.join(getOpenCodeDir(), "skills", skillName);
-    if (!fs.existsSync(skillDir)) {
+    // Check skill exists (supports hierarchical structure)
+    const skillDir = findSkillDir(skillName);
+    if (!skillDir) {
       fileLog(
         `[SkillGuard] Skill not found: ${skillName}`,
         "warn"
       );
       return {
         valid: false,
-        reason: `Skill "${skillName}" not found in skills directory`,
+        reason: `Skill "${skillName}" not found in skills directory (checked flat and hierarchical structures)`,
       };
     }
 
