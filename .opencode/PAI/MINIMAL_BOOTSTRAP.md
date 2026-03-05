@@ -18,6 +18,7 @@
 - All capabilities are skills (actually invoke them)
 - Voice curls at every phase (main agent only)
 - Direct tools before agents (Grep/Glob/Read <2s)
+- **OpenCode workdir:** Use `workdir` param when working outside Instance.directory (cd doesn't persist)
 
 **Full Algorithm:** This bootstrap contains the Algorithm essence. For complex tasks requiring detailed decomposition, PRD formatting, or extended effort levels:
 
