@@ -122,7 +122,7 @@ Never output directly to a project's `public/images/` directory. User needs to r
 
 ```bash
 # CORRECT - Output to Downloads for preview
-bun run ~/.opencode/skills/Art/Tools/Generate.ts \
+bun run ~/.opencode/skills/Media/Art/Tools/Generate.ts \
   --model nano-banana-pro \
   --prompt "[PROMPT]" \
   --size 2K \
@@ -141,7 +141,7 @@ For improved character or style consistency, use multiple `--reference-image` fl
 
 ```bash
 # Multiple reference images for better likeness
-bun run ~/.opencode/skills/Art/Tools/Generate.ts \
+bun run ~/.opencode/skills/Media/Art/Tools/Generate.ts \
   --model nano-banana-pro \
   --prompt "Person from references at a party..." \
   --reference-image face1.jpg \

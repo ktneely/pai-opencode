@@ -504,7 +504,7 @@ Assistant: Activating OSINT skill...
 ## Related Documentation
 
 **Security Skills:**
-- `~/.opencode/skills/OSINT/` - Entity and people reconnaissance
+- `~/.opencode/skills/Investigation/OSINT/` - Entity and people reconnaissance
 - `~/.opencode/skills/Webassessment/` - Web application testing
 
 **Tool Documentation:**

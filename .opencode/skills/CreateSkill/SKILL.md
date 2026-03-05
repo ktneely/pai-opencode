@@ -121,7 +121,7 @@ Additional .md files ARE the context files. They live **directly in skill root**
 
 **WRONG:**
 ```
-skills/Art/
+skills/Media/Art/
 ├── SKILL.md
 └── Context/              ❌ NEVER CREATE THIS
     └── Aesthetic.md
@@ -141,7 +141,7 @@ skills/Art/
 ### Example Structure
 
 ```
-skills/Art/
+skills/Media/Art/
 ├── SKILL.md              # 40 lines - minimal routing
 ├── Aesthetic.md          # Context file - SOP for aesthetic
 ├── Examples.md           # Context file - SOP for examples

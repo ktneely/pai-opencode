@@ -98,13 +98,13 @@ The system must know which skills exist to load them:
 | **Fabric** | "Fabric pattern", "extract wisdom", "summarize" | `skills/Fabric/SKILL.md` |
 | **Blog** | "Blog post", "article", "write content" | `skills/Blog/SKILL.md` |
 | **ContactEnrichment** | "Enrich contact", "verify email", "OSINT" | `skills/ContactEnrichment/SKILL.md` |
-| **OSINT** | "OSINT", "due diligence", "investigate person" | `skills/OSINT/SKILL.md` |
+| **OSINT** | "OSINT", "due diligence", "investigate person" | `skills/Investigation/OSINT/SKILL.md` |
 | **Recon** | "Recon", "reconnaissance", "bug bounty" | `skills/Recon/SKILL.md` |
 | **Apify** | "Scrape Twitter", "Instagram", "LinkedIn", "Google Maps" | `skills/Apify/SKILL.md` |
 | **BrightData** | "Bright Data", "scrape URL", "web scraping" | `skills/BrightData/SKILL.md` |
 | **AnnualReports** | "Annual report", "security report", "threat report" | `skills/AnnualReports/SKILL.md` |
 | **SECUpdates** | "Security news", "breaches", "security updates" | `skills/SECUpdates/SKILL.md` |
-| **PrivateInvestigator** | "Find person", "locate", "skip trace" | `skills/PrivateInvestigator/SKILL.md` |
+| **PrivateInvestigator** | "Find person", "locate", "skip trace" | `skills/Investigation/PrivateInvestigator/SKILL.md` |
 | **WarriorPatterns** | "Warrior patterns", "business analysis", "positioning" | `skills/WarriorPatterns/SKILL.md` |
 | **WarriorsWay** | "Warriors Way", "Core 4", "4Ps", "breakthrough" | `skills/WarriorsWay/SKILL.md` |
 | **Telos** | "TELOS", "life goals", "projects", "books" | `skills/Telos/SKILL.md` |
