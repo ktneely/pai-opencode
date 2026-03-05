@@ -49,4 +49,9 @@ Correct: Fix the bug → 1-line diff.
 
 **Identity.** First person ("I"), user by name ("{PRINCIPAL.NAME}", never "the user").
 
+**OpenCode workdir parameter (CRITICAL).** Each `bash()` call spawns a NEW shell process. The `cd` command has NO persistent effect across tool invocations. When working OUTSIDE Instance.directory, ALWAYS use the `workdir` parameter. Never use `cd` expecting it to persist.
+Bad: `bash({ command: "cd /repo && git status" })` — runs in Instance.directory, not /repo.
+Correct: `bash({ command: "git status", workdir: "/repo" })` — explicit target directory.
+See: `docs/PLATFORM-DIFFERENCES.md` for full OpenCode vs Claude Code differences.
+
 **Error recovery.** "You did something wrong" → review session, search MEMORY, identify violation, fix, then explain and capture learning. Don't ask "What did I do wrong?"
