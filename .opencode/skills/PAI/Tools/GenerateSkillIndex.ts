@@ -105,27 +105,50 @@ function parseFrontmatter(content: string): { name: string; description: string 
   const name = nameMatch ? nameMatch[1].trim() : '';
 
   // Extract description (handles both single-line and multi-line YAML with | or >)
-  // Regex allows hyphens in field names and handles all YAML styles
   let description = '';
-  const descMatch = frontmatter.match(/^description:\s*([|>]?-?)\s*([\s\S]*?)(?=\n[0-9A-Za-z_-]+:|$)/m);
-  if (descMatch) {
-    const indicator = descMatch[1] || ''; // |, >, |-, >- or empty
-    let rawDesc = descMatch[2];
+  
+  // Find the description line
+  const descLineMatch = frontmatter.match(/^description:\s*(.*)$/m);
+  if (descLineMatch) {
+    const indicator = descLineMatch[1].trim(); // |, >, |-, >- or empty
     
-    if (indicator.includes('>')) {
-      // Folded style: newlines become spaces
-      description = rawDesc
-        .split('\n')
-        .map(line => line.trim())
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-    } else if (indicator.includes('|')) {
-      // Literal style: preserve indentation, only remove trailing newline
-      description = rawDesc.replace(/\n$/, '');
+    if (indicator === '|' || indicator === '>' || indicator === '|-' || indicator === '>-') {
+      // Multiline YAML - extract content until next field
+      const descStart = frontmatter.indexOf(descLineMatch[0]) + descLineMatch[0].length;
+      const restOfFrontmatter = frontmatter.slice(descStart);
+      
+      // Find where next field starts (line beginning with field name:)
+      const nextFieldMatch = restOfFrontmatter.match(/\n([0-9A-Za-z_-]+):/);
+      const rawDesc = nextFieldMatch 
+        ? restOfFrontmatter.slice(0, nextFieldMatch.index)
+        : restOfFrontmatter;
+      
+      if (indicator === '>' || indicator === '>-') {
+        // Folded style: newlines become spaces
+        description = rawDesc
+          .split('\n')
+          .map(line => line.trimStart())
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      } else {
+        // Literal style (| or |-): preserve content but remove common indentation
+        const lines = rawDesc.split('\n').filter(l => l.trim().length > 0);
+        if (lines.length > 0) {
+          const minIndent = lines.reduce((min, line) => {
+            const match = line.match(/^(\s*)/);
+            const indent = match ? match[1].length : 0;
+            return Math.min(min, indent);
+          }, Infinity);
+          description = lines
+            .map(line => line.slice(minIndent))
+            .join('\n')
+            .trim();
+        }
+      }
     } else {
-      // Plain style
-      description = rawDesc.trim();
+      // Single-line description
+      description = indicator;
     }
   }
 

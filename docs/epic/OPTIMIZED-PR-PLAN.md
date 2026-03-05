@@ -118,9 +118,9 @@ flowchart TB
         I[Final integration tests]
     end
     
-    PR3 -->|depends on| PR4
-    C --> E
-    D --> I
+    PR4 -->|depends on| PR3
+    E --> C
+    I --> D
 ```
 
 </details>
@@ -182,4 +182,4 @@ flowchart TB
 - PR #3: Algorithm & Core (groß)
 - PR #4: Installer & Release (mittel)
 
-**Fertig.** v3.0 released in 4 PRs total.
+**Fertig.** v3.0 in 4 Pull Requests insgesamt veröffentlicht.
