@@ -101,8 +101,51 @@ The system must know which skills exist to load them:
 | **AnnualReports** | "Annual report", "security report", "threat report" | `skills/Security/AnnualReports/SKILL.md` |
 | **SECUpdates** | "Security news", "breaches", "security updates" | `skills/Security/SECUpdates/SKILL.md` |
 | **Telos** | "TELOS", "life goals", "projects", "books" | `skills/Telos/Telos/SKILL.md` |
-| **Aphorisms** | "Aphorism", "quote", "saying" | `skills/Aphorisms/SKILL.md` |
+| **Aphorisms** | "Aphorism", "quote", "saying" | `skills/Utilities/Aphorisms/SKILL.md` |
 | **Algorithm** | "Algorithm details", "full algorithm", "PRD format", "ISC decomposition", "Extended effort", "Advanced effort" | `PAI/Algorithm/v3.7.0.md` |
+| **Fabric** | "Fabric pattern", "extract wisdom", "summarize" | `skills/Utilities/Fabric/SKILL.md` |
+| **Blog** | "Blog post", "article", "write content" | `skills/Blog/SKILL.md` |
+| **ContactEnrichment** | "Enrich contact", "verify email", "OSINT" | `skills/ContactEnrichment/SKILL.md` |
+| **ContentAnalysis** | "Extract wisdom", "analyze content", "insight report" | `skills/ContentAnalysis/SKILL.md` |
+| **Investigation** | "OSINT", "due diligence", "find person", "background check" | `skills/Investigation/SKILL.md` |
+| **OSINT** | "OSINT", "due diligence", "company intel" | `skills/Investigation/OSINT/SKILL.md` |
+| **PrivateInvestigator** | "Find person", "locate", "skip trace" | `skills/Investigation/PrivateInvestigator/SKILL.md` |
+| **Media** | "Art", "video", "Remotion", "thumbnails" | `skills/Media/SKILL.md` |
+| **Security** | "Security scan", "pentest", "recon", "prompt injection" | `skills/Security/SKILL.md` |
+| **Scraping** | "Scrape", "Twitter", "Instagram", "web scraping" | `skills/Scraping/SKILL.md` |
+| **Thinking** | "Be creative", "first principles", "red team", "council" | `skills/Thinking/SKILL.md` |
+| **Utilities** | "Documents", "Fabric", "Browser", "CLI tools" | `skills/Utilities/SKILL.md` |
+| **USMetrics** | "US metrics", "American data", "statistics" | `skills/USMetrics/USMetrics/SKILL.md` |
+| **WarriorPatterns** | "Warrior patterns", "business analysis", "positioning" | `skills/WarriorPatterns/SKILL.md` |
+| **WarriorsWay** | "Warriors Way", "Core 4", "4Ps", "breakthrough" | `skills/WarriorsWay/SKILL.md` |
+
+### Thinking Sub-Skills
+
+| Skill | Trigger | Path |
+|-------|---------|------|
+| **BeCreative** | "Be creative", "deep thinking" | `skills/Thinking/BeCreative/SKILL.md` |
+| **Council** | "Council", "debate", "perspectives" | `skills/Thinking/Council/SKILL.md` |
+| **FirstPrinciples** | "First principles", "decompose" | `skills/Thinking/FirstPrinciples/SKILL.md` |
+| **IterativeDepth** | "Explore deeply", "multiple angles" | `skills/Thinking/IterativeDepth/SKILL.md` |
+| **RedTeam** | "Red team", "critique", "attack" | `skills/Thinking/RedTeam/SKILL.md` |
+| **Science** | "Science", "research method" | `skills/Thinking/Science/SKILL.md` |
+| **WorldThreatModelHarness** | "Threat model", "world analysis" | `skills/Thinking/WorldThreatModelHarness/SKILL.md` |
+
+### Utilities Sub-Skills
+
+| Skill | Trigger | Path |
+|-------|---------|------|
+| **Aphorisms** | "Aphorism", "quote" | `skills/Utilities/Aphorisms/SKILL.md` |
+| **Browser** | "Browser", "screenshots" | `skills/Utilities/Browser/SKILL.md` |
+| **Cloudflare** | "Cloudflare", "Workers" | `skills/Utilities/Cloudflare/SKILL.md` |
+| **CreateCLI** | "Create CLI", "build CLI" | `skills/Utilities/CreateCLI/SKILL.md` |
+| **CreateSkill** | "Create skill", "new skill" | `skills/Utilities/CreateSkill/SKILL.md` |
+| **Documents** | "Documents", "PDF", "Word" | `skills/Utilities/Documents/SKILL.md` |
+| **Evals** | "Eval", "benchmark" | `skills/Utilities/Evals/SKILL.md` |
+| **Fabric** | "Fabric", "extract wisdom" | `skills/Utilities/Fabric/SKILL.md` |
+| **PAIUpgrade** | "Upgrade", "PAI upgrade" | `skills/Utilities/PAIUpgrade/SKILL.md` |
+| **Parser** | "Parse", "extract data" | `skills/Utilities/Parser/SKILL.md` |
+| **Prompting** | "Prompting", "templates" | `skills/Utilities/Prompting/SKILL.md` |
 
 ### Agent Types (via Task Tool)
 
