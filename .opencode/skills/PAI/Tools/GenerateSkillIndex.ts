@@ -11,7 +11,7 @@
  */
 
 import { readdir, readFile, writeFile, stat } from 'fs/promises';
-import { join } from 'path';
+import { join, relative, sep } from 'path';
 import { existsSync } from 'fs';
 
 const SKILLS_DIR = join(import.meta.dir, '..', '..', '..', 'skills');
@@ -226,19 +226,20 @@ async function parseSkillFile(filePath: string): Promise<SkillEntry | null> {
     const workflows = extractWorkflows(content);
     const tier = ALWAYS_LOADED_SKILLS.includes(frontmatter.name) ? 'always' : 'deferred';
 
-    // Determine category from path
-    const relativePath = filePath.replace(SKILLS_DIR, '').replace(/^\//, '');
-    const pathParts = relativePath.split('/');
+    // Determine category from path (cross-platform using path.relative and path.sep)
+    const relPath = relative(SKILLS_DIR, filePath);
+    const pathParts = relPath.split(sep).filter(p => p !== '');
     
-    // Hierarchical structure: Category/Skill/SKILL.md (exactly 3 parts)
+    // Hierarchical structure: Category/Skill/SKILL.md (3 parts)
     // Flat structure: Skill/SKILL.md (2 parts)
-    // Deeper nesting (>3 parts) is not supported in standard structure
+    // Deeper nesting (>3 parts) is warned but still treated as hierarchical
     if (pathParts.length > 3) {
       console.warn(`⚠️  Deep nesting detected at ${filePath} (${pathParts.length} levels). Only 2 levels (Category/Skill) are supported.`);
     }
     
-    const isHierarchical = pathParts.length === 3;
+    const isHierarchical = pathParts.length >= 3;
     const category = isHierarchical ? pathParts[0] : null;
+    const relativePath = relPath.replace(/\\/g, '/'); // Normalize to forward slashes for output
 
     return {
       name: frontmatter.name,
@@ -276,6 +277,9 @@ async function main() {
 
   // Track categories
   const categories = new Set<string>();
+
+  // Sort skillFiles deterministically
+  skillFiles.sort((a, b) => a.localeCompare(b));
 
   for (const filePath of skillFiles) {
     const skill = await parseSkillFile(filePath);
@@ -319,6 +323,18 @@ async function main() {
 
   index.categories = categories.size;
 
+  // Sort categoryMap entries deterministically
+  for (const category of Object.keys(index.categoryMap)) {
+    index.categoryMap[category].sort((a, b) => a.localeCompare(b));
+  }
+
+  // Create sorted skills object for deterministic output
+  const sortedSkills: Record<string, SkillEntry> = {};
+  for (const key of Object.keys(index.skills).sort((a, b) => a.localeCompare(b))) {
+    sortedSkills[key] = index.skills[key];
+  }
+  index.skills = sortedSkills;
+
   // Write the index
   await writeFile(OUTPUT_FILE, JSON.stringify(index, null, 2));
 
@@ -344,10 +360,12 @@ async function main() {
   console.log(`   After:   ~${newTokens.toLocaleString()} tokens`);
   console.log(`   Savings: ~${savings}%`);
 
-  // Show category breakdown
+  // Show category breakdown (sorted)
   if (index.categories > 0) {
     console.log(`\n📂 Category Breakdown:`);
-    for (const [category, skills] of Object.entries(index.categoryMap)) {
+    const sortedCategories = Object.keys(index.categoryMap).sort((a, b) => a.localeCompare(b));
+    for (const category of sortedCategories) {
+      const skills = index.categoryMap[category];
       console.log(`   ${category}: ${skills.length} skills`);
     }
   }

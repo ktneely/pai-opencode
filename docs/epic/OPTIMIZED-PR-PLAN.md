@@ -162,7 +162,7 @@ flowchart TB
 
 ## Warum diese Aufteilung?
 
-| Kriterium | Altes Plan (8 PRs) | Neuer Plan (4 PRs) |
+| Kriterium | Alter Plan (8 PRs) | Neuer Plan (4 PRs) |
 |-----------|-------------------|-------------------|
 | Review-Overhead | Hoch | Niedrig |
 | Context-Switching | Viel | Wenig |
