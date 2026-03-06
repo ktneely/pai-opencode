@@ -21,16 +21,16 @@ export const INSTRUCTION_OVERRIDE_PATTERNS = [
 
 // === KATEGORIE 2: Rollen-Übernahme ===
 // Versuche, dem Modell eine neue Identität zu geben
-// Strengere Patterns: verlangen explizite Rollen-Tokens (Großbuchstaben/Quotes/Role-Label)
+// NUR explizit markierte Rollen (quotes, role: prefix) oder klar bösartige Rollen
 export const ROLE_HIJACKING_PATTERNS = [
-	// "you are now" gefolgt von einem rollen-indizierenden Token (nicht Adjektive wie "ready")
-	/you\s+are\s+now\s+(?:a\s+|an\s+)?(?:["']?[A-Z][a-z]+["']?|role:\s*\w+|hacker|attacker|malware|developer|expert|specialist)/i,
+	// "you are now" mit explizitem role: Prefix oder quoted string
+	/you\s+are\s+now\s+(?:a\s+|an\s+)?(?:["'][^"']{3,30}["']|role:\s*\w+|hacker|attacker|malware|jailbroken)/i,
 	// "act as" mit explizit bösartigen Rollen
-	/act\s+as\s+(?:a\s+|an\s+)?(?:evil|malicious|unrestricted|jailbreak|hacker|attacker)/i,
-	// "pretend to be" mit expliziten Rollennamen (nicht Adjektive)
-	/pretend\s+(?:you\s+are|to\s+be)\s+(?:a\s+|an\s+)?(?:["']?[A-Z][a-z]+["']?|hacker|attacker|expert|developer)/i,
-	// explizite Rollen-Keywords
-	/roleplay\s+as\s+(?:a\s+|an\s+)?(?:hacker|attacker|malware|developer)/i,
+	/act\s+as\s+(?:a\s+|an\s+)?(?:["'][^"']{3,30}["']|evil|malicious|unrestricted|jailbreak|hacker|attacker|malware)/i,
+	// "pretend to be" mit expliziten Rollen (quoted oder bösartig)
+	/pretend\s+(?:you\s+are|to\s+be)\s+(?:a\s+|an\s+)?(?:["'][^"']{3,30}["']|hacker|attacker|malware)/i,
+	// explizite Rollen-Keywords (nur bösartige)
+	/roleplay\s+as\s+(?:a\s+|an\s+)?(?:hacker|attacker|malware)/i,
 	/DAN\s+mode/i, // "Do Anything Now" jailbreak
 	/jailbreak\s+mode/i,
 	/developer\s+mode/i, // Fake "developer mode" jailbreak
@@ -72,9 +72,10 @@ export const CONTEXT_SEPARATOR_PATTERNS = [
 // === KATEGORIE 6: MCP Tool-Description Injection ===
 // Böswillige Anweisungen in Tool-Descriptions versteckt
 // Multiline-fähig: [\s\S] matcht auch Newlines
+// Bounded window [\s\S]{0,50} verhindert large-span false positives
 export const MCP_TOOL_INJECTION_PATTERNS = [
 	/when\s+(you\s+)?(use|call|invoke)\s+this\s+tool[\s\S]{0,50}(send|exfiltrate|leak)/i,
-	/tool\s+description.*ignore.*instructions/is,
+	/tool\s+description[\s\S]{0,50}ignore[\s\S]{0,50}instructions/is,
 	/\[hidden\s+instruction\]/i,
 	/<hidden>/i,
 ] as const;
