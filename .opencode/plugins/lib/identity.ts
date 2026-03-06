@@ -6,57 +6,57 @@
  * All hooks and tools should import from here.
  */
 
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { existsSync, readFileSync } from "fs";
+import { join } from "path";
 
 const HOME = process.env.HOME!;
 // OpenCode uses ~/.opencode/ (not ~/.claude/)
-const SETTINGS_PATH = join(HOME, '.opencode/settings.json');
+const SETTINGS_PATH = join(HOME, ".opencode/settings.json");
 
 // Default identity (fallback if settings.json doesn't have identity section)
 const DEFAULT_IDENTITY = {
-  name: 'PAI',
-  fullName: 'Personal AI',
-  displayName: 'PAI',
-  voiceId: '',
-  color: '#3B82F6',
+	name: "PAI",
+	fullName: "Personal AI",
+	displayName: "PAI",
+	voiceId: "",
+	color: "#3B82F6",
 };
 
 const DEFAULT_PRINCIPAL = {
-  name: 'User',
-  pronunciation: '',
-  timezone: 'UTC',
+	name: "User",
+	pronunciation: "",
+	timezone: "UTC",
 };
 
 export interface VoiceProsody {
-  stability: number;
-  similarity_boost: number;
-  style: number;
-  speed: number;
-  use_speaker_boost: boolean;
-  volume?: number;
+	stability: number;
+	similarity_boost: number;
+	style: number;
+	speed: number;
+	use_speaker_boost: boolean;
+	volume?: number;
 }
 
 export interface Identity {
-  name: string;
-  fullName: string;
-  displayName: string;
-  voiceId: string;
-  color: string;
-  voice?: VoiceProsody;
+	name: string;
+	fullName: string;
+	displayName: string;
+	voiceId: string;
+	color: string;
+	voice?: VoiceProsody;
 }
 
 export interface Principal {
-  name: string;
-  pronunciation: string;
-  timezone: string;
+	name: string;
+	pronunciation: string;
+	timezone: string;
 }
 
 export interface Settings {
-  daidentity?: Partial<Identity>;
-  principal?: Partial<Principal>;
-  env?: Record<string, string>;
-  [key: string]: unknown;
+	daidentity?: Partial<Identity>;
+	principal?: Partial<Principal>;
+	env?: Record<string, string>;
+	[key: string]: unknown;
 }
 
 let cachedSettings: Settings | null = null;
@@ -65,112 +65,120 @@ let cachedSettings: Settings | null = null;
  * Load settings.json (cached)
  */
 function loadSettings(): Settings {
-  if (cachedSettings) return cachedSettings;
+	if (cachedSettings) return cachedSettings;
 
-  try {
-    if (!existsSync(SETTINGS_PATH)) {
-      cachedSettings = {};
-      return cachedSettings;
-    }
+	try {
+		if (!existsSync(SETTINGS_PATH)) {
+			cachedSettings = {};
+			return cachedSettings;
+		}
 
-    const content = readFileSync(SETTINGS_PATH, 'utf-8');
-    cachedSettings = JSON.parse(content);
-    return cachedSettings!;
-  } catch {
-    cachedSettings = {};
-    return cachedSettings;
-  }
+		const content = readFileSync(SETTINGS_PATH, "utf-8");
+		cachedSettings = JSON.parse(content);
+		return cachedSettings!;
+	} catch {
+		cachedSettings = {};
+		return cachedSettings;
+	}
 }
 
 /**
  * Get DA (Digital Assistant) identity from settings.json
  */
 export function getIdentity(): Identity {
-  const settings = loadSettings();
+	const settings = loadSettings();
 
-  // Prefer settings.daidentity, fall back to env.DA for backward compat
-  const daidentity = settings.daidentity || {};
-  const envDA = settings.env?.DA;
+	// Prefer settings.daidentity, fall back to env.DA for backward compat
+	const daidentity = settings.daidentity || {};
+	const envDA = settings.env?.DA;
 
-  return {
-    name: daidentity.name || envDA || DEFAULT_IDENTITY.name,
-    fullName: daidentity.fullName || daidentity.name || envDA || DEFAULT_IDENTITY.fullName,
-    displayName: daidentity.displayName || daidentity.name || envDA || DEFAULT_IDENTITY.displayName,
-    voiceId: daidentity.voiceId || DEFAULT_IDENTITY.voiceId,
-    color: daidentity.color || DEFAULT_IDENTITY.color,
-    voice: (daidentity as any).voice as VoiceProsody | undefined,
-  };
+	return {
+		name: daidentity.name || envDA || DEFAULT_IDENTITY.name,
+		fullName:
+			daidentity.fullName ||
+			daidentity.name ||
+			envDA ||
+			DEFAULT_IDENTITY.fullName,
+		displayName:
+			daidentity.displayName ||
+			daidentity.name ||
+			envDA ||
+			DEFAULT_IDENTITY.displayName,
+		voiceId: daidentity.voiceId || DEFAULT_IDENTITY.voiceId,
+		color: daidentity.color || DEFAULT_IDENTITY.color,
+		voice: (daidentity as any).voice as VoiceProsody | undefined,
+	};
 }
 
 /**
  * Get Principal (human owner) identity from settings.json
  */
 export function getPrincipal(): Principal {
-  const settings = loadSettings();
+	const settings = loadSettings();
 
-  // Prefer settings.principal, fall back to env.PRINCIPAL for backward compat
-  const principal = settings.principal || {};
-  const envPrincipal = settings.env?.PRINCIPAL;
+	// Prefer settings.principal, fall back to env.PRINCIPAL for backward compat
+	const principal = settings.principal || {};
+	const envPrincipal = settings.env?.PRINCIPAL;
 
-  return {
-    name: principal.name || envPrincipal || DEFAULT_PRINCIPAL.name,
-    pronunciation: principal.pronunciation || DEFAULT_PRINCIPAL.pronunciation,
-    timezone: principal.timezone || DEFAULT_PRINCIPAL.timezone,
-  };
+	return {
+		name: principal.name || envPrincipal || DEFAULT_PRINCIPAL.name,
+		pronunciation: principal.pronunciation || DEFAULT_PRINCIPAL.pronunciation,
+		timezone: principal.timezone || DEFAULT_PRINCIPAL.timezone,
+	};
 }
 
 /**
  * Clear cache (useful for testing or when settings.json changes)
  */
 export function clearCache(): void {
-  cachedSettings = null;
+	cachedSettings = null;
 }
 
 /**
  * Get just the DA name (convenience function)
  */
 export function getDAName(): string {
-  return getIdentity().name;
+	return getIdentity().name;
 }
 
 /**
  * Get just the Principal name (convenience function)
  */
 export function getPrincipalName(): string {
-  return getPrincipal().name;
+	return getPrincipal().name;
 }
 
 /**
  * Get just the voice ID (convenience function)
  */
 export function getVoiceId(): string {
-  return getIdentity().voiceId;
+	return getIdentity().voiceId;
 }
 
 /**
  * Get the full settings object (for advanced use)
  */
 export function getSettings(): Settings {
-  return loadSettings();
+	return loadSettings();
 }
 
 /**
  * Get the default identity (for documentation/testing)
  */
 export function getDefaultIdentity(): Identity {
-  return { ...DEFAULT_IDENTITY };
+	return { ...DEFAULT_IDENTITY };
 }
 
 /**
  * Get the default principal (for documentation/testing)
  */
 export function getDefaultPrincipal(): Principal {
-  return { ...DEFAULT_PRINCIPAL };
+	return { ...DEFAULT_PRINCIPAL };
 }
 
 /**
  * Get voice prosody settings (convenience function)
  */
 export function getVoiceProsody(): VoiceProsody | undefined {
-  return getIdentity().voice;
+	return getIdentity().voice;
 }

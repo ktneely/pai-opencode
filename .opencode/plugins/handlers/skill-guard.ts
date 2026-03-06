@@ -15,8 +15,8 @@ import { fileLog, fileLogError } from "../lib/file-logger";
 import { getOpenCodeDir } from "../lib/paths";
 
 interface SkillValidation {
-  valid: boolean;
-  reason?: string;
+	valid: boolean;
+	reason?: string;
 }
 
 /** Skills known to be false-positive triggers */
@@ -26,7 +26,7 @@ const BLOCKED_SKILLS = ["keybindings-help"];
  * Check if a skill is in the blocked list
  */
 export function isBlockedSkill(skillName: string): boolean {
-  return BLOCKED_SKILLS.includes(skillName.toLowerCase());
+	return BLOCKED_SKILLS.includes(skillName.toLowerCase());
 }
 
 /**
@@ -34,114 +34,109 @@ export function isBlockedSkill(skillName: string): boolean {
  * Searches: skills/SkillName/ and skills/Category/SkillName/
  */
 function findSkillDir(skillName: string): string | null {
-  const skillsDir = path.join(getOpenCodeDir(), "skills");
-  
-  // Try flat structure first (backward compatibility)
-  const flatPath = path.join(skillsDir, skillName);
-  if (fs.existsSync(flatPath)) {
-    return flatPath;
-  }
-  
-  // Try hierarchical structure - search all categories
-  try {
-    const categories = fs.readdirSync(skillsDir, { withFileTypes: true })
-      .filter(d => d.isDirectory())
-      .map(d => d.name);
-    
-    for (const category of categories) {
-      const categoryPath = path.join(skillsDir, category);
-      const nestedSkillPath = path.join(categoryPath, skillName);
-      if (fs.existsSync(nestedSkillPath)) {
-        return nestedSkillPath;
-      }
-    }
-  } catch {
-    // Fall through to return null
-  }
-  
-  return null;
+	const skillsDir = path.join(getOpenCodeDir(), "skills");
+
+	// Try flat structure first (backward compatibility)
+	const flatPath = path.join(skillsDir, skillName);
+	if (fs.existsSync(flatPath)) {
+		return flatPath;
+	}
+
+	// Try hierarchical structure - search all categories
+	try {
+		const categories = fs
+			.readdirSync(skillsDir, { withFileTypes: true })
+			.filter((d) => d.isDirectory())
+			.map((d) => d.name);
+
+		for (const category of categories) {
+			const categoryPath = path.join(skillsDir, category);
+			const nestedSkillPath = path.join(categoryPath, skillName);
+			if (fs.existsSync(nestedSkillPath)) {
+				return nestedSkillPath;
+			}
+		}
+	} catch {
+		// Fall through to return null
+	}
+
+	return null;
 }
 
 /**
  * Extract USE WHEN triggers from a skill's SKILL.md
  */
 function extractTriggers(skillName: string): string | null {
-  try {
-    const skillDir = findSkillDir(skillName);
-    if (!skillDir) return null;
-    
-    const skillPath = path.join(skillDir, "SKILL.md");
+	try {
+		const skillDir = findSkillDir(skillName);
+		if (!skillDir) return null;
 
-    if (!fs.existsSync(skillPath)) return null;
+		const skillPath = path.join(skillDir, "SKILL.md");
 
-    const content = fs.readFileSync(skillPath, "utf-8");
+		if (!fs.existsSync(skillPath)) return null;
 
-    // Look for description in frontmatter
-    const frontmatterMatch = content.match(
-      /---\s*\n[\s\S]*?description:\s*(.+)\n[\s\S]*?---/
-    );
-    if (frontmatterMatch) {
-      return frontmatterMatch[1].trim();
-    }
+		const content = fs.readFileSync(skillPath, "utf-8");
 
-    // Look for USE WHEN in content
-    const useWhenMatch = content.match(/USE WHEN[:\s]+(.+)/i);
-    if (useWhenMatch) {
-      return useWhenMatch[1].trim();
-    }
+		// Look for description in frontmatter
+		const frontmatterMatch = content.match(
+			/---\s*\n[\s\S]*?description:\s*(.+)\n[\s\S]*?---/,
+		);
+		if (frontmatterMatch) {
+			return frontmatterMatch[1].trim();
+		}
 
-    return null;
-  } catch {
-    return null;
-  }
+		// Look for USE WHEN in content
+		const useWhenMatch = content.match(/USE WHEN[:\s]+(.+)/i);
+		if (useWhenMatch) {
+			return useWhenMatch[1].trim();
+		}
+
+		return null;
+	} catch {
+		return null;
+	}
 }
 
 /**
  * Validate a skill invocation
  */
 export async function validateSkillInvocation(
-  skillName: string,
-  context: string
+	skillName: string,
+	context: string,
 ): Promise<SkillValidation> {
-  try {
-    // Block known false-positives
-    if (isBlockedSkill(skillName)) {
-      fileLog(
-        `[SkillGuard] Blocked false-positive: ${skillName}`,
-        "warn"
-      );
-      return {
-        valid: false,
-        reason: `Skill "${skillName}" is in the blocked list (known false-positive)`,
-      };
-    }
+	try {
+		// Block known false-positives
+		if (isBlockedSkill(skillName)) {
+			fileLog(`[SkillGuard] Blocked false-positive: ${skillName}`, "warn");
+			return {
+				valid: false,
+				reason: `Skill "${skillName}" is in the blocked list (known false-positive)`,
+			};
+		}
 
-    // Check skill exists (supports hierarchical structure)
-    const skillDir = findSkillDir(skillName);
-    if (!skillDir) {
-      fileLog(
-        `[SkillGuard] Skill not found: ${skillName}`,
-        "warn"
-      );
-      return {
-        valid: false,
-        reason: `Skill "${skillName}" not found in skills directory (checked flat and hierarchical structures)`,
-      };
-    }
+		// Check skill exists (supports hierarchical structure)
+		const skillDir = findSkillDir(skillName);
+		if (!skillDir) {
+			fileLog(`[SkillGuard] Skill not found: ${skillName}`, "warn");
+			return {
+				valid: false,
+				reason: `Skill "${skillName}" not found in skills directory (checked flat and hierarchical structures)`,
+			};
+		}
 
-    // Extract and log triggers for debugging
-    const triggers = extractTriggers(skillName);
-    if (triggers) {
-      fileLog(
-        `[SkillGuard] Skill "${skillName}" triggers: ${triggers.substring(0, 100)}`,
-        "debug"
-      );
-    }
+		// Extract and log triggers for debugging
+		const triggers = extractTriggers(skillName);
+		if (triggers) {
+			fileLog(
+				`[SkillGuard] Skill "${skillName}" triggers: ${triggers.substring(0, 100)}`,
+				"debug",
+			);
+		}
 
-    fileLog(`[SkillGuard] Skill "${skillName}" invocation OK`, "debug");
-    return { valid: true };
-  } catch (error) {
-    fileLogError("[SkillGuard] Validation failed", error);
-    return { valid: true, reason: "Validation error — allowing invocation" };
-  }
+		fileLog(`[SkillGuard] Skill "${skillName}" invocation OK`, "debug");
+		return { valid: true };
+	} catch (error) {
+		fileLogError("[SkillGuard] Validation failed", error);
+		return { valid: true, reason: "Validation error — allowing invocation" };
+	}
 }

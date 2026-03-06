@@ -1,6 +1,6 @@
 ---
 title: PAI-OpenCode v3.0 - Korrigierter PR-Plan
-description: Tatsächlicher Stand nach WP1-WP4 Completion - Nur noch 2 PRs bis v3.0
+description: Tatsächlicher Stand nach WP1-WP4 Audit - Tatsächlich 4 PRs bis v3.0 (A, B, C, D)
 version: "3.0-corrected"
 status: active
 authors: [Jeremy]
@@ -11,115 +11,302 @@ tags: [architecture, migration, v3.0, PR-strategy, corrected]
 # PAI-OpenCode v3.0 - Korrigierter PR-Plan
 
 **Basierend auf:** Tatsächlicher Repository-Stand nach WP1-WP4 Completion  
-**Ziel:** Korrekte Darstellung der verbleibenden Arbeit (nur noch 2 PRs!)
+**Ziel:** Korrekte Darstellung der verbleibenden Arbeit (tatsächlich 4 PRs bis v3.0)
 
 ---
 
-## Tatsächlicher Stand (Korrigiert)
+## Tatsächlicher Stand (Nach vollständigem Audit 2026-03-06)
 
 | WP | Name | PRs | Status | Inhalt |
 |----|------|-----|--------|--------|
-| **WP1** | Algorithm v3.7.0 + Workdir Docs | #35, #36 | ✅ **Gemergt** | Algorithm v3.7.0, OpenCode workdir parameter |
-| **WP2** | Context Modernization | #34 | ✅ **Gemergt** | Lazy Loading, Hybrid Algorithm loading |
-| **WP3** | Category Structure Part A | #37 | ✅ **Gemergt** | Hierarchical structure, 10 Kategorien |
-| **WP4** | Integration & Validation | #38, #39, #40 | ✅ **Gemergt** | Path fixes, Plugin handlers, Validation tools |
+| **WP1** | Algorithm v3.7.0 + Workdir Docs | #35, #36 | ✅ **Komplett** | Algorithm v3.7.0, OpenCode workdir parameter |
+| **WP2** | Context Modernization | #34 | ✅ **Komplett** | Lazy Loading, Hybrid Algorithm loading |
+| **WP3** | Category Structure Part A | #37 | ⚠️ **~40% komplett** | Category Structure ja — Hooks/Plugin-Konsolidierung FEHLT |
+| **WP4** | Integration & Validation | #38, #39, #40 | ⚠️ **~70% komplett** | Funktional, aber auf unvollständigem WP3 aufgebaut |
 
-**Ergebnis:** WP1-WP4 sind **vollständig erledigt!**
+> [!warning]
+> ⚠️ **AUDIT-BEFUND 2026-03-06:** WP3 war NICHT vollständig! WP-A (PR #42) schließt die Lücke. Vollständige Analyse: `docs/epic/GAP-ANALYSIS-v3.0.md`
+
+**Ergebnis:** WP1 + WP2 vollständig. WP3 + WP4 haben signifikante Lücken.
 
 ---
 
-## Verbleibende Arbeit: Nur noch 2 PRs!
+## Verbleibende Arbeit: Tatsächlich 4 PRs (nach Audit)
 
-### 📋 PR #5: Core PAI System Struktur (GROSS)
-**Branch:** `feature/wp5-core-pai-system` (NEU)  
-**Schätzung:** ~20 Files, ~2000 Zeilen  
+> [!note]
+> **Aktualisiert nach vollständigem Gap-Analyse-Audit** — Details in `docs/epic/GAP-ANALYSIS-v3.0.md`
 
-**Problem:** Aktuell gibt es `.opencode/skills/PAI/` (als Skill), aber es fehlt das **Core PAI System** in `.opencode/PAI/` (nicht als Skill!)
+### 📋 PR #A: WP3-Completion — Plugin-System & Hooks (KRITISCH)
+**Branch:** `feature/wp3-completion-plugin-hooks` (NEU)  
+**Schätzung:** ~10 Files, ~800 Zeilen  
+
+**Problem:** WP3 hat nur die Category-Struktur geliefert. Das Plugin-System und die Hooks aus PAI v4.0.3 fehlen komplett.
 
 **Inhalt:**
 ```text
-NEU - Core PAI System (nicht als Skill):
-├── .opencode/PAI/                    # ← NEU: Core PAI (außerhalb skills/)
-│   ├── Algorithm/
-│   │   ├── v3.7.0.md                 # Port aus v4.0.3
-│   │   └── LATEST (Symlink)
-│   ├── Components/                   # Modularer Algorithm
-│   │   ├── THE_ALGORITHM.md
-│   │   ├── FORMAT_REMINDER.md
-│   │   ├── CAPABILITY_AUDIT.md
-│   │   ├── IDEAL_STATE_CRITERIA.md
-│   │   └── PHASE_GUIDES/
-│   ├── Tools/                        # Core Tools (fehlende portieren)
-│   │   ├── RebuildPAI.ts            # ← Fehlt!
-│   │   ├── IntegrityMaintenance.ts  # ← Fehlt!
-│   │   ├── SecretScan.ts            # ← Existiert bereits
-│   │   ├── SessionDocumenter.ts     # ← Fehlt!
-│   │   └── SystemAudit.ts           # ← Fehlt!
-│   ├── SKILL.md                      # ~200 Zeilen (nicht 1400!)
-│   ├── SYSTEM/
-│   └── USER/
-│
-REFACTOR - Bestehende Struktur:
-└── .opencode/skills/PAI/ → WIRD ENTFERNT/REDUZIERT
-    ├── SKILL.md (81KB monolithisch → modular)
-    └── Tools/ (nur Skill-spezifische Tools behalten)
+NEUE HOOK-HANDLER (fehlende aus v4.0.3 portieren):
+├── plugins/handlers/prdsync.ts             # PRD-Frontmatter → work.json Sync
+├── plugins/handlers/session-cleanup.ts     # Session-Ende Cleanup
+├── plugins/handlers/session-autoname.ts    # Automatische Session-Benennung
+├── plugins/handlers/last-response-cache.ts # Response-Caching
+├── plugins/handlers/relationship-memory.ts # User-Relationship-Tracking
+└── plugins/handlers/question-answered.ts   # Q&A-Tracking
+
+UNGENUTZTE BUS-EVENTS (direkt im event-Handler von pai-unified.ts):
+├── session.compacted   → Learnings VOR Kontextverlust retten (KRITISCH)
+├── session.error       → Error-Tracking für Debugging
+├── permission.asked    → Vollständiges Permission-Audit-Log
+├── command.executed    → /command Usage-Tracking
+├── installation.update.available → Native OpenCode Update-Notification
+├── session.updated     → Session-Titel-Tracking für Work-Log
+└── session.created     → info-Objekt (id, title, directory) für präzises Logging
+
+ARCHITEKTUR (pragmatisch — Option B):
+├── pai-unified.ts   # Neue Handler einbinden + Bus-Events ergänzen
+└── (Handler-Module bleiben, keine Umstrukturierung)
+
+MITTEL-PRIORITÄT (wenn Zeit):
+├── plugins/handlers/doc-integrity.ts
+├── plugins/handlers/response-tab-reset.ts
+└── plugins/handlers/set-question-tab.ts
 ```
 
-**Was muss passieren:**
-1. `.opencode/PAI/` Verzeichnis erstellen (parallel zu skills/, nicht darin)
-2. Algorithm v3.7.0 in modularer Form portieren
-3. Fehlende Core Tools portieren (RebuildPAI, IntegrityMaintenance, etc.)
-4. SKILL.md modularisieren (~200 Zeilen statt 81KB)
-5. `.opencode/skills/PAI/` auf Skill-spezifische Tools reduzieren
-
-**Abhängigkeiten:** Keine (kann parallel zu alledem laufen)
+**Abhängigkeiten:** WP1, WP2 (bereits erledigt)
 
 ---
 
-### 📋 PR #6: Installer & Migration (MITTEL)
+### 📋 PR #B: WP3.5 — Security Hardening / Prompt Injection (HOCH)
+
+**Branch:** `feature/wp3-5-security-hardening` (NEU)  
+**Schätzung:** ~5 Files, ~400 Zeilen  
+
+**Inhalt:**
+```text
+├── plugins/handlers/prompt-injection-guard.ts
+├── plugins/lib/injection-patterns.ts
+├── plugins/lib/sanitizer.ts
+└── Dokumentation: security-audit.md
+```
+
+**Abhängigkeiten:** PR #A (Plugin-System vollständig)
+
+---
+
+### 📋 PR #C: WP5 — Core PAI System Completion (KRITISCH)
+
+**Branch:** `feature/wp5-core-pai-system` (NEU)  
+**Schätzung:** ~25 Files, ~2500 Zeilen  
+
+**Inhalt:**
+```text
+FEHLENDE PAI-Docs portieren:
+├── .opencode/PAI/PAIAGENTSYSTEM.md
+├── .opencode/PAI/CLIFIRSTARCHITECTURE.md
+├── .opencode/PAI/FLOWS.md + FLOWS/
+├── .opencode/PAI/PIPELINES.md + PIPELINES/
+├── .opencode/PAI/THEFABRICSYSTEM.md
+├── .opencode/PAI/THENOTIFICATIONSYSTEM.md
+└── .opencode/PAI/DOCUMENTATIONINDEX.md
+
+FEHLENDE PAI Tools portieren:
+├── .opencode/skills/PAI/Tools/algorithm.ts      # CLI für Algorithm
+├── .opencode/skills/PAI/Tools/RebuildPAI.ts
+├── .opencode/skills/PAI/Tools/IntegrityMaintenance.ts
+├── .opencode/skills/PAI/Tools/AlgorithmPhaseReport.ts
+└── .opencode/skills/PAI/Tools/FailureCapture.ts
+
+SKILL-STRUKTUR KORREKTUREN:
+├── skills/Telos/: DashboardTemplate/, ReportTemplate/, Tools/, Workflows/ hinzufügen
+├── skills/USMetrics/: Struktur korrigieren (nested→flach)
+├── skills/Utilities/: AudioEditor/, Delegation/ hinzufügen
+└── skills/Research/: MigrationNotes.md, Templates/ hinzufügen
+```
+
+**Abhängigkeiten:** PR #A (Plugin-System vollständig)
+
+---
+
+### 📋 PR #D: WP6 — Installer & Migration + DB Health (KRITISCH)
+
 **Branch:** `feature/wp6-installer-migration` (NEU)  
-**Schätzung:** ~15 Files, ~800 Zeilen  
+**Schätzung:** ~18 Files, ~1300 Zeilen  
 
 **Inhalt:**
 ```text
 Final Delivery:
 ├── PAI-Install/ (portiert aus v4.0.3)
 │   ├── install.sh
-│   ├── electron/
-│   └── engine/
+│   ├── cli/
+│   ├── electron/          ← DB Health Tab hier integriert
+│   ├── engine/
+│   └── web/
 ├── Tools/migration-v2-to-v3.ts (neu)
-│   - Automatische Migration von v2.x zu v3.0
-│   - Backup bestehender Konfiguration
-│   - Skill-Struktur Konvertierung
+├── Tools/db-archive.ts (neu)      ← Standalone DB Archivierungs-Tool
 ├── UPGRADE.md (neu)
-│   - Schritt-für-Schritt Upgrade Guide
 ├── RELEASE-v3.0.0.md (neu)
-│   - Changelog, Breaking Changes, Migration
 └── README.md (updated)
-    - Neue Installation/Upgrade Instructions
 ```
 
-**Wichtig:** Dieser PR muss auf WP5 warten, da die Installer die neue `.opencode/PAI/` Struktur installieren müssen!
+**DB Health Erweiterung:** Siehe WP-F (DB Health & Archivierung) — vollständig integriert in PR #D.
+
+**Wichtig:** Dieser PR muss auf PR #C warten!
 
 ---
 
-## Warum nur noch 2 PRs?
+### 📋 PR #D Erweiterung: WP-F — DB Health & Session Archivierung (WICHTIG)
 
-### Vorheriger (falscher) Plan:
-- PR #1: WP3 Category (881 files) ✅
-- PR #2: WP4 Integration (3 kleine PRs) ✅
-- PR #3: WP5 Algorithm (falsch - bereits in WP1 erledigt!)
-- PR #4: WP6 Installer
+> [!note]
+> **Neu hinzugefügt 2026-03-06** — Erkenntnisse aus OpenCode DB-Analyse:  
+> `opencode.db` wird 2.4 GB+ groß ohne Cleanup. Keine Auto-Retention in OpenCode.  
+> Lösung muss OpenCode-native, benutzerfreundlich und in v3.0 integriert sein.
 
-### Korrigierter Plan:
-- ✅ WP1: Algorithm v3.7.0 (bereits erledigt)
-- ✅ WP2: Context Modernization (bereits erledigt)
-- ✅ WP3: Category Structure (bereits erledigt)
-- ✅ WP4: Integration & Validation (bereits erledigt)
-- 🔄 **PR #5**: Core PAI System (das war WP5 im alten Plan, aber falsch beschrieben)
-- 🔄 **PR #6**: Installer & Migration (final)
+**Drei Ebenen der Lösung:**
 
-**Ersparnis:** Statt 4 weiteren PRs nur noch **2 PRs**!
+```text
+EBENE 1 — Plugin Event (automatisch, WP-A Erweiterung):
+└── plugins/handlers/session-cleanup.ts
+    └── Erweitern: Auto-Archiv-Check nach Session-Ende
+        ├── Prüfen: Ist DB > 500 MB? Gibt es Sessions > 90 Tage?
+        ├── Wenn ja: Benutzer benachrichtigen ("DB wächst, Archiv empfohlen")
+        └── Optional: Silent Auto-Archiv nach konfigurierbarem Schwellenwert
+
+EBENE 2 — Custom Command (manuell, OpenCode-native):
+└── /db-archive  OpenCode Custom Command
+    ├── Zeigt: DB-Größe, Session-Anzahl, älteste Sessions
+    ├── Schlägt vor: Archivierung aller Sessions älter als N Tage
+    ├── Führt aus: Export → Löschen → VACUUM
+    └── Bestätigt: "X Sessions archiviert, Y MB freigegeben"
+
+EBENE 3 — Electron GUI (visuell, WP-D Electron-Installer):
+└── PAI-Install Electron App: "DB Health" Tab
+    ├── Dashboard: DB-Größe, Session-Count, Growth-Trend
+    ├── Archiv-Button: "Archiviere Sessions älter als [90] Tage"
+    ├── VACUUM-Button: "Datenbank defragmentieren"
+    └── Archiv-Browser: Alte Sessions wiederherstellen
+```
+
+**Technische Architektur:**
+
+```typescript
+// Tools/db-archive.ts — OpenCode-native Tool
+// Aufrufbar: bun db-archive.ts [days] [--dry-run] [--vacuum]
+
+interface ArchiveConfig {
+  daysToKeep: number;     // Default: 90
+  archiveDir: string;     // Default: ~/.opencode/archives/
+  autoVacuum: boolean;    // Default: true
+  dryRun: boolean;        // Default: false
+}
+
+interface ArchiveResult {
+  sessionsArchived: number;
+  messagesArchived: number;
+  partsArchived: number;
+  spaceSaved: string;     // "1.2 GB"
+  archivePath: string;
+  vacuumRan: boolean;
+}
+
+// Restore einzelner Session aus Archiv
+bun db-archive.ts --restore archive-2025-Q4.db --session ses_xxx
+```
+
+**Plugin Integration (session-cleanup.ts Erweiterung):**
+
+```typescript
+// Automatische Warnung bei DB-Wachstum
+async function checkDbHealth(dbPath: string): Promise<void> {
+  const sizeMB = getDbSizeMB(dbPath);
+  const oldSessionCount = getOldSessionCount(dbPath, 90);
+
+  if (sizeMB > 500 || oldSessionCount > 100) {
+    // OpenCode notification (nicht blockierend)
+    await notify(`⚠️ DB-Warnung: ${sizeMB}MB — ${oldSessionCount} Sessions > 90 Tage.\n` +
+                 `Archivierung empfohlen: /db-archive`);
+  }
+}
+```
+
+**OpenCode Custom Command (`/db-archive`):**
+
+```typescript
+// .opencode/commands/db-archive.ts
+// Aufrufbar direkt in OpenCode TUI: /db-archive
+export default async function dbArchiveCommand(args: string[]) {
+  const days = parseInt(args[0]) || 90;
+  
+  // 1. Status anzeigen
+  const stats = await getDbStats();
+  console.log(`DB: ${stats.sizeMB}MB | Sessions: ${stats.total} | Archivierbar: ${stats.archivable}`);
+  
+  // 2. Bestätigung
+  const confirmed = await confirm(`Archiviere ${stats.archivable} Sessions (> ${days} Tage)?`);
+  if (!confirmed) return;
+  
+  // 3. Archivieren
+  const result = await archiveSessions(days);
+  
+  // 4. Ergebnis
+  console.log(`✅ ${result.sessionsArchived} Sessions archiviert → ${result.archivePath}`);
+  console.log(`💾 Freigegeben: ${result.spaceSaved}`);
+}
+```
+
+**WICHTIG — VACUUM Requirement:**
+```
+VACUUM braucht EXKLUSIVEN DB Zugriff:
+→ db-archive.ts muss aufgerufen werden OHNE laufendes OpenCode
+→ Electron GUI: Zeigt "OpenCode muss beendet sein" Hinweis
+→ Custom Command /db-archive: Läuft im OpenCode-Prozess, nutzt
+   SQLite WAL Checkpoint statt Full VACUUM (sicherer bei laufender Session)
+```
+
+**Archiv-Format:**
+```
+~/.opencode/archives/
+├── archive-2025-Q4.db          ← SQLite (wiederherstellbar)
+├── archive-2026-Q1.db
+└── archive-index.json          ← { date, sessionCount, sizeBytes, dbPath }
+```
+
+---
+
+## ⚙️ Architektur-Entscheidung: Plugin-Konsolidierung
+
+> [!tip]
+> **Entschieden 2026-03-06 — Option B: Pragmatisch**
+
+**Option A (Epic-Ziel):** Alle 19 Handler auflösen, native OpenCode Events, ~300 Zeilen  
+**Option B (Gewählt):** Handler-Module bleiben als "internal modules", nur fehlende Hooks hinzufügen
+
+**Begründung für Option B:**
+- Geringeres Risiko (keine komplette Umstrukturierung)
+- Funktionalität bleibt garantiert erhalten
+- Weniger Aufwand (~1 Tag statt ~2 Tage)
+- Echte Konsolidierung auf **v3.1** verschoben
+
+**Konsequenz:** `pai-unified.ts` bleibt Coordinator über Handler-Module. Neue Hooks werden als neue Handler-Dateien hinzugefügt und in `pai-unified.ts` eingebunden.
+
+---
+
+## Warum 4 PRs und nicht 2?
+
+### Vorheriger (falscher) Plan (Korrektur 1, 2026-03-06 früh):
+- WP1-WP4 als "vollständig" markiert
+- Nur noch 2 PRs bis v3.0 behauptet
+- **FEHLER:** WP3 war nie vollständig!
+
+### Aktuell korrigierter Plan (Audit 2026-03-06):
+- ✅ WP1: Algorithm v3.7.0 (vollständig)
+- ✅ WP2: Context Modernization (vollständig)
+- ⚠️ WP3: ~40% — Category Structure ja, Hooks/Plugin-System NEIN
+- ⚠️ WP4: ~70% — Funktional, aber auf unvollständigem WP3
+- 🔄 **PR #A**: WP3-Completion (Plugin-System + 6 Hooks)
+- 🔄 **PR #B**: WP3.5 Security Hardening
+- 🔄 **PR #C**: WP5 Core PAI System + Skill-Fixes
+- 🔄 **PR #D**: WP6 Installer & Migration
+
+**Details:** Vollständige Gap-Analyse in `docs/epic/GAP-ANALYSIS-v3.0.md`
 
 ---
 
@@ -146,33 +333,48 @@ Final Delivery:
 
 ---
 
-## Empfohlene Reihenfolge
+## Empfohlene Reihenfolge (nach Audit)
 
-```
+```text
 Aktueller Stand (dev branch):
 ├── WP1 ✅ Algorithm v3.7.0
 ├── WP2 ✅ Context Modernization  
-├── WP3 ✅ Category Structure
-└── WP4 ✅ Integration & Validation
+├── WP3 ⚠️ Category Structure (hooks fehlen)
+└── WP4 ⚠️ Integration (70% fertig)
 
 Nächste Schritte:
     │
     ▼
 ┌─────────────────────────────────────┐
-│  PR #5: Core PAI System             │
-│  - .opencode/PAI/ erstellen         │
-│  - Algorithm modularisieren         │
-│  - Core Tools portieren             │
-│  - ~20 Files, ~2000 Zeilen          │
+│  PR #A: WP3-Completion              │
+│  - 6 kritische Hooks portieren      │
+│  - Plugin-Architektur verbessern    │
+│  - ~10 Files, ~800 Zeilen           │
 └─────────────────────────────────────┘
     │
     ▼
 ┌─────────────────────────────────────┐
-│  PR #6: Installer & Migration       │
-│  - PAI-Install/ portieren             │
+│  PR #B: WP3.5 Security              │
+│  - Prompt Injection Guard           │
+│  - ~5 Files, ~400 Zeilen            │
+└─────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────┐
+│  PR #C: WP5 Core PAI System         │
+│  - Fehlende PAI-Docs portieren      │
+│  - Fehlende PAI Tools portieren     │
+│  - Skill-Struktur-Fixes             │
+│  - ~25 Files, ~2500 Zeilen          │
+└─────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────┐
+│  PR #D: WP6 Installer & Migration   │
+│  - PAI-Install/ portieren           │
 │  - Migration-Script v2→v3           │
-│  - Release-Dokumentation              │
-│  - ~15 Files, ~800 Zeilen           │
+│  - Release-Dokumentation            │
+│  - ~15 Files, ~1000 Zeilen          │
 └─────────────────────────────────────┘
     │
     ▼
@@ -181,16 +383,18 @@ Nächste Schritte:
 
 ---
 
-## Zusammenfassung
+## Zusammenfassung (nach vollständigem Audit)
 
-| Metrik | Alter Plan | Korrigierter Plan |
+| Metrik | Falscher Plan | Audit-korrigierter Plan |
 |--------|-----------|------------------|
-| Gesamt-PRs | 4 PRs (noch offen) | 6 PRs total (4 ✅, 2 🔄) |
-| Noch offen | 4 PRs | **Nur noch 2 PRs!** |
-| Verbleibende Arbeit | WP3-WP6 | Nur WP5-WP6 |
-| ETA | Unklar | 2-3 Wochen (WP5+WP6) |
+| Gesamt-PRs | 6 PRs (4 ✅, 2 offen) | 10 PRs total (4 ✅ teilweise, 4 🔄 offen) |
+| Noch offen | 2 PRs | **4 PRs (A, B, C, D)** |
+| Verbleibende Arbeit | Nur WP5-WP6 | WP3-Completion + WP3.5 + WP5 + WP6 |
+| ETA | ~1-2 Wochen | **5-8 Tage realistisch** |
 
-**Fazit:** Wir sind viel weiter als der alte Plan suggeriert hat. WP1-WP4 sind vollständig. Es bleiben nur noch 2 substantielle PRs bis v3.0!
+**Fazit:** WP1 und WP2 sind solide. WP3 hat kritische Lücken (Hooks, Plugin-Architektur). WP4 funktioniert, baut aber auf unvollständigem WP3. Es braucht 4 weitere PRs für eine vollständige v3.0.
+
+**Vollständige Gap-Analyse:** `docs/epic/GAP-ANALYSIS-v3.0.md`
 
 ---
 

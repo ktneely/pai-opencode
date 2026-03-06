@@ -1,21 +1,37 @@
 /**
  * PAI-OpenCode Unified Plugin
  *
- * Single plugin that combines all PAI v2.4 hook functionality:
- * - Context injection (SessionStart equivalent)
- * - Security validation (PreToolUse blocking equivalent)
- * - Work tracking (AutoWorkCreation + SessionSummary)
- * - Rating capture (ExplicitRatingCapture)
- * - Agent output capture (AgentOutputCapture)
- * - Learning extraction (WorkCompletionLearning)
+ * Single plugin that combines all PAI hook functionality across two layers:
+ *
+ * SCHICHT 1 — Hooks (active, blocking):
+ * - Context injection       (session.systemPrompt)
+ * - Security validation     (permission.ask + tool.execute.before)
+ * - Work tracking           (chat.message)
+ * - Tool capture            (tool.execute.after)
+ *
+ * SCHICHT 2 — Event Bus (passive, via event handler):
+ * Session lifecycle:
+ * - session.created         → skill-restore, version-check, session-info logging
+ * - session.ended/idle      → learnings, integrity, work-complete, cleanup, relationship-memory
+ * - session.compacted       → urgent learning rescue before context loss
+ * - session.updated         → session title tracking
+ * - session.error           → error diagnostics
+ *
+ * Message events:
+ * - message.updated         → ISC validation, voice, response-capture, rating, sentiment
+ *
+ * System events:
+ * - permission.asked        → full permission audit log
+ * - command.executed        → /command usage tracking
+ * - installation.update.available → native OpenCode update notification
  *
  * v3.0 HANDLERS (added 2026-02-17):
- * - Algorithm state tracking
- * - Agent execution validation
- * - Skill invocation validation
- * - Version update checking
- * - System integrity checks
- * - Effort level detection
+ * - Algorithm state tracking, agent execution guard, skill guard,
+ *   version check, integrity check, effort level detection
+ *
+ * v3.0-WP-A HANDLERS (added 2026-03-06):
+ * - PRD sync, session cleanup, last response cache,
+ *   relationship memory, question tracking
  *
  * IMPORTANT: This plugin NEVER uses console.log!
  * All logging goes through file-logger.ts to prevent TUI corruption.
@@ -38,6 +54,10 @@ import { detectEffortLevel } from "./handlers/format-reminder";
 import { handleImplicitSentiment } from "./handlers/implicit-sentiment";
 import { runIntegrityCheck } from "./handlers/integrity-check";
 import { validateISC } from "./handlers/isc-validator";
+import {
+	cacheLastResponse,
+	readLastResponse,
+} from "./handlers/last-response-cache";
 import { extractLearningsFromWork } from "./handlers/learning-capture";
 import {
 	emitAgentComplete,
@@ -56,9 +76,17 @@ import {
 	emitUserMessage,
 	emitVoiceSent,
 } from "./handlers/observability-emitter";
+// WP-A: New handlers (PR #A)
+import { syncPRDToRegistry } from "./handlers/prd-sync";
+import {
+	extractAskUserQuestionAnswer,
+	trackQuestionAnswered,
+} from "./handlers/question-tracking";
 import { captureRating, detectRating } from "./handlers/rating-capture";
+import { captureRelationshipMemory } from "./handlers/relationship-memory";
 import { handleResponseCapture } from "./handlers/response-capture";
 import { validateSecurity } from "./handlers/security-validator";
+import { cleanupSession } from "./handlers/session-cleanup";
 import { validateSkillInvocation } from "./handlers/skill-guard";
 import { restoreSkillFiles } from "./handlers/skill-restore";
 import { handleTabState } from "./handlers/tab-state";
@@ -92,6 +120,28 @@ const messageDedupeCache = new Map<string, number>();
 const MESSAGE_DEDUPE_TTL_MS = 5000; // 5 seconds - enough for both events to fire
 
 /**
+ * SESSION MESSAGE BUFFERS (session-scoped)
+ * Accumulates user and assistant messages per session so relationship-memory.ts
+ * has real content to analyze at session end.
+ * Keyed by sessionId to prevent cross-session contamination in concurrent sessions.
+ * Entries are cleaned up on session.ended to prevent memory leaks.
+ */
+const sessionUserMessages = new Map<string, string[]>();
+const sessionAssistantMessages = new Map<string, string[]>();
+
+/** Helper: get or create message buffer for a session */
+function getUserMessages(sessionId: string): string[] {
+	if (!sessionUserMessages.has(sessionId))
+		sessionUserMessages.set(sessionId, []);
+	return sessionUserMessages.get(sessionId)!;
+}
+function getAssistantMessages(sessionId: string): string[] {
+	if (!sessionAssistantMessages.has(sessionId))
+		sessionAssistantMessages.set(sessionId, []);
+	return sessionAssistantMessages.get(sessionId)!;
+}
+
+/**
  * Check if a message was recently processed (deduplication)
  */
 function wasMessageRecentlyProcessed(content: string): boolean {
@@ -119,31 +169,57 @@ function wasMessageRecentlyProcessed(content: string): boolean {
 /**
  * Extract text content from message
  *
- * OpenCode v1.1.x can provide message.content as:
- * - string (simple case)
- * - array of blocks (structured content)
+ * FIX for Issue #28: OpenCode delivers message text in multiple shapes
+ * depending on version and context. Must check ALL known locations:
  *
- * This helper handles both cases robustly.
+ * 1. message.content (string)          — simple case
+ * 2. message.content (array of blocks) — structured content
+ * 3. message.parts (array)             — alternative shape (chat.message hook)
+ * 4. output.parts (array)              — output-side parts (chat.message output)
+ *
+ * The bug: early return on !message.content skipped cases 3+4,
+ * causing rating capture to fail when text arrived via parts.
+ *
+ * @param message - The message object
+ * @param outputParts - Optional: parts from the output param (chat.message hook)
  */
-function extractTextContent(message: any): string {
-	if (!message?.content) return "";
-
-	// Plain string
-	if (typeof message.content === "string") {
+function extractTextContent(message: any, outputParts?: any[]): string {
+	// 1. Plain string content
+	if (typeof message?.content === "string" && message.content.trim()) {
 		return message.content;
 	}
 
-	// Structured blocks/parts (OpenCode v1.1.x pattern)
-	if (Array.isArray(message.content)) {
-		return message.content
+	// 2. Structured blocks in message.content (OpenCode v1.1.x array pattern)
+	if (Array.isArray(message?.content)) {
+		const text = message.content
 			.filter((block: any) => block.type === "text" || block.text)
 			.map((block: any) => block.text || block.content || "")
 			.join(" ")
 			.trim();
+		if (text) return text;
 	}
 
-	// Fallback: stringify
-	return String(message.content);
+	// 3. message.parts — alternative shape seen in some OpenCode versions (Issue #28)
+	if (Array.isArray(message?.parts)) {
+		const text = message.parts
+			.filter((p: any) => p.type === "text" || p.text)
+			.map((p: any) => p.text || "")
+			.join(" ")
+			.trim();
+		if (text) return text;
+	}
+
+	// 4. output.parts — provided via chat.message hook output param (Issue #28)
+	if (Array.isArray(outputParts)) {
+		const text = outputParts
+			.filter((p: any) => p.type === "text" || p.text)
+			.map((p: any) => p.text || "")
+			.join(" ")
+			.trim();
+		if (text) return text;
+	}
+
+	return "";
 }
 
 /**
@@ -502,6 +578,53 @@ export const PaiUnified: Plugin = async (ctx) => {
 						error,
 					);
 				}
+
+				// === PRD SYNC (WP-A) ===
+				// When AI writes/edits a PRD.md in MEMORY/WORK/, sync frontmatter
+				// to prd-registry.json for dashboard and session continuity.
+				// See ADR-009.
+				if (
+					input.tool === "write_file" ||
+					input.tool === "edit_file" ||
+					input.tool === "str_replace_based_edit_tool" ||
+					input.tool.toLowerCase().includes("write") ||
+					input.tool.toLowerCase().includes("edit")
+				) {
+					try {
+						const filePath =
+							(output as any).args?.file_path ||
+							(output as any).args?.path ||
+							(input as any).args?.file_path ||
+							"";
+						if (filePath) {
+							await syncPRDToRegistry(filePath);
+						}
+					} catch (error) {
+						fileLogError("[PRDSync] Sync failed (non-blocking)", error);
+					}
+				}
+
+				// === QUESTION TRACKING (WP-A) ===
+				// When AskUserQuestion tool completes, record the Q&A pair.
+				try {
+					const args = (output as any).args || (input as any).args || {};
+					const qa = extractAskUserQuestionAnswer(
+						input.tool,
+						args,
+						output.result,
+					);
+					if (qa) {
+						const sessionId = (input as any).sessionId || "unknown";
+						await trackQuestionAnswered(
+							qa.question,
+							qa.answer,
+							sessionId,
+							(input as any).callID,
+						);
+					}
+				} catch (error) {
+					fileLogError("[QuestionTracking] Track failed (non-blocking)", error);
+				}
 			} catch (error) {
 				fileLogError("Tool after hook failed", error);
 			}
@@ -560,7 +683,12 @@ export const PaiUnified: Plugin = async (ctx) => {
 				}
 
 				const role = message.role || "unknown";
-				const content = extractTextContent(message);
+				// Fix Issue #28: pass output.parts so text delivered via parts is captured
+				const outputParts = (output as any).parts;
+				const content = extractTextContent(message, outputParts);
+
+				// Guard: skip empty/whitespace-only content before any further processing
+				if (!content || content.trim().length === 0) return;
 
 				// Only process user messages
 				if (role !== "user") return;
@@ -612,6 +740,14 @@ export const PaiUnified: Plugin = async (ctx) => {
 				} else if (currentSession) {
 					// Append to existing thread (only if session exists)
 					await appendToThread(`**User:** ${content}`);
+				}
+
+				// Buffer user message for relationship memory (session-scoped)
+				if (content.length >= 10) {
+					const sessionId = (input as any).sessionID || "unknown";
+					const buf = getUserMessages(sessionId);
+					buf.push(content.slice(0, 300));
+					if (buf.length > 50) buf.shift(); // cap at 50
 				}
 
 				// === EXPLICIT RATING CAPTURE ===
@@ -671,6 +807,12 @@ export const PaiUnified: Plugin = async (ctx) => {
 				// === SESSION START ===
 				if (eventType.includes("session.created")) {
 					fileLog("=== Session Started ===", "info");
+
+					// Initialize fresh buffers for new session (Map-based — no global reset)
+					const newSessionId =
+						(input.event as any)?.properties?.info?.id || "unknown";
+					sessionUserMessages.set(newSessionId, []);
+					sessionAssistantMessages.set(newSessionId, []);
 
 					// Emit session start (backup emit, primary is in context injection)
 					emitSessionStart().catch(() => {});
@@ -766,6 +908,46 @@ export const PaiUnified: Plugin = async (ctx) => {
 						await handleUpdateCounts();
 					} catch (error) {
 						fileLogError("Update counts failed (non-blocking)", error);
+					}
+
+					// === SESSION CLEANUP (WP-A) ===
+					// Mark work directory as COMPLETED, clear state, clean session-names.
+					// Runs AFTER learning extraction (uses state before clear). See ADR-009.
+					// SessionId lives in event.properties, not directly on input (event bus shape).
+					try {
+						const eventData = (input as any).event;
+						const sessionId =
+							eventData?.properties?.sessionID ||
+							eventData?.properties?.id ||
+							undefined;
+						await cleanupSession(sessionId);
+					} catch (error) {
+						fileLogError(
+							"[SessionCleanup] Cleanup failed (non-blocking)",
+							error,
+						);
+					}
+
+					// === RELATIONSHIP MEMORY (WP-A) ===
+					// Pass the accumulated session message buffers (session-scoped Map).
+					// Buffers are populated throughout the session and cleaned up here.
+					try {
+						const endedSessionId =
+							(input.event as any)?.properties?.sessionID ||
+							(input.event as any)?.properties?.id ||
+							"unknown";
+						await captureRelationshipMemory(
+							[...getUserMessages(endedSessionId)],
+							[...getAssistantMessages(endedSessionId)],
+						);
+						// Cleanup to prevent memory leaks
+						sessionUserMessages.delete(endedSessionId);
+						sessionAssistantMessages.delete(endedSessionId);
+					} catch (error) {
+						fileLogError(
+							"[RelationshipMemory] Capture failed (non-blocking)",
+							error,
+						);
 					}
 
 					// Emit session end
@@ -886,6 +1068,26 @@ export const PaiUnified: Plugin = async (ctx) => {
 									error,
 								);
 							}
+
+							// Buffer assistant response for relationship memory (session-scoped)
+							const assistantSessionId = (input as any).sessionID || "unknown";
+							const assistBuf = getAssistantMessages(assistantSessionId);
+							assistBuf.push(responseText.slice(0, 500));
+							if (assistBuf.length > 20) assistBuf.shift(); // cap at 20
+
+							// === LAST RESPONSE CACHE (WP-A) ===
+							// Cache response so ImplicitSentiment has context on next user message.
+							// OpenCode-native replacement for Claude-Code transcript_path pattern.
+							// See ADR-009.
+							try {
+								const cacheSessionId = (input as any).sessionID || "unknown";
+								await cacheLastResponse(responseText, cacheSessionId);
+							} catch (error) {
+								fileLogError(
+									"[LastResponseCache] Cache write failed (non-blocking)",
+									error,
+								);
+							}
 						}
 					}
 				}
@@ -903,7 +1105,9 @@ export const PaiUnified: Plugin = async (ctx) => {
 					let userText: string | null = null;
 
 					if (message?.role === "user") {
-						userText = extractTextContent(message);
+						// Fix Issue #28: also check event properties parts
+						const eventParts = eventData?.properties?.parts;
+						userText = extractTextContent(message, eventParts);
 						fileLog(
 							`[message.updated] User message: "${userText.substring(0, 100)}..."`,
 							"debug",
@@ -954,17 +1158,26 @@ export const PaiUnified: Plugin = async (ctx) => {
 							// Only run if NOT an explicit rating
 							try {
 								const sessionId = (input as any).sessionID || "unknown";
+								// Read last response for context (ADR-009: OpenCode-native replacement
+								// for Claude-Code's transcriptPath pattern)
+								const lastResponse =
+									(await readLastResponse((input as any).sessionID).catch(
+										() => null,
+									)) ?? undefined;
 								const sentimentResult = await handleImplicitSentiment(
 									userText,
 									sessionId,
+									lastResponse,
 								);
 
 								// Emit implicit sentiment if captured
-								if (sentimentResult && sentimentResult.score !== undefined) {
+								// Fix ADR-009: handleImplicitSentiment returns { rating, sentiment, confidence }
+								// NOT { score, indicators } — CodeRabbit bug fix
+								if (sentimentResult && sentimentResult.rating !== null) {
 									emitImplicitSentiment({
-										score: sentimentResult.score,
+										score: sentimentResult.rating,
 										confidence: sentimentResult.confidence || 0,
-										indicators: sentimentResult.indicators || [],
+										sentiment: sentimentResult.sentiment,
 									}).catch(() => {});
 								}
 							} catch (error) {
@@ -1017,10 +1230,172 @@ export const PaiUnified: Plugin = async (ctx) => {
 					}
 				}
 
+				// ─── BUS EVENTS (WP-A) ───────────────────────────────────────────────
+
+				// === SESSION COMPACTED ===
+				// OpenCode compresses context when token limit reached.
+				// CRITICAL moment — rescue learnings BEFORE context is lost.
+				if (eventType === "session.compacted") {
+					fileLog(
+						"=== Context Compaction Detected — rescuing learnings ===",
+						"info",
+					);
+					try {
+						const learningResult = await extractLearningsFromWork();
+						if (learningResult.success && learningResult.learnings.length > 0) {
+							fileLog(
+								`[Compaction] Rescued ${learningResult.learnings.length} learnings`,
+								"info",
+							);
+						} else {
+							fileLog("[Compaction] No learnings to rescue", "debug");
+						}
+					} catch (error) {
+						fileLogError("[Compaction] Learning rescue failed", error);
+					}
+					fileLog(
+						`[Compaction] Compacted at ${new Date().toISOString()}`,
+						"info",
+					);
+				}
+
+				// === SESSION ERROR ===
+				// Track session errors for debugging and resilience monitoring.
+				if (eventType === "session.error") {
+					const eventData = input.event as any;
+					const errMsg =
+						eventData?.properties?.error ||
+						eventData?.properties?.message ||
+						"unknown error";
+					const sessionId =
+						eventData?.properties?.sessionID ||
+						eventData?.properties?.id ||
+						"unknown";
+					fileLog(`[SessionError] Session ${sessionId}: ${errMsg}`, "error");
+				}
+
+				// === PERMISSION AUDIT LOG ===
+				// Full audit log of ALL permission requests (not just blocked ones).
+				// Gives complete picture of what OpenCode is doing. Complements
+				// permission.ask hook (Schicht 1) which only sees blocking decisions.
+				if (eventType === "permission.asked") {
+					const eventData = input.event as any;
+					const props = eventData?.properties || {};
+					const permId = props.id || "unknown";
+					const permission = props.permission || "unknown";
+					const patterns =
+						(props.patterns || []).slice(0, 3).join(", ") || "none";
+					const via = props.tool ? `tool/${props.tool.callID}` : "no-tool";
+					fileLog(
+						`[PermissionAudit] id=${permId} permission=${permission} patterns=[${patterns}] via=${via}`,
+						"info",
+					);
+				}
+
+				// === COMMAND TRACKING ===
+				// Track /command usage for analytics and debugging.
+				if (eventType === "command.executed") {
+					const eventData = input.event as any;
+					const props = eventData?.properties || {};
+					const cmdName = props.name || "unknown";
+					const cmdArgs = (props.arguments || "").slice(0, 100);
+					fileLog(
+						`[CommandTracker] /${cmdName}${cmdArgs ? ` ${cmdArgs}` : ""}`,
+						"info",
+					);
+				}
+
+				// === OPENCODE UPDATE AVAILABLE ===
+				// Native push notification when a new OpenCode version is available.
+				// Complements our check-version.ts (which checks PAI-OpenCode releases).
+				if (eventType === "installation.update.available") {
+					const eventData = input.event as any;
+					const version =
+						eventData?.properties?.version ||
+						eventData?.properties?.tag ||
+						"unknown";
+					fileLog(`[UpdateAvailable] OpenCode ${version} available`, "info");
+				}
+
+				// === SESSION UPDATED (title tracking) ===
+				// When OpenCode renames/updates a session, capture the new title.
+				if (eventType === "session.updated") {
+					const eventData = input.event as any;
+					const info = eventData?.properties?.info || {};
+					if (info.title) {
+						fileLog(`[SessionTitle] Updated to: "${info.title}"`, "info");
+					}
+				}
+
+				// ─── END BUS EVENTS ──────────────────────────────────────────────────
+
 				// Log all events for debugging
 				fileLog(`Event: ${eventType}`, "debug");
 			} catch (error) {
 				fileLogError("Event handler failed", error);
+			}
+		},
+
+		// === SHELL.ENV HOOK (WP-G — OpenCode-native) ===
+		// Inject PAI context into every Bash tool call environment.
+		// OpenCode Bash is STATELESS (fresh process per call) — this is the only
+		// reliable way to pass runtime context into shell commands.
+		// See docs/epic/OPENCODE-NATIVE-RESEARCH.md — Section 1.
+		// === SHELL.ENV HOOK (WP-G — OpenCode-native) ===
+		// OpenCode Bash is STATELESS — every call spawns a fresh shell process.
+		// This hook runs before EACH bash call and injects environment variables.
+		//
+		// TWO-LAYER SYSTEM:
+		// Layer 1 — .opencode/.env (loaded by Bun at startup):
+		//   All API keys are already in process.env. Plugin TypeScript code reads
+		//   them directly via process.env.GOOGLE_API_KEY etc. — no hook needed.
+		//
+		// Layer 2 — shell.env Hook (this function):
+		//   For Bash child processes that need RUNTIME context (session ID, work dir)
+		//   OR explicit passthrough of keys that may not be inherited automatically.
+		//
+		// API keys live in .env and are read via process.env in TypeScript.
+		// Do NOT duplicate all keys here — Bun already handles that via inheritance.
+		// Only add keys here if a Bash script explicitly needs them and inheritance fails.
+		//
+		// See: docs/epic/OPENCODE-NATIVE-RESEARCH.md — Section 1 (Bash Stateless)
+		"shell.env": async (input: any, output: any) => {
+			try {
+				const sessionId = input?.sessionID || "unknown";
+				const workDir = input?.cwd || "";
+
+				output.env = output.env || {};
+
+				// PAI runtime context (not in .env — dynamically computed per call)
+				output.env["PAI_CONTEXT"] = "1";
+				output.env["PAI_SESSION_ID"] = sessionId;
+				output.env["PAI_WORK_DIR"] = workDir;
+				output.env["PAI_VERSION"] = "3.0";
+
+				// Explicit passthrough for keys that PAI scripts may need in Bash
+				// These are already in process.env via Bun .env loading, but we
+				// explicitly forward them to ensure child process inheritance.
+				const PASSTHROUGH_KEYS = [
+					"PAI_OBSERVABILITY_PORT",
+					"PAI_OBSERVABILITY_ENABLED",
+					"GOOGLE_API_KEY", // Used by transcription scripts
+					"TTS_PROVIDER", // Voice synthesis selector
+					"DA", // Agent name (Jeremy)
+					"TIME_ZONE", // Timezone for date formatting in scripts
+				];
+				for (const key of PASSTHROUGH_KEYS) {
+					if (process.env[key]) {
+						output.env[key] = process.env[key];
+					}
+				}
+
+				fileLog(
+					`[shell.env] Context injected for session ${sessionId}`,
+					"debug",
+				);
+			} catch (error) {
+				// Non-blocking — never fail a bash call due to env injection
+				fileLogError("[shell.env] Env injection failed (non-blocking)", error);
 			}
 		},
 	};

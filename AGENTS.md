@@ -10,6 +10,26 @@ You are an AI coding assistant working on **PAI-OpenCode** — the community por
 
 **Tech Stack:** TypeScript, Bun (never npm), Biome (never ESLint/Prettier), GitHub Actions
 
+## OpenCode Bash Tool — CRITICAL Behavior
+
+**OpenCode's Bash tool is STATELESS. Every call spawns a fresh shell process.**
+
+| Behavior | OpenCode | Claude Code |
+|----------|---------|------------|
+| Working Directory | ❌ Does NOT persist | ✅ Persists |
+| Environment Variables | ❌ Does NOT persist | ✅ Persists |
+| `cd` commands | ❌ No effect on next call | ✅ Works |
+
+**ALWAYS use `workdir` parameter instead of `cd`:**
+
+```bash
+# ❌ WRONG — cd has no effect on next call
+Bash({ command: "cd /some/path && ls" })
+
+# ✅ CORRECT — use workdir parameter
+Bash({ command: "ls", workdir: "/some/path" })
+```
+
 ---
 
 ## CI/CD & Branch Protection Rules
