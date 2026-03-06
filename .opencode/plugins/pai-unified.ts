@@ -147,31 +147,57 @@ function wasMessageRecentlyProcessed(content: string): boolean {
 /**
  * Extract text content from message
  *
- * OpenCode v1.1.x can provide message.content as:
- * - string (simple case)
- * - array of blocks (structured content)
+ * FIX for Issue #28: OpenCode delivers message text in multiple shapes
+ * depending on version and context. Must check ALL known locations:
  *
- * This helper handles both cases robustly.
+ * 1. message.content (string)          — simple case
+ * 2. message.content (array of blocks) — structured content
+ * 3. message.parts (array)             — alternative shape (chat.message hook)
+ * 4. output.parts (array)              — output-side parts (chat.message output)
+ *
+ * The bug: early return on !message.content skipped cases 3+4,
+ * causing rating capture to fail when text arrived via parts.
+ *
+ * @param message - The message object
+ * @param outputParts - Optional: parts from the output param (chat.message hook)
  */
-function extractTextContent(message: any): string {
-	if (!message?.content) return "";
-
-	// Plain string
-	if (typeof message.content === "string") {
+function extractTextContent(message: any, outputParts?: any[]): string {
+	// 1. Plain string content
+	if (typeof message?.content === "string" && message.content.trim()) {
 		return message.content;
 	}
 
-	// Structured blocks/parts (OpenCode v1.1.x pattern)
-	if (Array.isArray(message.content)) {
-		return message.content
+	// 2. Structured blocks in message.content (OpenCode v1.1.x array pattern)
+	if (Array.isArray(message?.content)) {
+		const text = message.content
 			.filter((block: any) => block.type === "text" || block.text)
 			.map((block: any) => block.text || block.content || "")
 			.join(" ")
 			.trim();
+		if (text) return text;
 	}
 
-	// Fallback: stringify
-	return String(message.content);
+	// 3. message.parts — alternative shape seen in some OpenCode versions (Issue #28)
+	if (Array.isArray(message?.parts)) {
+		const text = message.parts
+			.filter((p: any) => p.type === "text" || p.text)
+			.map((p: any) => p.text || "")
+			.join(" ")
+			.trim();
+		if (text) return text;
+	}
+
+	// 4. output.parts — provided via chat.message hook output param (Issue #28)
+	if (Array.isArray(outputParts)) {
+		const text = outputParts
+			.filter((p: any) => p.type === "text" || p.text)
+			.map((p: any) => p.text || "")
+			.join(" ")
+			.trim();
+		if (text) return text;
+	}
+
+	return "";
 }
 
 /**
@@ -635,7 +661,9 @@ export const PaiUnified: Plugin = async (ctx) => {
 				}
 
 				const role = message.role || "unknown";
-				const content = extractTextContent(message);
+				// Fix Issue #28: pass output.parts so text delivered via parts is captured
+				const outputParts = (output as any).parts;
+				const content = extractTextContent(message, outputParts);
 
 				// Only process user messages
 				if (role !== "user") return;
@@ -1008,7 +1036,9 @@ export const PaiUnified: Plugin = async (ctx) => {
 					let userText: string | null = null;
 
 					if (message?.role === "user") {
-						userText = extractTextContent(message);
+						// Fix Issue #28: also check event properties parts
+						const eventParts = eventData?.properties?.parts;
+						userText = extractTextContent(message, eventParts);
 						fileLog(
 							`[message.updated] User message: "${userText.substring(0, 100)}..."`,
 							"debug",
