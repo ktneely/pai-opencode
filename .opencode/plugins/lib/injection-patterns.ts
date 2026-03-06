@@ -73,6 +73,19 @@ export const MCP_TOOL_INJECTION_PATTERNS = [
 	/<hidden>/i,
 ] as const;
 
+// === KATEGORIE 7: PII / Credential Leaks ===
+// Erkennt API-Keys und Private Keys die nicht in Agent-Content gehören
+// Pattern-Quellen: jcfischer/pai-content-filter (MIT) + eigene Ergänzungen
+export const PII_PATTERNS = [
+	/sk-ant-[A-Za-z0-9\-_]{20,}/, // Anthropic API Key
+	/sk-(?!ant-)[a-zA-Z0-9]{32,}/, // OpenAI API Key
+	/gh[pousr]_[a-zA-Z0-9]{36,}/, // GitHub PAT
+	/\b(?:AKIA|ABIA|ACCA|ASIA)[0-9A-Z]{16}\b/, // AWS Access Key ID
+	/-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----/, // PEM Private Key
+	/gsk_[a-zA-Z0-9]{52}/, // Groq API Key
+	/hf_[a-zA-Z0-9]{34,}/, // HuggingFace Token
+] as const;
+
 // Alle Patterns für eine einzige Überprüfung kombiniert
 export const ALL_INJECTION_PATTERNS = [
 	...INSTRUCTION_OVERRIDE_PATTERNS,
@@ -81,6 +94,7 @@ export const ALL_INJECTION_PATTERNS = [
 	...SAFETY_BYPASS_PATTERNS,
 	...CONTEXT_SEPARATOR_PATTERNS,
 	...MCP_TOOL_INJECTION_PATTERNS,
+	...PII_PATTERNS,
 ] as const;
 
 export type InjectionCategory =
@@ -89,7 +103,8 @@ export type InjectionCategory =
 	| "system_prompt_extraction"
 	| "safety_bypass"
 	| "context_separator"
-	| "mcp_tool_injection";
+	| "mcp_tool_injection"
+	| "pii_credential_leak";
 
 export interface InjectionMatch {
 	category: InjectionCategory;
@@ -112,6 +127,7 @@ export function detectInjections(content: string): InjectionMatch[] {
 		["safety_bypass", SAFETY_BYPASS_PATTERNS],
 		["context_separator", CONTEXT_SEPARATOR_PATTERNS],
 		["mcp_tool_injection", MCP_TOOL_INJECTION_PATTERNS],
+		["pii_credential_leak", PII_PATTERNS],
 	];
 	for (const [category, patterns] of checks) {
 		for (const pattern of patterns) {
