@@ -59,7 +59,7 @@ export async function cacheLastResponse(responseText: string): Promise<void> {
 export async function readLastResponse(): Promise<string | null> {
 	try {
 		const cachePath = path.join(getStateDir(), CACHE_FILENAME);
-		if (!fs.existsSync(cachePath)) return null;
+		// Purely async: rely on ENOENT catch instead of mixing sync existsSync
 		return await fs.promises.readFile(cachePath, "utf-8");
 	} catch {
 		return null;

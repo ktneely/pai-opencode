@@ -7,6 +7,7 @@ date: 2026-03-06
 
 # PAI-OpenCode v3.0 — TODO
 
+> [!NOTE]
 > **Basis:** Gap-Analyse 2026-03-06 | Referenz: `GAP-ANALYSIS-v3.0.md` | Plan: `OPTIMIZED-PR-PLAN.md`
 
 ---
@@ -41,35 +42,33 @@ WP-E  ░░░░░░░░░░░░   0% 🔄
 
 ### Neue Handler (HOCH-Priorität — alle 6 müssen rein)
 
-- [ ] **`plugins/handlers/prdsync.ts`** portieren
+- [x] **`plugins/handlers/prd-sync.ts`** ✅ portiert (PR #A)
   - Referenz: `PRDSync.hook.ts`
-  - Funktion: PRD-Frontmatter (status, iteration, failing_criteria) → work.json synchronisieren
-  - Event: `message.completed` oder `session.completed`
+  - Funktion: PRD-Frontmatter → `prd-registry.json` synchronisieren
+  - Event: `tool.execute.after` (Write/Edit auf PRD.md)
 
-- [ ] **`plugins/handlers/session-cleanup.ts`** portieren
+- [x] **`plugins/handlers/session-cleanup.ts`** ✅ portiert (PR #A)
   - Referenz: `SessionCleanup.hook.ts`
-  - Funktion: Beim Session-Ende temporäre Dateien räumen, offene Work-Items schließen
-  - Event: `session.end`
+  - Funktion: Work-Directory COMPLETED markieren, State bereinigen
+  - Event: `session.ended` / `session.idle`
 
-- [ ] **`plugins/handlers/session-autoname.ts`** portieren
-  - Referenz: `SessionAutoName.hook.ts`
-  - Funktion: Session automatisch nach Aufgabe benennen (z.B. "WP3-Audit-2026-03-06")
-  - Event: `session.start` (nach erstem Message)
-
-- [ ] **`plugins/handlers/last-response-cache.ts`** portieren
+- [x] **`plugins/handlers/last-response-cache.ts`** ✅ portiert (PR #A)
   - Referenz: `LastResponseCache.hook.ts`
-  - Funktion: Letzte AI-Response cachen für Continuity nach Compaction
-  - Event: `message.completed`
+  - Funktion: Letzten AI-Response cachen für ImplicitSentiment-Kontext
+  - Event: `message.updated` (assistant)
 
-- [ ] **`plugins/handlers/relationship-memory.ts`** portieren
+- [x] **`plugins/handlers/relationship-memory.ts`** ✅ portiert (PR #A)
   - Referenz: `RelationshipMemory.hook.ts`
-  - Funktion: Erwähnte Personen/Projekte in MEMORY/RELATIONSHIPS/ speichern
-  - Event: `message.completed`
+  - Funktion: W/B/O-Notizen → `MEMORY/RELATIONSHIP/` schreiben
+  - Event: `session.ended` / `session.idle`
 
-- [ ] **`plugins/handlers/question-answered.ts`** portieren
-  - Referenz: `QuestionAnswered.hook.ts`
-  - Funktion: Gestellte Fragen + Antworten tracken, in MEMORY ablegen
-  - Event: `message.completed`
+- [x] **`plugins/handlers/question-tracking.ts`** ✅ portiert (PR #A)
+  - Referenz: `QuestionAnswered.hook.ts` (OpenCode-Semantik: Q&A-Tracking, kein Tab-Reset)
+  - Funktion: AskUserQuestion Q&A-Pairs → `STATE/questions.jsonl`
+  - Event: `tool.execute.after` (AskUserQuestion)
+
+- [ ] `session-autoname` → **KEIN separater Handler nötig**
+  - OpenCode setzt `info.title` nativ im `session.created` Event → wird bereits geloggt
 
 ### Neue Handler (MITTEL-Priorität — nice to have für PR #A)
 
@@ -384,13 +383,27 @@ Referenz: `/Releases/v4.0.3/.claude/PAI-Install/`
 
 ## 🗂️ Endstruktur `docs/epic/` (Zielzustand nach Konsolidierung)
 
-```
+```text
 docs/epic/
 ├── EPIC-v3.0-Synthesis-Architecture.md   ← Master (Vision + WP-Status + Guidelines)
 ├── GAP-ANALYSIS-v3.0.md                  ← Audit-Ergebnis (Referenz für PR-Arbeit)
 ├── OPTIMIZED-PR-PLAN.md                  ← Aktiver PR-Plan (A-E)
 └── TODO-v3.0.md                          ← Diese Datei (granulare Tasks)
 ```
+
+<details>
+<summary>Mermaid-Ansicht der Zielstruktur</summary>
+
+```mermaid
+graph TD
+    root["docs/epic/"]
+    root --> epic["EPIC-v3.0-Synthesis-Architecture.md<br/><i>Master: Vision + WP-Status + Guidelines</i>"]
+    root --> gap["GAP-ANALYSIS-v3.0.md<br/><i>Audit-Ergebnis (3-Wege-Vergleich)</i>"]
+    root --> plan["OPTIMIZED-PR-PLAN.md<br/><i>Aktiver PR-Plan (A–E)</i>"]
+    root --> todo["TODO-v3.0.md<br/><i>Granulare Tasks</i>"]
+```
+
+</details>
 
 ---
 

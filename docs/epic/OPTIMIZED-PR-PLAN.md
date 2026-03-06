@@ -1,6 +1,6 @@
 ---
 title: PAI-OpenCode v3.0 - Korrigierter PR-Plan
-description: Tatsächlicher Stand nach WP1-WP4 Completion - Nur noch 2 PRs bis v3.0
+description: Tatsächlicher Stand nach WP1-WP4 Audit - Tatsächlich 4 PRs bis v3.0 (A, B, C, D)
 version: "3.0-corrected"
 status: active
 authors: [Jeremy]
@@ -92,9 +92,6 @@ MITTEL-PRIORITÄT (wenn Zeit):
 
 ### 📋 PR #C: WP5 — Core PAI System Completion (KRITISCH)
 
----
-
-### 📋 PR #6: Installer & Migration (MITTEL)
 **Branch:** `feature/wp5-core-pai-system` (NEU)  
 **Schätzung:** ~25 Files, ~2500 Zeilen  
 
@@ -214,7 +211,7 @@ Final Delivery:
 
 ## Empfohlene Reihenfolge (nach Audit)
 
-```
+```text
 Aktueller Stand (dev branch):
 ├── WP1 ✅ Algorithm v3.7.0
 ├── WP2 ✅ Context Modernization  

@@ -95,7 +95,9 @@ function parseFrontmatter(content: string): PRDFrontmatter | null {
 				break;
 		}
 
-		// failing_criteria is an array — capture inline or multi-line
+		// failing_criteria: capture inline array format only (e.g. failing_criteria: ["ISC-C1"])
+		// Does NOT handle YAML multi-line arrays (items on separate lines with "- ").
+		// If the value is not an inline bracket array, falls back to empty array.
 		if (key === "failing_criteria") {
 			const inlineMatch = rawVal.match(/\[([^\]]*)\]/);
 			if (inlineMatch) {

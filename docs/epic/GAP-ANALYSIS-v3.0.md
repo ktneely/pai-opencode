@@ -12,7 +12,7 @@ tags: [architecture, gap-analysis, v3.0, audit]
 
 **Basis:** 3-Wege-Vergleich  
 1. **Epic Plan** (`docs/epic/EPIC-v3.0-Synthesis-Architecture.md`)  
-2. **PAI v4.0.3 Upstream** (`/Users/steffen/workspace/github.com/danielmiessler/Personal_AI_Infrastructure/Releases/v4.0.3/`)  
+2. **PAI v4.0.3 Upstream** (`Releases/v4.0.3/` — relative to PAI repository root)  
 3. **Tatsächlich implementiert** (PRs #32–#40, Branch `dev`)
 
 ---
@@ -201,7 +201,7 @@ Das stimmt **nicht**. Hier ist die Wahrheit:
 ### BEREICH 5: Core PAI System (`.opencode/PAI/`) — TEILWEISE
 
 #### Was haben wir aktuell in `.opencode/PAI/`:
-```
+```text
 PAI/
 ├── ACTIONS.md ✅
 ├── AISTEERINGRULES.md ✅
@@ -222,7 +222,7 @@ PAI/
 ```
 
 #### Was v4.0.3 hat, das wir NICHT haben:
-```
+```text
 PAI/
 ├── ACTIONS/ ← Wir haben ACTIONS.md, aber kein ACTIONS/ Verzeichnis
 ├── Algorithm/ ← Wir haben, aber v4.0.3 hat mehr darin
@@ -301,7 +301,7 @@ Das ist für v3.0 Release essenziell und komplett unangetastet.
 
 ## 📋 Vorgeschlagener Neuer PR-Plan (Realistisch)
 
-```
+```text
 WP1 ✅ Algorithm v3.7.0
 WP2 ✅ Context Modernization
 WP3 ⚠️ Category Structure (teilweise)

@@ -24,6 +24,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import { getMemoryDir, ensureDir, getDateString, getYearMonth } from "../lib/paths";
+import { getDAName, getPrincipal } from "../lib/identity";
 
 interface RelationshipNote {
 	type: "W" | "B" | "O";
@@ -74,17 +75,21 @@ function analyzeForRelationship(
 		}
 	}
 
+	// Resolve entity names from config (fallback to defaults if not configured)
+	const daEntity = `@${getDAName() || "Jeremy"}`;
+	const principalEntity = `@${getPrincipal()?.name || "User"}`;
+
 	// B notes — what the AI accomplished
 	const uniqueSummaries = [...new Set(sessionSummaries)].slice(0, 3);
 	for (const summary of uniqueSummaries) {
-		notes.push({ type: "B", entity: "@Jeremy", content: summary });
+		notes.push({ type: "B", entity: daEntity, content: summary });
 	}
 
 	// O notes — inferred user preferences
 	if (positiveCount >= 2) {
 		notes.push({
 			type: "O",
-			entity: "@Steffen",
+			entity: principalEntity,
 			content: "Responded positively to this session's approach",
 			confidence: 0.7,
 		});
@@ -93,7 +98,7 @@ function analyzeForRelationship(
 	if (frustrationCount >= 2) {
 		notes.push({
 			type: "O",
-			entity: "@Steffen",
+			entity: principalEntity,
 			content: "Experienced friction during this session (tooling or complexity)",
 			confidence: 0.75,
 		});

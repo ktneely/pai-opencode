@@ -120,6 +120,14 @@ const messageDedupeCache = new Map<string, number>();
 const MESSAGE_DEDUPE_TTL_MS = 5000; // 5 seconds - enough for both events to fire
 
 /**
+ * SESSION MESSAGE BUFFER
+ * Accumulates user and assistant messages during a session so relationship-memory.ts
+ * has real content to analyze at session end. Reset on session.created.
+ */
+const sessionUserMessages: string[] = [];
+const sessionAssistantMessages: string[] = [];
+
+/**
  * Check if a message was recently processed (deduplication)
  */
 function wasMessageRecentlyProcessed(content: string): boolean {
@@ -717,6 +725,12 @@ export const PaiUnified: Plugin = async (ctx) => {
 					await appendToThread(`**User:** ${content}`);
 				}
 
+				// Buffer user message for relationship memory (session end analysis)
+				if (content.length >= 10) {
+					sessionUserMessages.push(content.slice(0, 300));
+					if (sessionUserMessages.length > 50) sessionUserMessages.shift(); // cap at 50
+				}
+
 				// === EXPLICIT RATING CAPTURE ===
 				// Check if message is a rating (e.g., "8", "7 - needs work", "9/10")
 				const rating = detectRating(content);
@@ -774,6 +788,10 @@ export const PaiUnified: Plugin = async (ctx) => {
 				// === SESSION START ===
 				if (eventType.includes("session.created")) {
 					fileLog("=== Session Started ===", "info");
+
+					// Reset session message buffers for relationship memory
+					sessionUserMessages.length = 0;
+					sessionAssistantMessages.length = 0;
 
 					// Emit session start (backup emit, primary is in context injection)
 					emitSessionStart().catch(() => {});
@@ -874,19 +892,27 @@ export const PaiUnified: Plugin = async (ctx) => {
 					// === SESSION CLEANUP (WP-A) ===
 					// Mark work directory as COMPLETED, clear state, clean session-names.
 					// Runs AFTER learning extraction (uses state before clear). See ADR-009.
+					// SessionId lives in event.properties, not directly on input (event bus shape).
 					try {
-						const sessionId = (input as any).sessionID || undefined;
+						const eventData = (input as any).event;
+						const sessionId =
+							eventData?.properties?.sessionID ||
+							eventData?.properties?.id ||
+							undefined;
 						await cleanupSession(sessionId);
 					} catch (error) {
 						fileLogError("[SessionCleanup] Cleanup failed (non-blocking)", error);
 					}
 
 					// === RELATIONSHIP MEMORY (WP-A) ===
-					// Extract relationship notes from session into MEMORY/RELATIONSHIP/
-					// Note: Minimal context for now — future enhancement can collect
-					// session messages in a buffer and pass them here.
+					// Pass the accumulated session message buffers so the analyzer has
+					// real content. Buffers are populated throughout the session and
+					// reset on session.created.
 					try {
-						await captureRelationshipMemory([], []);
+						await captureRelationshipMemory(
+							[...sessionUserMessages],
+							[...sessionAssistantMessages],
+						);
 					} catch (error) {
 						fileLogError("[RelationshipMemory] Capture failed (non-blocking)", error);
 					}
@@ -1009,6 +1035,10 @@ export const PaiUnified: Plugin = async (ctx) => {
 									error,
 								);
 							}
+
+							// Buffer assistant response for relationship memory (session end analysis)
+							sessionAssistantMessages.push(responseText.slice(0, 500));
+							if (sessionAssistantMessages.length > 20) sessionAssistantMessages.shift(); // cap at 20
 
 							// === LAST RESPONSE CACHE (WP-A) ===
 							// Cache response so ImplicitSentiment has context on next user message.

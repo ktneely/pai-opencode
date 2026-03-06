@@ -891,7 +891,7 @@ PAI-OpenCode processes user input and executes system commands. Without protecti
 
 ## 🔄 Aktueller Dependency-Graph (nach Audit 2026-03-06)
 
-```
+```text
 WP1 ✅ (Algorithm v3.7.0)
     │
     └──► WP2 ✅ (Lazy Context)

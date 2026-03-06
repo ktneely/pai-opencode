@@ -96,18 +96,30 @@ export function extractAskUserQuestionAnswer(
 		return null;
 	}
 
-	const question = (args.question as string) || "";
-	const answer =
-		typeof result === "string"
-			? result
-			: (result as any)?.answer ||
-				(result as any)?.response ||
-				JSON.stringify(result || "");
+	// Safely extract question — must be a string
+	const question = typeof args.question === "string" ? args.question : "";
+
+	// Safely extract answer — check known shapes before falling back to stringify
+	let answer: string;
+	if (typeof result === "string") {
+		answer = result;
+	} else if (typeof (result as any)?.answer === "string") {
+		answer = (result as any).answer;
+	} else if (typeof (result as any)?.response === "string") {
+		answer = (result as any).response;
+	} else {
+		// Last resort: stringify with safety net
+		try {
+			answer = JSON.stringify(result ?? "");
+		} catch {
+			answer = "[unserializable]";
+		}
+	}
 
 	if (!question || !answer) return null;
 
 	return {
 		question: question.slice(0, 500),
-		answer: String(answer).slice(0, 500),
+		answer: answer.slice(0, 500),
 	};
 }
