@@ -161,5 +161,8 @@ export default async function dbArchiveCommand(input: string): Promise<string> {
 // If run directly (for testing)
 if (import.meta.main) {
 	const input = process.argv.slice(2).join(" ");
-	dbArchiveCommand(input).then(console.log);
+	dbArchiveCommand(input).then((output) => {
+		// Use stdout directly for standalone mode (outside TUI)
+		process.stdout.write(output + "\n");
+	});
 }

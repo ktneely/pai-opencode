@@ -6,6 +6,7 @@
 
 import { join } from "node:path";
 import { homedir } from "node:os";
+import { fileLog } from "./file-logger";
 
 const PAI_DIR = join(homedir(), ".opencode");
 const DB_PATH = join(PAI_DIR, "conversations.db");
@@ -128,7 +129,7 @@ export async function vacuumDb(): Promise<void> {
 	// Check if any other processes are using the DB
 	try {
 		db.run("VACUUM");
-		console.log("✓ Database vacuumed successfully");
+		fileLog("✓ Database vacuumed successfully", "info");
 	} catch (error) {
 		throw new Error(`Vacuum failed: ${error.message}. Is OpenCode running?`);
 	}
