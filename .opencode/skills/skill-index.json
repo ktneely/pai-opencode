@@ -1,11 +1,11 @@
 {
-  "generated": "2026-03-05T23:42:19.981Z",
-  "totalSkills": 49,
+  "generated": "2026-03-08T21:38:47.482Z",
+  "totalSkills": 51,
   "categories": 7,
   "flatSkills": 15,
-  "hierarchicalSkills": 34,
+  "hierarchicalSkills": 36,
   "alwaysLoadedCount": 2,
-  "deferredCount": 47,
+  "deferredCount": 49,
   "skills": {
     "agents": {
       "name": "Agents",
@@ -125,6 +125,34 @@
         "RecipeCards"
       ],
       "tier": "always",
+      "isHierarchical": true
+    },
+    "audioeditor": {
+      "name": "AudioEditor",
+      "path": "Utilities/AudioEditor/SKILL.md",
+      "category": "Utilities",
+      "fullDescription": "AI-powered audio/video editing — transcription, intelligent cut detection, automated editing with crossfades, and optional cloud polish. USE WHEN clean audio, edit audio, remove filler words, clean podcast, remove ums, fix audio, cut dead air, polish audio, clean recording, transcribe and edit.",
+      "triggers": [
+        "clean",
+        "audio",
+        "edit",
+        "remove",
+        "filler",
+        "words",
+        "podcast",
+        "ums",
+        "fix",
+        "cut",
+        "dead",
+        "air",
+        "polish",
+        "recording",
+        "transcribe"
+      ],
+      "workflows": [
+        "Clean"
+      ],
+      "tier": "deferred",
       "isHierarchical": true
     },
     "becreative": {
@@ -284,6 +312,28 @@
         "UpdateSkill",
         "CanonicalizeSkill"
       ],
+      "tier": "deferred",
+      "isHierarchical": true
+    },
+    "delegation": {
+      "name": "Delegation",
+      "path": "Utilities/Delegation/SKILL.md",
+      "category": "Utilities",
+      "fullDescription": "Parallelize work via background/foreground agents, built-in types, custom agents, or agent teams/swarms. USE WHEN 3+ independent workstreams, parallel execution, agent specialization, Extended+ effort, agent team, swarm, create an agent team.",
+      "triggers": [
+        "independent",
+        "workstreams",
+        "parallel",
+        "execution",
+        "agent",
+        "specialization",
+        "extended+",
+        "effort",
+        "team",
+        "swarm",
+        "create"
+      ],
+      "workflows": [],
       "tier": "deferred",
       "isHierarchical": true
     },
@@ -1188,10 +1238,12 @@
     ],
     "Utilities": [
       "Aphorisms",
+      "AudioEditor",
       "Browser",
       "Cloudflare",
       "CreateCLI",
       "CreateSkill",
+      "Delegation",
       "Documents",
       "Docx",
       "Evals",
