@@ -142,6 +142,23 @@ export const DANGEROUS_PATTERNS = [
 	/cat.*\.ssh\/id_/,
 	/cat.*\.aws\/credentials/,
 	/cat.*\.env/,
+
+	// === WP-B: Additional modern attack vectors ===
+	// Obfuscated RCE via base64 decode
+	/eval\s*\$\(\s*(echo|printf|cat)\s+.*\|\s*base64\s+-d/,
+	/\$\(curl\s+.*\)\s*\|\s*(ba)?sh/, // command substitution + pipe
+
+	// Environment variable exfiltration
+	/printenv\s*.*\|\s*(curl|wget|nc)/, // env dump + exfiltration
+	/env\s*\|?\s*grep\s+.*KEY.*\|\s*(curl|wget)/, // API key theft via grep
+
+	// Python/Node RCE one-liners
+	/python[23]?\s+-c\s+["'].*__import__.*os.*system/, // python -c "import os; os.system()"
+	/node\s+-e\s+["'].*require.*child_process/, // node -e "require('child_process')"
+
+	// SSH key theft / identity compromise
+	/cat\s+~\/\.ssh\/known_hosts/,
+	/ssh-keyscan/,
 ] as const;
 
 /**

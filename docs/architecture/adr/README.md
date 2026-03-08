@@ -35,6 +35,7 @@ Architecture Decision Records document **WHY** we made specific technical choice
 | [ADR-008](ADR-008-opencode-bash-workdir-parameter.md) | OpenCode Bash workdir Parameter | ✅ Accepted | Platform Adaptation | v1.0 |
 | [ADR-009](ADR-009-handler-audit-opencode-adaptation.md) | Handler Audit — Claude-Code-specific Patterns | ✅ Accepted | Platform Adaptation | PR #42 |
 | [ADR-010](ADR-010-shell-env-two-layer-system.md) | Shell.env + .env Two-Layer Env Variable System | ✅ Accepted | Platform Adaptation | PR #42 |
+| [ADR-011](ADR-011-security-hardening.md) | Security Hardening — Prompt Injection Defense | ✅ Accepted | Security | WP-B |
 
 ---
 
@@ -61,6 +62,7 @@ Decisions prioritizing upstream PAI compatibility.
 ### Security
 Decisions about security and safety guarantees.
 - ADR-006: Security validation preservation
+- ADR-011: Prompt injection defense & audit logging (WP-B)
 
 ---
 
@@ -180,4 +182,4 @@ Potential topics for future documentation:
 ---
 
 *Last Updated: 2026-03-06*
-*ADRs Created: 10 (ADR-009: Handler Audit, ADR-010: Shell.env Two-Layer System)*
+*ADRs Created: 11 (ADR-011: Security Hardening — WP-B)*
