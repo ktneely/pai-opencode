@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.0.0] - 2026-03-09
+
+### Breaking Changes
+- Plugin system migrated from hooks to event-driven architecture (WP-A)
+- Skills structure changed: flat → hierarchical Category/Skill (WP-C)
+- Config dual-file: `opencode.json` + `settings.json` (replaces single file)
+- All paths migrated: `.claude/` → `.opencode/`, `CLAUDE.md` → `AGENTS.md`
+
+### Added
+
+#### Plugin Event Bus (WP-A)
+- **6 Plugin Handlers** — prd-sync, session-cleanup, last-response-cache, relationship-memory, question-tracking, agent-execution-guard
+- **7 Bus Events** — session.compacted, session.error, permission.asked, command.executed, installation.update.available, session.updated, session.created
+- **Event-Driven Architecture** — cleaner code, better testability, unified handler registration
+
+#### Security Layer (WP-B)
+- **Prompt Injection Guard** — `plugins/handlers/prompt-injection-guard.ts` with `injection-patterns.ts` library
+- **Input Sanitizer** — `plugins/lib/sanitizer.ts` for pre-processing protection
+- **Sensitivity Levels** — low/medium/high security modes
+- **Pattern Detection** — 200+ known injection patterns from v4.0.3 upstream
+
+#### Core PAI System (WP-C)
+- **Missing Skills** — AudioEditor, Delegation, Research/Templates, Agents/ClaudeResearcherContext
+- **PAI Flat Docs** — 9 files: CLI.md, CLIFIRSTARCHITECTURE.md, DOCUMENTATIONINDEX.md, FLOWS.md, PAIAGENTSYSTEM.md, README.md, SYSTEM_USER_EXTENDABILITY.md, THEFABRICSYSTEM.md, THENOTIFICATIONSYSTEM.md
+- **PAI Subdirectories** — ACTIONS/, FLOWS/, PIPELINES/
+- **BuildOpenCode.ts** — OpenCode-native version of BuildCLAUDE.ts
+- **Telos/USMetrics Flatten** — Fixed nested skill structure
+
+#### Installer & Migration (WP-D)
+- **PAI-Install** — Complete port from upstream v4.0.3 (shell, CLI, engine, Electron GUI)
+- **Migration Script** — `tools/migration-v2-to-v3.ts` with `--dry-run`, `--force`, `--backup-dir`
+- **UPGRADE.md** — Step-by-step v2→v3 migration guide
+
+#### DB Health Tooling (WP-F)
+- **DB Utils Library** — `plugins/lib/db-utils.ts` with getDbSizeMB(), getSessionsOlderThan(), archiveSessions(), vacuumDb()
+- **Session Cleanup Extension** — Automatic DB health warnings (>500MB, >90 days)
+- **Standalone Archive Tool** — `Tools/db-archive.ts` with --dry-run, --vacuum, --restore
+- **Custom Command** — `/db-archive` for in-session DB stats
+- **Maintenance Guide** — `docs/DB-MAINTENANCE.md`
+
+### Changed
+- Skills organization: flat → hierarchical (Category/Skill)
+- Config management: single-file → dual-file
+- Installer: CLI-only → CLI + Electron GUI
+- Security: none → full prompt injection protection
+
+### Migration
+- See [UPGRADE.md](/UPGRADE.md) for detailed migration instructions
+- Run `bun tools/migration-v2-to-v3.ts --dry-run` to preview
+- Automatic backup created before any changes
+
+---
+
 ## [2.0.0] - 2026-02-19
 
 ### Breaking Changes
