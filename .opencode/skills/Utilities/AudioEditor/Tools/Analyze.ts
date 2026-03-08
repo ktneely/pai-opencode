@@ -93,8 +93,15 @@ async function main(): Promise<void> {
     throw new Error("Missing ANTHROPIC_API_KEY");
   }
 
-  const outFile =
-    outputPath || inputFile.replace(/\.transcript\.json$/, ".edits.json").replace(/\.json$/, ".edits.json");
+  // FIX: Only apply one replacement - check for .transcript.json first, then .json
+  let outFile: string;
+  if (outputPath) {
+    outFile = outputPath;
+  } else if (inputFile.endsWith(".transcript.json")) {
+    outFile = inputFile.replace(/\.transcript\.json$/, ".edits.json");
+  } else {
+    outFile = inputFile.replace(/\.json$/, ".edits.json");
+  }
 
   console.log(`Analyzing: ${inputFile}`);
   console.log(`Mode: ${aggressive ? "aggressive" : "standard"}`);
@@ -221,6 +228,9 @@ If no edits found in a section, return: []`;
   const totalWindows = Math.ceil(chunks.length / (WINDOW_SIZE - OVERLAP));
   console.log(`Processing ${chunks.length} words in ${totalWindows} windows...`);
 
+  // Track if any window had a critical error
+  let hadWindowError = false;
+
   for (let windowStart = 0; windowStart < chunks.length; windowStart += WINDOW_SIZE - OVERLAP) {
     const windowEnd = Math.min(windowStart + WINDOW_SIZE, chunks.length);
     const windowNum = Math.floor(windowStart / (WINDOW_SIZE - OVERLAP)) + 1;
@@ -258,6 +268,7 @@ If no edits found in a section, return: []`;
       if (!response.ok) {
         const err = await response.text();
         console.error(`\n  API error: ${response.status} ${err}`);
+        hadWindowError = true;
         continue;
       }
 
@@ -269,14 +280,38 @@ If no edits found in a section, return: []`;
       try {
         const jsonMatch = text.match(/\[[\s\S]*\]/);
         edits = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-      } catch {
-        console.error(` parse error`);
+      } catch (parseErr) {
+        console.error(` parse error: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`);
+        console.error(` raw text: ${text.substring(0, 200)}...`);
+        hadWindowError = true;
         continue;
       }
 
-      // Deduplicate against existing edits (from overlap regions)
+      // Validate and deduplicate against existing edits
       let added = 0;
       for (const edit of edits) {
+        // Validation: required fields
+        if (!edit.type || typeof edit.start !== 'number' || typeof edit.end !== 'number') {
+          console.error(`  Invalid edit (missing fields): ${JSON.stringify(edit)}`);
+          continue;
+        }
+        // Validation: numeric ranges
+        if (edit.end <= edit.start) {
+          console.error(`  Invalid edit (end <= start): ${JSON.stringify(edit)}`);
+          continue;
+        }
+        // Validation: confidence is number in [0,1]
+        if (typeof edit.confidence !== 'number' || edit.confidence < 0 || edit.confidence > 1) {
+          console.error(`  Invalid edit (confidence out of range): ${JSON.stringify(edit)}`);
+          continue;
+        }
+        // Validation: within transcript bounds
+        const transcriptEnd = chunks[chunks.length - 1].timestamp[1] || chunks[chunks.length - 1].timestamp[0];
+        if (edit.start < 0 || edit.end > transcriptEnd + 1) {
+          console.error(`  Invalid edit (out of bounds): ${JSON.stringify(edit)}`);
+          continue;
+        }
+
         const isDuplicate = allEdits.some(
           (e) => Math.abs(e.start - edit.start) < 1.0 && Math.abs(e.end - edit.end) < 1.0
         );
@@ -289,7 +324,14 @@ If no edits found in a section, return: []`;
       console.log(` ${added} edits`);
     } catch (err) {
       console.error(` error: ${err}`);
+      hadWindowError = true;
     }
+  }
+
+  // Abort if any window had a critical error
+  if (hadWindowError) {
+    console.error("\n❌ Analysis failed due to window errors. Not saving partial results.");
+    throw new Error("Window processing errors occurred");
   }
 
   // Phase 3: Sort and merge overlapping edits
@@ -301,7 +343,10 @@ If no edits found in a section, return: []`;
       // Merge overlapping edits
       const prev = merged[merged.length - 1];
       prev.end = Math.max(prev.end, edit.end);
-      prev.type = prev.type.includes("+") ? prev.type : `${prev.type}+${edit.type}`;
+      // Deduplicate types: split, add new, rejoin unique
+      const existingTypes = new Set(prev.type.split("+").map(t => t.trim()));
+      existingTypes.add(edit.type);
+      prev.type = Array.from(existingTypes).join("+");
       prev.reason = `${prev.reason}; ${edit.reason}`;
     } else {
       merged.push({ ...edit });

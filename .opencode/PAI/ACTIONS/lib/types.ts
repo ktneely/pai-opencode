@@ -26,7 +26,7 @@ export interface ActionContext {
   mode: "local" | "cloud";
 
   /** Environment/secrets available to the action */
-  env?: Record<string, string>;
+  env?: Record<string, string | undefined>;
 
   /** Trace context for observability */
   trace?: {

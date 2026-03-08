@@ -88,10 +88,43 @@ async function main(): Promise<void> {
   const dir = dirname(audioFile);
   const outFile = outputPath || join(dir, `${base}_polished${ext}`);
 
+  // Check if output would overwrite input
+  if (resolve(outFile) === resolve(audioFile)) {
+    console.error(`Error: Output path would overwrite input file.`);
+    console.error(`Input:  ${audioFile}`);
+    console.error(`Output: ${outFile}`);
+    throw new Error("Output path conflicts with input file");
+  }
+
   console.log(`Audio: ${audioFile}`);
   console.log(`Output: ${outFile}`);
 
   const API_BASE = "https://api.cleanvoice.ai/v2";
+  const UPLOAD_TIMEOUT = 120000; // 2 minutes for upload
+  const EDIT_TIMEOUT = 30000; // 30 seconds for edit request
+  const STATUS_TIMEOUT = 30000; // 30 seconds for status check
+  const DOWNLOAD_TIMEOUT = 120000; // 2 minutes for download
+
+  // Helper function for fetch with timeout
+  async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error(`Request timeout after ${timeoutMs}ms`);
+      }
+      throw err;
+    }
+  }
 
   // Step 1: Upload the file
   console.log("\nUploading to Cleanvoice...");
@@ -100,13 +133,13 @@ async function main(): Promise<void> {
   const formData = new FormData();
   formData.append("file", new Blob([fileData]), basename(audioFile));
 
-  const uploadResponse = await fetch(`${API_BASE}/upload`, {
+  const uploadResponse = await fetchWithTimeout(`${API_BASE}/upload`, {
     method: "POST",
     headers: {
       "X-API-Key": apiKey,
     },
     body: formData,
-  });
+  }, UPLOAD_TIMEOUT);
 
   if (!uploadResponse.ok) {
     const err = await uploadResponse.text();
@@ -124,7 +157,7 @@ async function main(): Promise<void> {
   // Step 2: Start processing
   console.log("Starting Cleanvoice processing...");
 
-  const editResponse = await fetch(`${API_BASE}/edit`, {
+  const editResponse = await fetchWithTimeout(`${API_BASE}/edit`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -139,7 +172,7 @@ async function main(): Promise<void> {
         normalize: true,
       },
     }),
-  });
+  }, EDIT_TIMEOUT);
 
   if (!editResponse.ok) {
     const err = await editResponse.text();
@@ -162,9 +195,10 @@ async function main(): Promise<void> {
   for (let i = 0; i < MAX_POLLS; i++) {
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL));
 
-    const statusResponse = await fetch(`${API_BASE}/edit/${editId}`, {
+    const statusResponse = await fetchWithTimeout(`${API_BASE}/edit/${editId}`, {
+      method: "GET",
       headers: { "X-API-Key": apiKey },
-    });
+    }, STATUS_TIMEOUT);
 
     if (!statusResponse.ok) {
       console.error(`Status check failed: ${statusResponse.status}`);
@@ -191,7 +225,10 @@ async function main(): Promise<void> {
       }
 
       console.log("Downloading polished audio...");
-      const downloadResponse = await fetch(downloadUrl);
+      const downloadResponse = await fetchWithTimeout(downloadUrl, {
+        method: "GET",
+      }, DOWNLOAD_TIMEOUT);
+      
       if (!downloadResponse.ok) {
         console.error(`Download failed: ${downloadResponse.status}`);
         throw new Error("Download failed");

@@ -44,7 +44,7 @@ function safeJsonParse<T>(path: string, defaultValue: T): T {
 
 function getAlgorithmVersion(): string {
   if (!existsSync(LATEST_PATH)) {
-    console.error("⚠ PAI/Algorithm/LATEST not found, defaulting to v3.7.0");
+    console.warn("⚠ PAI/Algorithm/LATEST not found, defaulting to v3.7.0");
     return "v3.7.0";
   }
   const version = readFileSync(LATEST_PATH, "utf-8").trim();
@@ -54,11 +54,11 @@ function getAlgorithmVersion(): string {
 
 // ─── Load variables from settings.json ───
 
-function loadVariables(): Record<string, string> {
+function loadVariables(): { variables: Record<string, string>; settings: Record<string, any> } {
   const settings = safeJsonParse<Record<string, any>>(SETTINGS_PATH, {});
   const algoVersion = getAlgorithmVersion();
 
-  return {
+  const variables = {
     "{DAIDENTITY.NAME}": settings.daidentity?.name || "Assistant",
     "{DAIDENTITY.FULLNAME}": settings.daidentity?.fullName || "Assistant",
     "{DAIDENTITY.DISPLAYNAME}": settings.daidentity?.displayName || "Assistant",
@@ -68,6 +68,8 @@ function loadVariables(): Record<string, string> {
     "{{ALGO_VERSION}}": algoVersion,
     "{{ALGO_PATH}}": `PAI/Algorithm/${algoVersion}.md`,
   };
+
+  return { variables, settings };
 }
 
 // ─── Check if rebuild is needed ───
@@ -77,7 +79,7 @@ export function needsRebuild(): boolean {
   if (!existsSync(TEMPLATE_PATH)) return false; // no template = nothing to build
 
   const outputContent = readFileSync(OUTPUT_PATH, "utf-8");
-  const variables = loadVariables();
+  const { variables, settings } = loadVariables();
 
   // Check if any template variable appears unresolved in output
   for (const key of Object.keys(variables)) {
@@ -90,8 +92,7 @@ export function needsRebuild(): boolean {
   const match = outputContent.match(algoPathPattern);
   if (match && match[1] !== algoVersion) return true;
 
-  // Check if DA name matches settings
-  const settings = safeJsonParse<Record<string, any>>(SETTINGS_PATH, {});
+  // Check if DA name matches settings (reuse already parsed settings)
   const daName = settings.daidentity?.name || "Assistant";
   if (!outputContent.includes(`🗣️ ${daName}:`)) return true;
 
@@ -106,7 +107,7 @@ export function build(): { rebuilt: boolean; reason?: string } {
   }
 
   let content = readFileSync(TEMPLATE_PATH, "utf-8");
-  const variables = loadVariables();
+  const { variables } = loadVariables();
 
   for (const [key, value] of Object.entries(variables)) {
     content = content.replaceAll(key, value);
@@ -129,11 +130,11 @@ export function build(): { rebuilt: boolean; reason?: string } {
 if (import.meta.main) {
   const result = build();
   if (result.rebuilt) {
-    const vars = loadVariables();
+    const { variables } = loadVariables();
     console.log("✅ Built AGENTS.md from template");
-    console.log(`   Algorithm: ${vars["{{ALGO_VERSION}}"]}`);
-    console.log(`   DA: ${vars["{DAIDENTITY.NAME}"]}`);
-    console.log(`   Principal: ${vars["{PRINCIPAL.NAME}"]}`);
+    console.log(`   Algorithm: ${variables["{{ALGO_VERSION}}"]}`);
+    console.log(`   DA: ${variables["{DAIDENTITY.NAME}"]}`);
+    console.log(`   Principal: ${variables["{PRINCIPAL.NAME}"]}`);
   } else {
     console.log(`ℹ ${result.reason}`);
   }

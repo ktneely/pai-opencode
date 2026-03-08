@@ -19,7 +19,7 @@
  * ============================================================================
  */
 
-import { resolve, dirname, join } from "path";
+import { resolve, dirname, join, relative } from "path";
 import type { ActionSpec, ActionContext, ActionResult } from "./types";
 
 const ACTIONS_DIR = dirname(import.meta.dir);
@@ -89,7 +89,7 @@ export async function runAction<TInput, TOutput>(
     // Build context
     const ctx: ActionContext = {
       mode,
-      env: options.env || process.env as Record<string, string>,
+      env: options.env || process.env,
       trace: options.traceId ? {
         traceId: options.traceId,
         spanId: crypto.randomUUID().slice(0, 8),
@@ -146,7 +146,13 @@ async function dispatchToCloud<TInput, TOutput>(
 
   // Setup timeout with AbortController
   const controller = new AbortController();
-  const timeoutMs = ctx.env?.ACTION_TIMEOUT_MS ? parseInt(ctx.env.ACTION_TIMEOUT_MS, 10) : 30000;
+  let timeoutMs = 30000; // Default 30s
+  if (ctx.env?.ACTION_TIMEOUT_MS) {
+    const parsed = parseInt(ctx.env.ACTION_TIMEOUT_MS, 10);
+    if (!Number.isNaN(parsed) && parsed > 0) {
+      timeoutMs = parsed;
+    }
+  }
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
@@ -226,8 +232,10 @@ export async function listActions(): Promise<string[]> {
   const files = await glob(pattern);
 
   return files.map(f => {
-    const relative = f.replace(ACTIONS_DIR + "/", "").replace(".action.ts", "");
-    return relative;
+    // Use path.relative for cross-platform compatibility
+    const relativePath = relative(ACTIONS_DIR, f);
+    // Remove .action.ts extension
+    return relativePath.replace(/\.action\.ts$/, "");
   });
 }
 
