@@ -176,7 +176,7 @@ export async function stepIdentity(
 
 export interface VoiceConfig {
 	enabled: boolean;
-	provider?: "elevenlabs" | "macos" | "none";
+	provider?: "elevenlabs" | "google" | "macos" | "none";
 	apiKey?: string;
 	voiceId?: string;
 }
@@ -190,7 +190,7 @@ export async function stepVoice(
 	
 	state.collected.voiceEnabled = config.enabled;
 	state.collected.voiceProvider = config.provider || "none";
-	state.collected.elevenLabsKey = config.apiKey;
+	// Store voice API key in .env via stepInstallPAI, not here
 	state.collected.voiceId = config.voiceId;
 }
 
@@ -392,6 +392,7 @@ export async function runFreshInstall(
   emit({ event: "step_start", step: "voice" });
   const voiceChoices = [
     { label: "No voice (text only)", value: "none", description: "Skip voice setup" },
+    { label: "PAI Voice Server (Google TTS)", value: "google", description: "Use PAI voice server with Google TTS (recommended)" },
     { label: "ElevenLabs (premium voices)", value: "elevenlabs", description: "High quality AI voices" },
     { label: "macOS (built-in)", value: "macos", description: "Use macOS system voices" },
   ];
@@ -402,7 +403,7 @@ export async function runFreshInstall(
     const voiceKey = await requestInput("voice-api-key", `Enter ${voiceProvider} API key (optional):`, "key");
     voiceConfig = {
       enabled: true,
-      provider: voiceProvider as "elevenlabs" | "macos" | "none",
+      provider: voiceProvider as "elevenlabs" | "google" | "macos" | "none",
       apiKey: voiceKey || undefined,
       voiceId: "default",
     };

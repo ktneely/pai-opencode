@@ -96,7 +96,7 @@ export interface InstallState {
     modelTier?: "quick" | "standard" | "advanced";
     models?: string[];
     voiceEnabled?: boolean;
-    voiceProvider?: "elevenlabs" | "macos" | "none";
+    voiceProvider?: "elevenlabs" | "google" | "macos" | "none";
     voiceId?: string;
   };
 
