@@ -11,9 +11,10 @@
 #
 # Usage:
 #   {AI_NAME}-wrapper [opencode args...]
-#   {AI_NAME}-wrapper --status       # Show build info
-#   {AI_NAME}-wrapper --brew         # Fall back to Homebrew version
-#   {AI_NAME}-wrapper --rebuild      # Rebuild from source
+#   {AI_NAME}-wrapper --status       # Show build info and symlink health
+#   {AI_NAME}-wrapper --brew          # Fall back to Homebrew version
+#   {AI_NAME}-wrapper --rebuild       # Rebuild from source
+#   {AI_NAME}-wrapper --fix-symlink   # Recreate ~/.opencode symlink to current PWD
 #   {AI_NAME}-wrapper --help-wrapper  # Show this help
 #
 # Called from .zshrc {AI_NAME}() function:
@@ -29,7 +30,16 @@ AI_NAME="{AI_NAME}"
 PAI_BIN_DIR="${HOME}/.opencode/tools"
 PAI_BIN="${PAI_BIN_DIR}/opencode"
 BREW_BIN="/usr/local/bin/opencode"
-BUILD_DIR="${HOME}/workspace/github.com/Steffen025/opencode"
+
+# Resolve PAI installation directory from ~/.opencode symlink
+PAI_INSTALL_DIR=""
+if [[ -L "${HOME}/.opencode" ]]; then
+    PAI_INSTALL_DIR=$(readlink -f "${HOME}/.opencode" 2>/dev/null || readlink "${HOME}/.opencode" 2>/dev/null)
+fi
+
+# Build directory is relative to the PAI installation
+# (where the installer cloned the opencode source)
+BUILD_DIR="${PAI_INSTALL_DIR:-${PWD}}/opencode-build"
 
 # ─── Colors ────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -56,11 +66,20 @@ detect_binary() {
 rebuild() {
     echo -e "${BLUE}[${AI_NAME}]${NC} Rebuilding from source..."
     
-    if [[ ! -d "${BUILD_DIR}" ]]; then
-        echo -e "${YELLOW}[${AI_NAME}]${NC} Source not found at ${BUILD_DIR}"
-        echo -e "${YELLOW}[${AI_NAME}]${NC} Please run the installer first:"
-        echo "  bash install.sh"
+    # If no PAI installation detected, we can't rebuild
+    if [[ -z "${PAI_INSTALL_DIR}" ]]; then
+        echo -e "${YELLOW}[${AI_NAME}]${NC} No PAI installation found at ~/.opencode"
+        echo -e "${YELLOW}[${AI_NAME}]${NC} Please run the installer first or use --fix-symlink"
         return 1
+    fi
+    
+    # Check for build directory or clone
+    if [[ ! -d "${BUILD_DIR}" ]]; then
+        echo -e "${BLUE}[${AI_NAME}]${NC} Cloning opencode source..."
+        git clone https://github.com/Steffen025/opencode.git "${BUILD_DIR}" || {
+            echo -e "${RED}[${AI_NAME}]${NC} Failed to clone source!"
+            return 1
+        }
     fi
     
     local branch=$(cd "${BUILD_DIR}" && git branch --show-current 2>/dev/null || echo "unknown")
@@ -90,17 +109,92 @@ rebuild() {
     echo -e "${GREEN}[${AI_NAME}]${NC} Commit: ${commit}"
 }
 
+# ─── Fix Symlink ──────────────────────────────────────────
+fix_symlink() {
+    echo -e "${BLUE}[${AI_NAME}]${NC} Checking ~/.opencode symlink..."
+    
+    local target_dir="${PWD}/.opencode"
+    local symlink_path="${HOME}/.opencode"
+    
+    # Check if target directory exists
+    if [[ ! -d "${target_dir}" ]]; then
+        echo -e "${RED}[${AI_NAME}]${NC} No .opencode directory found in current directory: ${PWD}"
+        echo -e "${YELLOW}[${AI_NAME}]${NC} Run the installer first to create the installation."
+        return 1
+    fi
+    
+    # Check current symlink status
+    if [[ -L "${symlink_path}" ]]; then
+        local current_target=$(readlink -f "${symlink_path}" 2>/dev/null || readlink "${symlink_path}" 2>/dev/null)
+        if [[ "${current_target}" == "${target_dir}" ]]; then
+            echo -e "${GREEN}[${AI_NAME}]${NC} Symlink is already correct!"
+            echo -e "${GREEN}[${AI_NAME}]${NC} ~/.opencode → ${target_dir}"
+            return 0
+        else
+            echo -e "${YELLOW}[${AI_NAME}]${NC} Symlink points to wrong location: ${current_target}"
+            echo -e "${BLUE}[${AI_NAME}]${NC} Updating to: ${target_dir}"
+            rm -f "${symlink_path}"
+        fi
+    elif [[ -e "${symlink_path}" ]]; then
+        echo -e "${RED}[${AI_NAME}]${NC} ~/.opencode exists but is not a symlink!"
+        echo -e "${YELLOW}[${AI_NAME}]${NC} Please backup and remove it manually:"
+        echo "  mv ~/.opencode ~/.opencode.backup-$(date +%Y%m%d)"
+        return 1
+    fi
+    
+    # Create symlink
+    ln -s "${target_dir}" "${symlink_path}"
+    echo -e "${GREEN}[${AI_NAME}]${NC} Symlink created!"
+    echo -e "${GREEN}[${AI_NAME}]${NC} ~/.opencode → ${target_dir}"
+    echo ""
+    echo -e "${BLUE}[${AI_NAME}]${NC} You can now use ${AI_NAME} from any directory."
+}
+
+# ─── Check Symlink Health ────────────────────────────────
+check_symlink_health() {
+    local symlink_path="${HOME}/.opencode"
+    
+    if [[ ! -L "${symlink_path}" ]]; then
+        if [[ -d "${symlink_path}" ]]; then
+            echo "DIRECTORY"
+        else
+            echo "MISSING"
+        fi
+        return
+    fi
+    
+    local target=$(readlink -f "${symlink_path}" 2>/dev/null || readlink "${symlink_path}" 2>/dev/null)
+    
+    if [[ ! -d "${target}" ]]; then
+        echo "BROKEN"
+    else
+        echo "OK"
+    fi
+}
+
 # ─── Show Status ─────────────────────────────────────────
 show_status() {
     local brew_version=$("${BREW_BIN}" --version 2>/dev/null || echo "not installed")
     local binary_exists=$([[ -f "${PAI_BIN}" ]] && echo "yes" || echo "NO - run --rebuild")
     local binary_size=$([[ -f "${PAI_BIN}" ]] && du -hL "${PAI_BIN}" 2>/dev/null | awk '{print $1}' || echo "n/a")
+    local symlink_status=$(check_symlink_health)
+    local install_dir="${PAI_INSTALL_DIR:-"not detected"}"
 
     echo -e "${CYAN}${AI_NAME} - Custom Build Status${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo -e "Binary:           ${PAI_BIN} (${binary_size})"
     echo -e "Binary exists:    ${binary_exists}"
-    echo -e "Source:           ${BUILD_DIR}"
+    echo -e "Symlink:          ${symlink_status}"
+    if [[ "${symlink_status}" == "BROKEN" ]]; then
+        echo -e "${RED}  ⚠ Symlink is broken! Run: ${AI_NAME}-wrapper --fix-symlink${NC}"
+    elif [[ "${symlink_status}" == "DIRECTORY" ]]; then
+        echo -e "${YELLOW}  ⚠ ~/.opencode is a directory, not a symlink${NC}"
+    elif [[ "${symlink_status}" == "MISSING" ]]; then
+        echo -e "${YELLOW}  ⚠ Symlink missing! Run: ${AI_NAME}-wrapper --fix-symlink${NC}"
+    else
+        echo -e "  → ${install_dir}"
+    fi
+    echo -e "Build source:     ${BUILD_DIR}"
     echo -e "Brew version:     ${YELLOW}${brew_version}${NC} (inactive)"
     echo ""
     echo -e "${BLUE}Custom features:${NC}"
@@ -108,8 +202,9 @@ show_status() {
     echo "  - Agent frontmatter metadata (voice, fallback, etc.)"
     echo "  - PAI CODE branding"
     echo ""
-    echo -e "Rebuild: ${YELLOW}${AI_NAME}-wrapper --rebuild${NC}"
-    echo -e "Escape:  ${YELLOW}${AI_NAME}-wrapper --brew${NC}"
+    echo -e "Fix symlink: ${YELLOW}${AI_NAME}-wrapper --fix-symlink${NC}"
+    echo -e "Rebuild:     ${YELLOW}${AI_NAME}-wrapper --rebuild${NC}"
+    echo -e "Escape:      ${YELLOW}${AI_NAME}-wrapper --brew${NC}"
 }
 
 # ─── Main ───────────────────────────────────────────────
@@ -128,24 +223,41 @@ main() {
             rebuild
             exit $?
             ;;
+        --fix-symlink)
+            fix_symlink
+            exit $?
+            ;;
         --help-wrapper)
             echo "${AI_NAME}-wrapper - PAI CODE Custom Build Launcher"
             echo ""
             echo "Runs a custom-compiled OpenCode binary with agent system support."
             echo ""
             echo "Special commands:"
-            echo "  --status        Show build info"
+            echo "  --status        Show build info and symlink health"
+            echo "  --fix-symlink   Recreate ~/.opencode symlink to current directory"
             echo "  --brew          Use Homebrew OpenCode (escape hatch)"
             echo "  --rebuild       Rebuild binary from source"
             echo "  --help-wrapper  Show this help"
             echo ""
             echo "All other arguments are passed to ${AI_NAME}."
             echo ""
+            echo "Symlink health:"
+            echo "  ~/.opencode should point to your PAI installation directory"
+            echo "  Use --fix-symlink to repair broken/missing symlinks"
+            echo ""
             echo "Binary: ${PAI_BIN}"
-            echo "Source: ${BUILD_DIR}"
+            echo "Install: ${PAI_INSTALL_DIR:-"unknown (run --fix-symlink)"}"
             exit 0
             ;;
     esac
+
+    # Check symlink health before running
+    local symlink_status=$(check_symlink_health)
+    if [[ "${symlink_status}" != "OK" ]]; then
+        echo -e "${RED}[${AI_NAME}]${NC} ~/.opencode symlink is ${symlink_status}!"
+        echo -e "${YELLOW}[${AI_NAME}]${NC} Run: ${AI_NAME}-wrapper --fix-symlink"
+        exit 1
+    fi
 
     # Verify binary exists
     if [[ ! -f "${PAI_BIN}" ]]; then

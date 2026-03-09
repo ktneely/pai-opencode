@@ -8,8 +8,8 @@
 import type { InstallState } from "./types";
 import { buildOpenCodeBinary } from "./build-opencode";
 import type { BuildResult } from "./build-opencode";
-import { existsSync, mkdirSync, writeFileSync, chmodSync, copyFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, writeFileSync, chmodSync, copyFileSync, symlinkSync, unlinkSync, lstatSync, realpathSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { homedir } from "node:os";
 
 // ═══════════════════════════════════════════════════════════
@@ -204,13 +204,16 @@ export async function stepInstallPAI(
 ): Promise<void> {
 	onProgress(90, "Installing PAI-OpenCode files...");
 	
-	const paiDir = join(homedir(), ".opencode");
-	const toolsDir = join(paiDir, "tools");
+	// Install location: current working directory (where install.sh was run)
+	const installDir = process.cwd();
+	const localOpencodeDir = join(installDir, ".opencode");
+	const toolsDir = join(localOpencodeDir, "tools");
+	const globalOpencodeLink = join(homedir(), ".opencode");
 	
-	// Create directory structure
-	mkdirSync(paiDir, { recursive: true });
+	// Create local .opencode directory structure
+	mkdirSync(localOpencodeDir, { recursive: true });
 	mkdirSync(toolsDir, { recursive: true });
-	onProgress(92, "Created directory structure...");
+	onProgress(92, "Created local directory structure...");
 	
 	// Generate settings.json
 	const settings = {
@@ -236,7 +239,7 @@ export async function stepInstallPAI(
 		},
 	};
 	writeFileSync(
-		join(paiDir, "settings.json"),
+		join(localOpencodeDir, "settings.json"),
 		JSON.stringify(settings, null, 2)
 	);
 	onProgress(94, "Generated settings.json...");
@@ -260,15 +263,47 @@ export async function stepInstallPAI(
 		},
 	};
 	writeFileSync(
-		join(paiDir, "opencode.json"),
+		join(localOpencodeDir, "opencode.json"),
 		JSON.stringify(opencode, null, 2)
 	);
 	onProgress(96, "Generated opencode.json...");
 	
-	onProgress(98, "Creating wrapper script...");
+	// Create symlink from ~/.opencode to local .opencode
+	onProgress(98, "Creating symlink ~/.opencode → ./.opencode...");
 	
-	// Note: Wrapper installation happens via install.sh or manual setup
-	// The wrapper template is processed and installed separately
+	try {
+		// Check if ~/.opencode exists
+		if (existsSync(globalOpencodeLink)) {
+			const stats = lstatSync(globalOpencodeLink);
+			
+			if (stats.isSymbolicLink()) {
+				// It's already a symlink - check if it points to our location
+				const currentTarget = realpathSync(globalOpencodeLink);
+				if (currentTarget !== localOpencodeDir) {
+					// Remove old symlink and create new one
+					unlinkSync(globalOpencodeLink);
+					symlinkSync(localOpencodeDir, globalOpencodeLink, "dir");
+				}
+				// If it already points to our location, nothing to do
+			} else if (stats.isDirectory()) {
+				// It's a real directory - backup and replace with symlink
+				const backupPath = `${globalOpencodeLink}.backup-${Date.now()}`;
+				// Note: In production, this would need proper backup logic
+				// For now, we just warn and don't overwrite
+				throw new Error(
+					`~/.opencode is a directory (not a symlink). ` +
+					`Please backup and remove it manually, then re-run the installer.`
+				);
+			}
+		} else {
+			// No ~/.opencode exists - create symlink
+			symlinkSync(localOpencodeDir, globalOpencodeLink, "dir");
+		}
+	} catch (error) {
+		// Log error but don't fail - user can fix manually or wrapper can assist
+		console.error(`Warning: Could not create symlink: ${error}`);
+		console.error(`You can manually create it with: ln -s ${localOpencodeDir} ~/.opencode`);
+	}
 	
 	onProgress(100, "Installation complete!");
 }
