@@ -512,12 +512,19 @@ function startInstall() {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: 'start_install' }));
   } else {
-    // Queue for when connection opens
+    // Queue for when connection opens with retry limit
+    let attempts = 0;
+    const maxRetries = 50; // 5 seconds total (50 * 100ms)
+    
     const checkAndSend = () => {
+      attempts++;
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: 'start_install' }));
-      } else {
+      } else if (attempts < maxRetries) {
         setTimeout(checkAndSend, 100);
+      } else {
+        console.error('Failed to start installation: WebSocket not ready after 5 seconds');
+        addMessage('system', 'Error: Could not connect to installer. Please refresh and try again.');
       }
     };
     checkAndSend();

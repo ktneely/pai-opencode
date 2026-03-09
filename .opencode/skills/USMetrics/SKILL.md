@@ -21,7 +21,7 @@ triggers:
 
 | Skill | Purpose | Trigger |
 |-------|---------|---------|
-| **USMetrics** | US-specific metrics, economic indicators and data tracking | "US metrics", "American data", "statistics", "GDP", "inflation", "unemployment", "economic metrics", "gas prices" |
+| **USMetrics** | US-specific metrics, economic indicators and data tracking | "US metrics", "American data", "statistics", "GDP", "inflation", "unemployment", "economic metrics", "gas prices", "demographics" |
 
 ## When to Use
 

@@ -10,6 +10,7 @@
 [![Algorithm](https://img.shields.io/badge/Algorithm-1.8.0-blueviolet)](https://github.com/danielmiessler/TheAlgorithm)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+> [!note]
 > **v3.0 Release** — Plugin event bus, security hardening (prompt injection protection), Electron GUI installer, DB health tooling, hierarchical skills structure, and 52 skills. See [CHANGELOG.md](CHANGELOG.md) and [UPGRADE.md](UPGRADE.md).
 
 > **🎯 Scope Note:** PAI-OpenCode is a **community port** of PAI to OpenCode. For the future vision (Voice-to-Voice, Ambient AI, OMI integration), see **[Open Arc](https://github.com/jeremaiah-ai/openark)**. [Read the Scope Boundary →](docs/SCOPE-BOUNDARY.md)

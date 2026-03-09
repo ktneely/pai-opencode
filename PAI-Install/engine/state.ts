@@ -3,7 +3,7 @@
  * Manages install state to support resume from interruption.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync, renameSync } from "fs";
 import { homedir } from "os";
 import { join, dirname } from "path";
 import type { InstallState, StepId } from "./types";
@@ -79,7 +79,7 @@ export function loadState(): InstallState | null {
 }
 
 /**
- * Save install state to disk.
+ * Save install state to disk atomically.
  */
 export function saveState(state: InstallState): void {
   state.updatedAt = new Date().toISOString();
@@ -89,7 +89,10 @@ export function saveState(state: InstallState): void {
     mkdirSync(dir, { recursive: true });
   }
 
-  writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), { mode: 0o600 });
+  // Atomic write: write to temp file then rename
+  const tempFile = `${STATE_FILE}.tmp`;
+  writeFileSync(tempFile, JSON.stringify(state, null, 2), { mode: 0o600 });
+  renameSync(tempFile, STATE_FILE);
 }
 
 /**

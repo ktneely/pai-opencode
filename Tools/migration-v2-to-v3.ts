@@ -65,16 +65,8 @@ function parseArgs(): Options {
 	return {
 		dryRun: args.includes("--dry-run"),
 		force: args.includes("--force"),
-		// If no backup dir provided, createBackup will use its own default
-		backupDir: backupDir || join(PAI_DIR, "backups"),
-	};
-}
-	}
-
-	return {
-		dryRun: args.includes("--dry-run"),
-		force: args.includes("--force"),
-		backupDir,
+		// If no backup dir provided, default to home directory (not PAI_DIR)
+		backupDir: backupDir || join(homedir(), ".opencode-backups"),
 	};
 }
 
@@ -238,7 +230,7 @@ async function migrateSkills(report: MigrationReport, dryRun: boolean): Promise<
 				log(`Migrated flat skill to hierarchical: ${skill.name}`, "success");
 				migratedCount++;
 			}
-		}
+		} // Close SKILL.md check
 	}
 
 	if (migratedCount > 0) {

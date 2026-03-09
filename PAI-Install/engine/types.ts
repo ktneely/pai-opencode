@@ -193,6 +193,6 @@ export const ALGORITHM_VERSION = "3.7.0";
 export const INSTALLER_VERSION = "4.0";
 
 export const DEFAULT_VOICES = {
-  male: "pNInz6obpgDQGcFmaJgB", // Adam
-  female: "21m00Tcm4TlvDq8ikWAM", // Rachel
+  male: "pNInz6obpgDQGcFmaJgB", // Adam # pragma: allowlist secret
+  female: "21m00Tcm4TlvDq8ikWAM", // Rachel # pragma: allowlist secret
 } as const;

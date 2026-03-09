@@ -138,10 +138,13 @@ export function detectSystem(): DetectionResult {
       git: detectTool("git", "git --version"),
       claude: detectTool("claude", "claude --version 2>&1"),
       node: detectTool("node", "node --version"),
-      brew: {
-        installed: tryExec("which brew") !== null,
-        path: tryExec("which brew") || undefined,
-      },
+      brew: (() => {
+        const brewPath = tryExec("which brew");
+        return {
+          installed: brewPath !== null,
+          path: brewPath || undefined,
+        };
+      })(),
     },
     existing: detectExisting(home, paiDir, configDir),
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,

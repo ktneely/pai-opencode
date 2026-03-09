@@ -41,13 +41,26 @@ function parseArgs(): Options {
 	const daysArg = args.find((a) => /^\d+$/.test(a));
 	const restoreIdx = args.findIndex((a) => a === "--restore");
 
+	// Validate --restore usage
+	let restore: string | null = null;
+	if (restoreIdx !== -1) {
+		// Check for --restore=/path form
+		if (args[restoreIdx].includes("=")) {
+			restore = args[restoreIdx].split("=")[1];
+		} else if (restoreIdx + 1 < args.length && !args[restoreIdx + 1].startsWith("-")) {
+			// Check for --restore /path form (next arg exists and is not a flag)
+			restore = args[restoreIdx + 1];
+		} else {
+			// --restore provided without a path
+			throw new Error("--restore requires a path argument. Usage: --restore=/path/to/archive.db or --restore /path/to/archive.db");
+		}
+	}
+
 	return {
 		days: daysArg ? parseInt(daysArg, 10) : 90,
 		dryRun: args.includes("--dry-run"),
 		vacuum: args.includes("--vacuum"),
-		restore:
-			args.find((a) => a.startsWith("--restore="))?.split("=")[1] ||
-			(restoreIdx !== -1 ? args[restoreIdx + 1] || null : null),
+		restore,
 	};
 }
 
@@ -121,11 +134,17 @@ async function performArchiving(days: number): Promise<void> {
 
 	const archived = await archiveSessions(sessions, archivePath);
 
-	log(`Archived ${archived} sessions.`, "success");
-
-	// Update last archive timestamp
-	const timestampFile = join(ARCHIVE_DIR, ".last-archive");
-	await Bun.write(timestampFile, new Date().toISOString());
+	// Verify all sessions were archived
+	if (archived === sessions.length) {
+		log(`Archived ${archived} sessions.`, "success");
+		
+		// Update last archive timestamp only on full success
+		const timestampFile = join(ARCHIVE_DIR, ".last-archive");
+		await Bun.write(timestampFile, new Date().toISOString());
+	} else {
+		log(`Archive incomplete: ${archived}/${sessions.length} sessions archived`, "error");
+		process.exit(1);
+	}
 }
 
 async function performVacuum(): Promise<void> {

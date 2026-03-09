@@ -56,7 +56,30 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
     critical: true,
   });
 
-  // 2. Required settings fields
+  // 2. opencode.json exists and is valid JSON
+  const opencodePath = join(paiDir, "opencode.json");
+  const opencodeExists = existsSync(opencodePath);
+  let opencodeValid = false;
+
+  if (opencodeExists) {
+    try {
+      JSON.parse(readFileSync(opencodePath, "utf-8"));
+      opencodeValid = true;
+    } catch {
+      opencodeValid = false;
+    }
+  }
+
+  checks.push({
+    name: "opencode.json",
+    passed: opencodeExists && opencodeValid,
+    detail: opencodeValid
+      ? "Valid OpenCode configuration"
+      : opencodeExists
+        ? "File exists but invalid JSON"
+        : "File not found",
+    critical: true,
+  });
   if (settings) {
     checks.push({
       name: "Principal name",
@@ -184,7 +207,15 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
     if (existsSync(shell.path)) {
       try {
         const content = readFileSync(shell.path, "utf-8");
-        if (content.includes("# PAI alias") && content.includes("alias pai=")) {
+        // Check for PAI alias marker
+        if (!content.includes("# PAI alias")) continue;
+        
+        // POSIX syntax: alias pai=...
+        const hasPosixAlias = content.includes("alias pai=");
+        // Fish syntax: alias pai '...' or alias pai (...)
+        const hasFishAlias = /alias pai\s+['"]/.test(content);
+        
+        if (hasPosixAlias || hasFishAlias) {
           aliasConfigured = true;
           aliasSource = shell.name;
           break;

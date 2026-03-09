@@ -461,7 +461,7 @@ export async function runRepository(
     }
 
     const cloneResult = tryExec(
-      `git clone https://github.com/danielmiessler/PAI.git "${paiDir}" 2>&1`,
+      `git clone https://github.com/Steffen025/pai-opencode.git "${paiDir}" 2>&1`,
       120000
     );
 
@@ -471,13 +471,13 @@ export async function runRepository(
       // If clone fails (dir not empty), try to init and pull
       await emit({ event: "progress", step: "repository", percent: 50, detail: "Directory exists, trying alternative approach..." });
 
-      const initResult = tryExec(`cd "${paiDir}" && git init && git remote add origin https://github.com/danielmiessler/PAI.git && git fetch origin && git checkout -b main origin/main 2>&1`, 120000);
+      const initResult = tryExec(`cd "${paiDir}" && git init && git remote add origin https://github.com/Steffen025/pai-opencode.git && git fetch origin && git checkout -b main origin/main 2>&1`, 120000);
       if (initResult !== null) {
         await emit({ event: "message", content: "PAI repository initialized and synced." });
       } else {
         await emit({
           event: "message",
-          content: "Could not clone PAI repo automatically. You can clone it manually later: git clone https://github.com/danielmiessler/PAI.git ~/.opencode",
+          content: "Could not clone PAI repo automatically. You can clone it manually later: git clone https://github.com/Steffen025/pai-opencode.git ~/.opencode",
         });
       }
     }

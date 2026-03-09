@@ -2,10 +2,11 @@
 /**
  * OpenCode Custom Command: /db-archive
  *
- * Provides in-session access to database archiving functionality.
+ * Shows database health statistics and provides archiving recommendations.
  * Usage in OpenCode chat: /db-archive [days] [--dry-run] [--vacuum]
  *
- * Shows current DB stats, last archive time, and runs archive operations.
+ * This command displays current DB stats, last archive time, and suggests
+ * actions. For actual archiving operations, use: bun Tools/db-archive.ts
  */
 
 import { join } from "node:path";
@@ -86,14 +87,21 @@ export default async function dbArchiveCommand(input: string): Promise<string> {
 
 	if (args.help) {
 		return `
-## /db-archive — Database Maintenance Command
+## /db-archive — Database Health Report
+
+**Purpose:** Shows database statistics and archiving recommendations.
 
 **Usage:**
 \`\`\`
-/db-archive              Show DB stats
-/db-archive 180          Archive sessions > 180 days
-/db-archive --dry-run    Preview only
-/db-archive --vacuum     VACUUM after archiving
+/db-archive              Show DB health stats
+/db-archive 180          Show sessions > 180 days old
+/db-archive --dry-run    Preview what would be archived
+/db-archive --vacuum     Show VACUUM instructions
+\`\`\`
+
+**Note:** This command only *displays* information. To actually archive sessions, run:
+\`\`\`bash
+bun Tools/db-archive.ts <days>
 \`\`\`
 
 **Thresholds:**

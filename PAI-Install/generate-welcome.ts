@@ -9,8 +9,8 @@
  * Uses voice clone ID from settings.json principal.voiceClone
  */
 
-import { writeFileSync, readFileSync, existsSync } from "fs";
-import { join, dirname } from "path";
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from "fs";
+import { join } from "path";
 import { homedir } from "os";
 
 const OUTPUT_PATH = join(import.meta.dir, "public", "assets", "welcome.mp3");
@@ -47,7 +47,7 @@ async function generateWelcome() {
     const envPath = join(homedir(), ".config", "PAI", ".env");
     if (existsSync(envPath)) {
       const envContent = readFileSync(envPath, "utf-8");
-      const match = envContent.match(/ELEVENLABS_API_KEY=(.+)/);
+      const match = envContent.match(/ELEVENLABS_API_KEY=["']?([^"'\n]+)["']?/);
       if (match) {
         process.env.ELEVENLABS_API_KEY = match[1].trim();
       }
@@ -96,12 +96,19 @@ async function generateWelcome() {
   }
 
   const buffer = await response.arrayBuffer();
+  
+  // Ensure output directory exists
+  const outputDir = join(import.meta.dir, "public", "assets");
+  if (!existsSync(outputDir)) {
+    mkdirSync(outputDir, { recursive: true });
+  }
+  
   writeFileSync(OUTPUT_PATH, Buffer.from(buffer));
 
   console.log(`\n✓ Welcome audio generated: ${OUTPUT_PATH} (${Math.round(buffer.byteLength / 1024)}KB)`);
 }
 
 generateWelcome().catch((err) => {
-  console.error("Error:", err.message);
+  console.error("Error:", err instanceof Error ? err.message : String(err));
   process.exit(1);
 });
