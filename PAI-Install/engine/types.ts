@@ -79,6 +79,7 @@ export interface InstallState {
 
   // Collected data
   collected: {
+    // v2.x properties (legacy)
     elevenLabsKey?: string;
     principalName?: string;
     timezone?: string;
@@ -88,6 +89,15 @@ export interface InstallState {
     temperatureUnit?: "fahrenheit" | "celsius";
     voiceType?: "female" | "male" | "custom";
     customVoiceId?: string;
+    
+    // v3.0 properties
+    provider?: string;
+    apiKey?: string;
+    modelTier?: "quick" | "standard" | "advanced";
+    models?: string[];
+    voiceEnabled?: boolean;
+    voiceProvider?: "elevenlabs" | "macos" | "none";
+    voiceId?: string;
   };
 
   // Results
