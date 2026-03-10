@@ -11,7 +11,7 @@ tags: [architecture, opencode-native, v3.0, refactoring, epic]
 # PAI-OpenCode v3.0 — OpenCode-Native Transformation
 
 > [!important]
-> **This document supersedes the v3.0 port plan. All previous WPs are DONE.**
+> **This document supersedes the v3.0 port plan. All port WPs are DONE — only WP-E remains in review.**
 > The question is no longer "how do we port Claude Code?" — it is "how do we become genuinely OpenCode?"
 
 ---
@@ -344,8 +344,8 @@ doesn't *know* these tools exist. It won't use `session_registry` unless it's ta
 
 ---
 
-### WP-N5: Epic + Plan Update (P0 — Documentation)
-**Effort:** 1h | **Branch:** included in WP-N1 or standalone
+### WP-N5: Epic + Plan Update (P1 — Documentation)
+**Effort:** 1h | **Branch:** part of WP-N1 (parallel documentation work)
 
 **Deliverables:**
 
@@ -392,11 +392,15 @@ WP-N1 (Session Registry)           ← No dependencies
     │
     ├──► WP-N2 (Compaction Intelligence) ← Reads registry output
     │         │
-    └──► WP-N3 (Algorithm Awareness) ← Documents N1+N2 tools
-              │
-              └──► WP-N4 (LSP + Fork)  ← Independent, can parallel
-                        │
-                        └──► WP-N5 (Plan Update) ← After N1-N4 done
+    ├──► WP-N3 (Algorithm Awareness) ← Documents N1+N2 tools
+    │         │
+    │         ▼
+    │     WP-N4 (LSP + Fork)  ← Independent, can parallel with N2/N3
+    │         │
+    │         ▼
+    │     WP-N5 (Plan Update) ← Parallel docs work (part of N1)
+    │
+    └──► (All N2–N5 can run in parallel once N1 starts)
 ```
 
 <details>

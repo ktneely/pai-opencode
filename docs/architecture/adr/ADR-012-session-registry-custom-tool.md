@@ -326,7 +326,7 @@ export const sessionRegistryTool = tool({
     }
 
     lines.push("");
-    lines.push("Use `session_results` with any session_id above to retrieve the full subagent output.");
+    lines.push("Use `session_results` with any session_id above to retrieve registry metadata and resume instructions (full conversation requires Task tool with session_id).");
 
     return lines.join("\n");
   },
