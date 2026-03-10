@@ -1,11 +1,11 @@
 ---
 title: PAI-OpenCode v3.0 - Corrected PR Plan
-description: Actual state after WP1-WP4 audit + WP-A/WP-B completion — 2 PRs remaining until v3.0 (C, D)
-version: "3.0-corrected-2"
+description: Port complete — WP-E (Installer Refactor) in review, native transformation defined (WP-N1..WP-N5)
+version: "3.0-native-1"
 status: active
 authors: [Jeremy]
-date: 2026-03-08
-tags: [architecture, migration, v3.0, PR-strategy, corrected]
+date: 2026-03-10
+tags: [architecture, migration, v3.0, PR-strategy, native-transformation]
 ---
 
 # PAI-OpenCode v3.0 — Corrected PR Plan

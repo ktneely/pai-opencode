@@ -2,14 +2,14 @@
 title: PAI-OpenCode v3.0 — Task List
 description: Granular, immediately actionable tasks for the remaining PRs until v3.0 release
 status: active
-date: 2026-03-08
+date: 2026-03-10
 ---
 
 # PAI-OpenCode v3.0 — TODO
 
 > [!NOTE]
 > **Basis:** Gap-Analysis 2026-03-06 | Reference: `GAP-ANALYSIS-v3.0.md` | Plan: `OPTIMIZED-PR-PLAN.md`
-> **Updated:** 2026-03-08 — WP-A (PR #42) and WP-B (PR #43) merged. WP-C verified against v4.0.3 upstream.
+> **Updated:** 2026-03-10 — WP-A through WP-D merged. WP-E in review. WP-N1..N5 defined for native transformation.
 
 ---
 
@@ -72,17 +72,14 @@ All handlers ported and integrated into `pai-unified.ts`:
 
 ---
 
-## 🟡 PR #C — WP5: Core PAI System + Skill Fixes
+## ✅ PR #C — WP5: Core PAI System + Skill Fixes — MERGED (#45)
 
-**Branch:** `feature/wp-c-core-pai-system`
+**Branch:** `feature/wp-c-core-pai-system` — **MERGED into `dev`**
 **Estimated effort:** ~3–3.5h (verified against v4.0.3 upstream — many items already done)
 **Dependencies:** PR #A ✅ (done)
-**Priority:** CRITICAL
 
 > [!NOTE]
-> **Verified 2026-03-08:** Many items from the original TODO were already completed in earlier WPs.
-> This section reflects only the **actual remaining gaps** confirmed against v4.0.3 at:
-> `/Users/steffen/workspace/github.com/danielmiessler/Personal_AI_Infrastructure/Releases/v4.0.3/.claude/`
+> **Completed:** PR #45 merged 2026-03-10. All tasks below delivered.
 
 ---
 
@@ -99,10 +96,10 @@ cp -r .opencode/skills/USMetrics/USMetrics/Workflows  .opencode/skills/USMetrics
 rm -rf .opencode/skills/USMetrics/USMetrics/
 ```
 
-- [ ] Move `USMetrics/USMetrics/Tools/` → `USMetrics/Tools/`
-- [ ] Move `USMetrics/USMetrics/Workflows/` → `USMetrics/Workflows/`
-- [ ] Merge inner `USMetrics/USMetrics/SKILL.md` into outer `USMetrics/SKILL.md`
-- [ ] Delete `USMetrics/USMetrics/` directory
+- [x] Move `USMetrics/USMetrics/Tools/` → `USMetrics/Tools/`
+- [x] Move `USMetrics/USMetrics/Workflows/` → `USMetrics/Workflows/`
+- [x] Merge inner `USMetrics/USMetrics/SKILL.md` into outer `USMetrics/SKILL.md`
+- [x] Delete `USMetrics/USMetrics/` directory
 
 **Telos — flatten:**
 ```bash
@@ -113,12 +110,12 @@ mv .opencode/skills/Telos/Telos/Workflows          .opencode/skills/Telos/
 rm -rf .opencode/skills/Telos/Telos/
 ```
 
-- [ ] Move `Telos/Telos/DashboardTemplate/` → `Telos/DashboardTemplate/`
-- [ ] Move `Telos/Telos/ReportTemplate/` → `Telos/ReportTemplate/`
-- [ ] Move `Telos/Telos/Tools/` → `Telos/Tools/`
-- [ ] Move `Telos/Telos/Workflows/` → `Telos/Workflows/`
-- [ ] Delete `Telos/Telos/` directory
-- [ ] Verify `Telos/SKILL.md` references point to `Telos/` not `Telos/Telos/`
+- [x] Move `Telos/Telos/DashboardTemplate/` → `Telos/DashboardTemplate/`
+- [x] Move `Telos/Telos/ReportTemplate/` → `Telos/ReportTemplate/`
+- [x] Move `Telos/Telos/Tools/` → `Telos/Tools/`
+- [x] Move `Telos/Telos/Workflows/` → `Telos/Workflows/`
+- [x] Delete `Telos/Telos/` directory
+- [x] Verify `Telos/SKILL.md` references point to `Telos/` not `Telos/Telos/`
 
 ---
 
@@ -127,17 +124,17 @@ rm -rf .opencode/skills/Telos/Telos/
 Reference source: `.../Releases/v4.0.3/.claude/skills/`
 
 **Utilities — 2 skills missing:**
-- [ ] `skills/Utilities/AudioEditor/` — port from v4.0.3 (`SKILL.md`, `Tools/`, `Workflows/`)
-- [ ] `skills/Utilities/Delegation/` — port from v4.0.3 (`SKILL.md` only)
-- [ ] Update `skills/Utilities/SKILL.md` — add AudioEditor + Delegation entries
-- [ ] Replace any `.claude/` references with `.opencode/` in ported files
+- [x] `skills/Utilities/AudioEditor/` — port from v4.0.3 (`SKILL.md`, `Tools/`, `Workflows/`)
+- [x] `skills/Utilities/Delegation/` — port from v4.0.3 (`SKILL.md` only)
+- [x] Update `skills/Utilities/SKILL.md` — add AudioEditor + Delegation entries
+- [x] Replace any `.claude/` references with `.opencode/` in ported files
 
 **Research — 2 items missing:**
-- [ ] `skills/Research/MigrationNotes.md` — port from v4.0.3
-- [ ] `skills/Research/Templates/` — port directory (contains `MarketResearch.md`, `ThreatLandscape.md`)
+- [x] `skills/Research/MigrationNotes.md` — port from v4.0.3
+- [x] `skills/Research/Templates/` — port directory (contains `MarketResearch.md`, `ThreatLandscape.md`)
 
 **Agents — 1 file missing:**
-- [ ] `skills/Agents/ClaudeResearcherContext.md` — port from v4.0.3
+- [x] `skills/Agents/ClaudeResearcherContext.md` — port from v4.0.3
 
 ---
 
@@ -159,22 +156,22 @@ for f in CLI.md CLIFIRSTARCHITECTURE.md DOCUMENTATIONINDEX.md FLOWS.md \
 done
 ```
 
-- [ ] `CLI.md` → `.opencode/PAI/CLI.md`
-- [ ] `CLIFIRSTARCHITECTURE.md` → `.opencode/PAI/CLIFIRSTARCHITECTURE.md`
-- [ ] `DOCUMENTATIONINDEX.md` → `.opencode/PAI/DOCUMENTATIONINDEX.md`
-- [ ] `FLOWS.md` → `.opencode/PAI/FLOWS.md`
-- [ ] `PAIAGENTSYSTEM.md` → `.opencode/PAI/PAIAGENTSYSTEM.md`
-- [ ] `README.md` → `.opencode/PAI/README.md`
-- [ ] `SYSTEM_USER_EXTENDABILITY.md` → `.opencode/PAI/SYSTEM_USER_EXTENDABILITY.md`
-- [ ] `THEFABRICSYSTEM.md` → `.opencode/PAI/THEFABRICSYSTEM.md`
-- [ ] `THENOTIFICATIONSYSTEM.md` → `.opencode/PAI/THENOTIFICATIONSYSTEM.md`
-- [ ] All 9 files: replace `.claude/` → `.opencode/` after copy
+- [x] `CLI.md` → `.opencode/PAI/CLI.md`
+- [x] `CLIFIRSTARCHITECTURE.md` → `.opencode/PAI/CLIFIRSTARCHITECTURE.md`
+- [x] `DOCUMENTATIONINDEX.md` → `.opencode/PAI/DOCUMENTATIONINDEX.md`
+- [x] `FLOWS.md` → `.opencode/PAI/FLOWS.md`
+- [x] `PAIAGENTSYSTEM.md` → `.opencode/PAI/PAIAGENTSYSTEM.md`
+- [x] `README.md` → `.opencode/PAI/README.md`
+- [x] `SYSTEM_USER_EXTENDABILITY.md` → `.opencode/PAI/SYSTEM_USER_EXTENDABILITY.md`
+- [x] `THEFABRICSYSTEM.md` → `.opencode/PAI/THEFABRICSYSTEM.md`
+- [x] `THENOTIFICATIONSYSTEM.md` → `.opencode/PAI/THENOTIFICATIONSYSTEM.md`
+- [x] All 9 files: replace `.claude/` → `.opencode/` after copy
 
 **3 subdirectories missing from `.opencode/PAI/`:**
-- [ ] `ACTIONS/` — port from v4.0.3 (contains `A_EXAMPLE_FORMAT/`, `A_EXAMPLE_SUMMARIZE/`, `lib/`, `pai.ts`, `README.md`)
-- [ ] `FLOWS/` — port from v4.0.3 (contains `README.md`)
-- [ ] `PIPELINES/` — port from v4.0.3 (contains `P_EXAMPLE_SUMMARIZE_AND_FORMAT.yaml`, `README.md`)
-- [ ] All ported files: replace `.claude/` → `.opencode/` after copy
+- [x] `ACTIONS/` — port from v4.0.3 (contains `A_EXAMPLE_FORMAT/`, `A_EXAMPLE_SUMMARIZE/`, `lib/`, `pai.ts`, `README.md`)
+- [x] `FLOWS/` — port from v4.0.3 (contains `README.md`)
+- [x] `PIPELINES/` — port from v4.0.3 (contains `P_EXAMPLE_SUMMARIZE_AND_FORMAT.yaml`, `README.md`)
+- [x] All ported files: replace `.claude/` → `.opencode/` after copy
 
 > [!NOTE]
 > Already present in `.opencode/PAI/` (no action needed): `ACTIONS.md`, `AISTEERINGRULES.md`,
@@ -194,61 +191,65 @@ done
 > All other PAI Tools are already present in `.opencode/PAI/Tools/` — identical to v4.0.3.
 > Only `BuildCLAUDE.ts` needs adaptation for OpenCode.
 
-- [ ] Copy `.opencode/PAI/Tools/BuildCLAUDE.ts` → `.opencode/PAI/Tools/BuildOpenCode.ts`
-- [ ] In `BuildOpenCode.ts`: replace all `.claude/` → `.opencode/`
-- [ ] In `BuildOpenCode.ts`: replace all `CLAUDE.md` → `AGENTS.md`
-- [ ] In `BuildOpenCode.ts`: replace all `claude` CLI references → `opencode`
-- [ ] Update file header comment: `// BuildOpenCode.ts — OpenCode-native version of BuildCLAUDE.ts`
+- [x] Copy `.opencode/PAI/Tools/BuildCLAUDE.ts` → `.opencode/PAI/Tools/BuildOpenCode.ts`
+- [x] In `BuildOpenCode.ts`: replace all `.claude/` → `.opencode/`
+- [x] In `BuildOpenCode.ts`: replace all `CLAUDE.md` → `AGENTS.md`
+- [x] In `BuildOpenCode.ts`: replace all `claude` CLI references → `opencode`
+- [x] Update file header comment: `// BuildOpenCode.ts — OpenCode-native version of BuildCLAUDE.ts`
 
 ---
 
 ### C.5 — Bootstrap & Index Update
 
-- [ ] Update `MINIMAL_BOOTSTRAP.md` — fix USMetrics path (remove `/USMetrics/USMetrics/` nesting)
-- [ ] Update `MINIMAL_BOOTSTRAP.md` — add AudioEditor and Delegation entries
-- [ ] Regenerate skill index: `bun GenerateSkillIndex.ts`
+- [x] Update `MINIMAL_BOOTSTRAP.md` — fix USMetrics path (remove `/USMetrics/USMetrics/` nesting)
+- [x] Update `MINIMAL_BOOTSTRAP.md` — add AudioEditor and Delegation entries
+- [x] Regenerate skill index: `bun GenerateSkillIndex.ts`
 
 ---
 
 ### PR #C Completion
 
-- [ ] `bun run skills:validate` (ValidateSkillStructure.ts)
-- [ ] `bun run skills:index` (GenerateSkillIndex.ts)
-- [ ] `biome check --write .`
-- [ ] `bun test`
-- [ ] Create PR against `dev`
+- [x] `bun run skills:validate` (ValidateSkillStructure.ts)
+- [x] `bun run skills:index` (GenerateSkillIndex.ts)
+- [x] `biome check --write .`
+- [x] `bun test`
+- [x] Create PR against `dev` → **MERGED #45**
 
 ---
 
-## 🟢 PR #D — WP6: Installer & Migration
+## ✅ PR #D — WP6: Installer & Migration — MERGED (#47)
 
-**Branch:** `feature/wp-d-installer-migration`
+**Branch:** `feature/wp-d-installer-migration` — **MERGED into `dev`**
 **Estimated effort:** 1–2 days
-**Dependencies:** PR #C
-**Priority:** CRITICAL (release blocker)
+**Dependencies:** PR #C ✅ (done)
+
+> [!NOTE]
+> **Completed:** PR #47 merged 2026-03-10. All tasks below delivered.
+
+---
 
 ### Port PAI-Install
 
 Reference: `.../Releases/v4.0.3/.claude/PAI-Install/`
 
-- [ ] `PAI-Install/install.sh` — port + adapt for OpenCode
+- [x] `PAI-Install/install.sh` — port + adapt for OpenCode
   - `~/.claude/` → `~/.opencode/`
   - `CLAUDE.md` → `AGENTS.md`
-- [ ] `PAI-Install/cli/` — port
-- [ ] `PAI-Install/engine/` — port
-- [ ] `PAI-Install/electron/` — port + adapt for OpenCode (**required for v3.0**)
+- [x] `PAI-Install/cli/` — port
+- [x] `PAI-Install/engine/` — port
+- [x] `PAI-Install/electron/` — port + adapt for OpenCode (**required for v3.0**)
   - Electron app as GUI installer: step-by-step "Install PAI-OpenCode" UI
   - Replace all Claude Code references → OpenCode
-- [ ] `PAI-Install/web/` — port (Electron web UI)
-- [ ] `PAI-Install/main.ts` — adapt for OpenCode
-- [ ] `PAI-Install/README.md` — write
+- [x] `PAI-Install/web/` — port (Electron web UI)
+- [x] `PAI-Install/main.ts` — adapt for OpenCode
+- [x] `PAI-Install/README.md` — write
 
 > [!IMPORTANT]
 > **Electron GUI is required for v3.0** — both CLI installer AND Electron GUI
 
 ### Migration Script
 
-- [ ] Create `tools/migration-v2-to-v3.ts`:
+- [x] Create `tools/migration-v2-to-v3.ts`:
   ```text
   1. Backup ~/.opencode/ → ~/.opencode-backup-YYYYMMDD/
   2. Detect current version (v2.x vs v3.x)
@@ -257,38 +258,38 @@ Reference: `.../Releases/v4.0.3/.claude/PAI-Install/`
   5. Run ValidateSkillStructure.ts
   6. Report: what was migrated, what was skipped, what needs manual review
   ```
-- [ ] Test migration against a clean v2.x test setup
+- [x] Test migration against a clean v2.x test setup
 
 ### DB Health (WP-F — integrated into PR #D)
 
-- [ ] Extend `plugins/handlers/session-cleanup.ts` with `checkDbHealth()` — warn when DB > 500MB or sessions > 90 days old
-- [ ] Implement `plugins/lib/db-utils.ts` — `getDbSizeMB()` and `getSessionsOlderThan(days)`
-- [ ] Create `Tools/db-archive.ts` — standalone Bun script for session archiving
+- [x] Extend `plugins/handlers/session-cleanup.ts` with `checkDbHealth()` — warn when DB > 500MB or sessions > 90 days old
+- [x] Implement `plugins/lib/db-utils.ts` — `getDbSizeMB()` and `getSessionsOlderThan(days)`
+- [x] Create `Tools/db-archive.ts` — standalone Bun script for session archiving
   - `bun db-archive.ts` — archive sessions > 90 days
   - `bun db-archive.ts 180` — archive sessions > 180 days
   - `bun db-archive.ts --dry-run` — preview what would be archived
   - `bun db-archive.ts --vacuum` — VACUUM after archiving (requires OpenCode to be stopped)
   - `bun db-archive.ts --restore archive-2025-Q4.db` — restore from archive
-- [ ] Create `.opencode/commands/db-archive.ts` — OpenCode custom command `/db-archive`
-- [ ] Add "DB Health" tab to `PAI-Install/electron/`
-- [ ] Create `docs/DB-MAINTENANCE.md`
+- [x] Create `.opencode/commands/db-archive.ts` — OpenCode custom command `/db-archive`
+- [x] Add "DB Health" tab to `PAI-Install/electron/`
+- [x] Create `docs/DB-MAINTENANCE.md`
 
 ### Documentation
 
-- [ ] Write `UPGRADE.md` — step-by-step from v2.x → v3.0
-- [ ] Write `INSTALL.md` — fresh installation for new users
-- [ ] Create `CHANGELOG.md` — all breaking changes, new features, migration path
-- [ ] Update root `README.md` — v3.0-specific info
+- [x] Write `UPGRADE.md` — step-by-step from v2.x → v3.0
+- [x] Write `INSTALL.md` — fresh installation for new users
+- [x] Create `CHANGELOG.md` — all breaking changes, new features, migration path
+- [x] Update root `README.md` — v3.0-specific info
 
 ### PR #D Completion
 
-- [ ] Test migration script on clean test directory
-- [ ] Install script dry-run
-- [ ] `bun Tools/db-archive.ts --dry-run` on a real DB
-- [ ] Test custom command `/db-archive` in a fresh session
-- [ ] Test archive restore (restore one session)
-- [ ] `biome check --write .`
-- [ ] Create PR against `dev`
+- [x] Test migration script on clean test directory
+- [x] Install script dry-run
+- [x] `bun Tools/db-archive.ts --dry-run` on a real DB
+- [x] Test custom command `/db-archive` in a fresh session
+- [x] Test archive restore (restore one session)
+- [x] `biome check --write .`
+- [x] Create PR against `dev` → **MERGED #47**
 
 ---
 
@@ -361,6 +362,66 @@ graph TD
 
 ---
 
+## 🆕 WP-N1..N5 — OpenCode-Native Transformation (ACTIVE)
+
+> [!IMPORTANT]
+> **The port is complete. The native transformation starts now.**
+> Full specification: `docs/epic/EPIC-v3.0-OpenCode-Native.md`
+
+### WP-N1: Session Registry — ⏳ ACTIVE (Next)
+**Branch:** `feature/wp-n1-session-registry`
+**Spec:** ADR-012
+
+- [ ] Create `plugins/handlers/session-registry.ts` — track subagent sessions via `tool.execute.after`
+- [ ] Add custom tools `session_registry` + `session_results` in `pai-unified.ts`
+- [ ] Write AGENTS.md section on post-compaction recovery
+- [ ] Create ADR-012
+
+---
+
+### WP-N2: Compaction Intelligence — ⏳ Planned
+**Branch:** `feature/wp-n2-compaction-intelligence`
+**Spec:** ADR-015
+
+- [ ] Implement `experimental.session.compacting` hook
+- [ ] Create `plugins/lib/compaction-context.ts`
+- [ ] Inject registry + ISC + PRD context into compaction summary
+- [ ] Create ADR-015
+
+---
+
+### WP-N3: Algorithm Awareness — ⏳ Planned
+**Branch:** `feature/wp-n3-algorithm-awareness`
+**Spec:** ADR-013
+
+- [ ] Update AGENTS.md — Session API section
+- [ ] Update Algorithm SKILL.md — post-compaction recovery pattern
+- [ ] Update CONTEXT RECOVERY section — session_registry first
+- [ ] Create ADR-013
+
+---
+
+### WP-N4: LSP + Fork Documentation — ⏳ Planned
+**Branch:** `feature/wp-n4-lsp-fork`
+**Spec:** ADR-014 + ADR-016
+
+- [ ] Document `OPENCODE_EXPERIMENTAL_LSP_TOOL=true`
+- [ ] Add LSP examples to AGENTS.md
+- [ ] Document Session Fork API for safe experiments
+- [ ] Create ADR-014 (LSP) + ADR-016 (Fork)
+
+---
+
+### WP-N5: Plan Update — ⏳ Planned
+**Branch:** `feature/wp-n5-plan-update` (or part of N1)
+
+- [ ] Update EPIC-v3.0-Synthesis-Architecture.md — WP-N section
+- [ ] Update OPTIMIZED-PR-PLAN.md — PR #N1..#N4 as upcoming
+- [ ] Update TODO-v3.0.md — this file (make N1 active)
+- [ ] Update ADR README — ensure all 16 ADRs indexed
+
+---
+
 *Created: 2026-03-06*
-*Updated: 2026-03-08 — WP-A/WP-B merged; WP-C verified against v4.0.3 upstream*
-*Basis: GAP-ANALYSIS-v3.0.md + EPIC-v3.0-Synthesis-Architecture.md + live repo audit*
+*Updated: 2026-03-10 — WP-A through WP-D merged; WP-E in review; WP-N1..N5 native transformation defined*
+*Basis: GAP-ANALYSIS-v3.0.md + EPIC-v3.0-Synthesis-Architecture.md + EPIC-v3.0-OpenCode-Native.md*

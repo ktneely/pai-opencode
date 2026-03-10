@@ -10,6 +10,7 @@ tags: [architecture, opencode-native, v3.0, refactoring, epic]
 
 # PAI-OpenCode v3.0 — OpenCode-Native Transformation
 
+> [!important]
 > **This document supersedes the v3.0 port plan. All previous WPs are DONE.**
 > The question is no longer "how do we port Claude Code?" — it is "how do we become genuinely OpenCode?"
 
@@ -55,7 +56,7 @@ The symptoms are real and recurring:
 ### GAP-1: Session API — UNUSED (Critical)
 
 **What OpenCode provides:**
-```
+```text
 GET /session/:id/children     → Query all subagent sessions by parent
 Session.children(parentID)    → Indexed DB query — always available
 POST /session/:id/fork        → Fork at any point — safe experiments
@@ -146,7 +147,7 @@ diagnostics after edits, call hierarchies for impact analysis.
 ### GAP-5: Session Forking — UNUSED
 
 **What OpenCode provides:**
-```typescript
+```text
 POST /session/:id/fork  → Creates exact copy of session at current state
 ```
 
@@ -397,6 +398,28 @@ WP-N1 (Session Registry)           ← No dependencies
                         │
                         └──► WP-N5 (Plan Update) ← After N1-N4 done
 ```
+
+<details>
+<summary>Detailed Mermaid Diagram</summary>
+
+```mermaid
+flowchart TD
+    E["WP-E (PR #48 — Installer Refactor)"]
+    N1["WP-N1 (Session Registry)"]
+    N2["WP-N2 (Compaction Intelligence)"]
+    N3["WP-N3 (Algorithm Awareness)"]
+    N4["WP-N4 (LSP + Fork)"]
+    N5["WP-N5 (Plan Update)"]
+
+    E --> N1
+    N1 --> N2
+    N1 --> N3
+    N2 --> N3
+    N3 --> N4
+    N4 --> N5
+```
+
+</details>
 
 ---
 
