@@ -384,7 +384,7 @@ doesn't *know* these tools exist. It won't use `session_registry` unless it's ta
 
 ## 🔄 Dependency Graph
 
-```
+```text
 WP-E (PR #48 — Installer Refactor) — IN REVIEW, independent
     │
     ▼

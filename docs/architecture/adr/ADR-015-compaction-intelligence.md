@@ -13,7 +13,7 @@ related_adrs: [ADR-012, ADR-013]
 
 ## Quick Overview
 
-```
+```text
 ┌─────────────────┐     ┌──────────────────────┐     ┌─────────────────┐
 │  Compaction     │────▶│ compaction-          │────▶│ Injected        │
 │  Triggered      │     │ intelligence.ts    │     │ Context         │

@@ -13,7 +13,7 @@ related_adrs: [ADR-001, ADR-013, ADR-015]
 
 ## Quick Overview
 
-```
+```text
 ┌─────────────────┐     ┌──────────────────────┐     ┌─────────────────┐
 │  Task Tool      │────▶│ session-registry.ts  │────▶│ Registry File   │
 │  (subagent)     │     │ (capture handler)    │     │ (JSON metadata) │

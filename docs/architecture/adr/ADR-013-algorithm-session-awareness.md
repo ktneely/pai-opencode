@@ -13,7 +13,7 @@ related_adrs: [ADR-012, ADR-015]
 
 ## Quick Overview
 
-```
+```text
 ┌─────────────────┐     ┌──────────────────────┐     ┌─────────────────┐
 │  AGENTS.md      │────▶│ Session Recovery     │────▶│ Algorithm       │
 │  (docs)         │     │ Section              │     │ Uses Tools      │
