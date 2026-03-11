@@ -11,7 +11,7 @@ tags: [architecture, opencode-native, v3.0, refactoring, epic]
 # PAI-OpenCode v3.0 — OpenCode-Native Transformation
 
 > [!important]
-> **This document supersedes the v3.0 port plan. All port WPs are DONE — only WP-E remains in review.**
+> **This document supersedes the v3.0 port plan. All port WPs are DONE — WP-E (PR #48) is merged.**
 > The question is no longer "how do we port Claude Code?" — it is "how do we become genuinely OpenCode?"
 
 ---
@@ -30,7 +30,7 @@ Current status of original WPs:
 | WP-B | Security Hardening | #43 | ✅ MERGED |
 | WP-C | Core PAI System + Skill Fixes | #45 | ✅ MERGED |
 | WP-D | Installer + Migration + DB Health | #47 | ✅ MERGED |
-| WP-E | Installer Refactor (Electron-first) | #48 | 🔄 IN REVIEW |
+| WP-E | Installer Refactor (Electron-first) | #48 | ✅ MERGED |
 
 **We have completed a port. We have NOT built a native OpenCode system.**
 

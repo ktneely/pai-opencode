@@ -422,7 +422,7 @@ graph TD
 - [x] Update OPTIMIZED-PR-PLAN.md — WP-N1..N4 complete, WP-E merged, summary/progress updated
 - [x] Update EPIC-v3.0-OpenCode-Native.md — WP-N1..N5 status lines added
 - [x] Update ADR README — ADR-012..016 Planned → Merged
-- [ ] Update TODO-v3.0.md — this file (WP-N5 in progress)
+- [x] Update TODO-v3.0.md — this file (WP-N5 complete)
 
 ---
 
