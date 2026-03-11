@@ -31,7 +31,7 @@ WP-N1 ████████████ 100% ✅  ← Session Registry comple
 WP-N2 ████████████ 100% ✅  ← Compaction Intelligence complete, PR #51
 WP-N3 ████████████ 100% ✅  ← Algorithm Awareness complete, PR #52+#53
 WP-N4 ████████████ 100% ✅  ← LSP + Fork Documentation complete, PR #53
-WP-N5 ██████████░░  80% 🔄  ← Plan Update (in progress, PR #54)
+WP-N5 ████████████ 100% ✅  ← Plan Update complete, PR #54
 ```
 
 > **The port is done. The native transformation starts with WP-N1.**
@@ -416,7 +416,7 @@ graph TD
 
 ---
 
-### WP-N5: Plan Update — 🔄 In Progress (PR #54)
+### WP-N5: Plan Update — ✅ Complete (PR #54)
 **Branch:** `feature/wp-n5-plan-update`
 
 - [x] Update OPTIMIZED-PR-PLAN.md — WP-N1..N4 complete, WP-E merged, summary/progress updated
