@@ -15,8 +15,8 @@
  * @module compaction-intelligence
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import { getStateDir, getWorkDir } from "../lib/paths";
 import { buildRegistryContext } from "./session-registry";
@@ -47,8 +47,12 @@ function buildPrdContext(sessionId: string): string | null {
 
 		// Extract frontmatter fields
 		const statusMatch = prdContent.match(/^status:\s*(.+)$/m);
-		const progressMatch = prdContent.match(/^verification_summary:\s*"?(\d+\/\d+)"?$/m);
-		const failingMatch = prdContent.match(/^failing_criteria:\s*\[([^\]]*)\]$/m);
+		const progressMatch = prdContent.match(
+			/^verification_summary:\s*"?(\d+\/\d+)"?$/m,
+		);
+		const failingMatch = prdContent.match(
+			/^failing_criteria:\s*\[([^\]]*)\]$/m,
+		);
 		const effortMatch = prdContent.match(/^effort_level:\s*(.+)$/m);
 		const phaseMatch = prdContent.match(/^last_phase:\s*(.+)$/m);
 
@@ -70,7 +74,9 @@ function buildPrdContext(sessionId: string): string | null {
 
 		if (criteria.length > 0) {
 			lines.push("");
-			lines.push("### ISC Criteria (carry forward — these ARE the verification checklist):");
+			lines.push(
+				"### ISC Criteria (carry forward — these ARE the verification checklist):",
+			);
 			lines.push("");
 			for (const c of criteria) {
 				lines.push(c);
@@ -148,16 +154,18 @@ export async function injectCompactionContext(
 		}
 
 		// 4. Recovery instructions
-		output.context.push([
-			"## Post-Compaction Recovery Tools",
-			"",
-			"After compaction, these tools are available to recover context:",
-			"- `session_registry` — Lists all subagent sessions with their IDs",
-			"- `session_results(session_id)` — Retrieves output from a specific subagent",
-			"",
-			"Subagent data SURVIVES compaction. It is stored in OpenCode's database.",
-			"Do NOT claim results are lost — use the tools above to recover them.",
-		].join("\n"));
+		output.context.push(
+			[
+				"## Post-Compaction Recovery Tools",
+				"",
+				"After compaction, these tools are available to recover context:",
+				"- `session_registry` — Lists all subagent sessions with their IDs",
+				"- `session_results(session_id)` — Retrieves output from a specific subagent",
+				"",
+				"Subagent data SURVIVES compaction. It is stored in OpenCode's database.",
+				"Do NOT claim results are lost — use the tools above to recover them.",
+			].join("\n"),
+		);
 		injectedCount++;
 
 		fileLog(
@@ -165,7 +173,10 @@ export async function injectCompactionContext(
 			"info",
 		);
 	} catch (error) {
-		fileLogError("[CompactionIntelligence] Context injection failed (non-blocking)", error);
+		fileLogError(
+			"[CompactionIntelligence] Context injection failed (non-blocking)",
+			error,
+		);
 		// Non-blocking — compaction must not fail due to our plugin
 	}
 }
