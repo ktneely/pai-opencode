@@ -29,9 +29,8 @@ WP-E  ████████████ 100% ✅  ← PR #48 merged
 ──────────────────────────────────────
 WP-N1 ████████████ 100% ✅  ← Session Registry complete, PR #50
 WP-N2 ████████████ 100% ✅  ← Compaction Intelligence complete, PR #51
-WP-N3 ████████████ 100% ✅  ← Algorithm Awareness complete, PR #52
+WP-N3 ██████████░░  90% 🔄  ← Algorithm Awareness implemented, PR #52
 WP-N4 ░░░░░░░░░░░░   0% ⏳  ← LSP + Fork Documentation (next)
-WP-N4 ░░░░░░░░░░░░   0% ⏳  ← LSP + Fork
 WP-N5 ░░░░░░░░░░░░   0% ⏳  ← Plan Update
 ```
 
@@ -393,7 +392,7 @@ graph TD
 
 ---
 
-### WP-N3: Algorithm Awareness — ✅ COMPLETE (PR #52)
+### WP-N3: Algorithm Awareness — ⏳ Implemented (PR #52)
 **Branch:** `feature/wp-n3-algorithm-awareness`
 **Spec:** ADR-013
 **Status:** Implementation complete, awaiting PR review/merge

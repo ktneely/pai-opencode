@@ -455,23 +455,25 @@ Fill in all bracketed values from the current session. `implied_sentiment` is yo
 
 ### Context Recovery
 
-**Recovery Mode Detection (check FIRST — before searching):**
+**Recovery Mode Detection (check FIRST — before Algorithm OBSERVE phase):**
 
-- **POST-COMPACTION:** Context was compressed mid-session →
-  1. **Read PRD frontmatter** — get `parent_session_id` (the OpenCode session ID)
-  2. **Call `session_registry`** with the context — lists all subagents for this parent session
-  3. **Call `session_results(session_id)`** for any subagent results needed
+> ⚠️ **CRITICAL:** The OBSERVE phase has a hard rule: "No tool calls except TaskCreate, voice curls, and CONTEXT RECOVERY (Grep/Glob/Read)". **POST-COMPACTION recovery runs BEFORE OBSERVE**, not during it. Use OpenCode-native recovery tools only in this pre-OBSERVE recovery step.
+
+- **POST-COMPACTION:** Context was compressed mid-session → Run this recovery **before** starting Algorithm OBSERVE phase:
+  1. **Read PRD frontmatter** (Grep/Read allowed) — get `parent_session_id` 
+  2. **Call `session_registry`** tool — OpenCode-native recovery (whitelisted for post-compaction)
+  3. **Call `session_results(session_id)`** — OpenCode-native recovery (whitelisted for post-compaction)
   4. Run env var/shell state audit: verify auth tokens, working directory
-  5. Read ISC criteria from PRD body
-  6. **NEVER claim "subagent results are lost"** — they survive compaction in OpenCode's SQLite database, indexed by `parent_id`
+  5. Read ISC criteria from PRD body (Grep/Read)
+  6. **NEVER claim "subagent results are lost"** — they survive compaction in OpenCode's SQLite database
 
 - **SAME-SESSION:** Task was worked on earlier THIS session (in working memory) → Skip search entirely. Use working memory context directly.
 
-- **POST-COMPACTION (legacy fallback):** If session tools unavailable →
-  1. Read the most recent PRD from `~/.opencode/MEMORY/WORK/` (by mtime) — it has all state
-  2. PRD frontmatter has `phase`, `progress` (legacy) or `last_phase`, `verification_summary` (v1.0.0 canonical), `effort_level`, `mode`, `task`/`id`, `slug`, `started`/`created`, `updated` (optional: `iteration`)
-  3. PRD body has criteria checkboxes, decisions, verification evidence
-  4. `~/.opencode/MEMORY/STATE/work.json` has the registry of all sessions (populated by read-only PRDSync + PRDStateSync hooks)
+- **POST-COMPACTION (legacy fallback, if native tools unavailable):**
+  1. Read the most recent PRD from `~/.opencode/MEMORY/WORK/` (by mtime) — Grep/Glob/Read only
+  2. PRD frontmatter has state fields
+  3. PRD body has criteria checkboxes, decisions
+  4. `~/.opencode/MEMORY/STATE/work.json` has session registry
 
 **Subagent Session Recovery Tools (OpenCode-Native):**
 
@@ -498,7 +500,7 @@ session_results: { "session_id": "ses_child456" }
 
 ### PRD.md Format
 
-**Frontmatter (Canonical v1.0.0):** 12 fields — `prd`, `id`, `status`, `mode`, `effort_level`, `created`, `updated`. Optional: `iteration`, `maxIterations`, `loopStatus`, `last_phase`, `failing_criteria`, `verification_summary`, `parent`, `children`.
+**Frontmatter (Canonical v1.0.0):** 13 fields — `prd`, `id`, `status`, `mode`, `effort_level`, `created`, `updated`. Optional: `parent_session_id`, `iteration`, `maxIterations`, `loopStatus`, `last_phase`, `failing_criteria`, `verification_summary`, `parent`, `children`.
 
 **Frontmatter (Legacy, migrate to v1.0.0):** 8 fields — `task`, `slug`, `effort`, `phase`, `progress`, `mode`, `started`, `updated`. Map to canonical: `task`→`id`, `effort`→`effort_level`, `started`→`created`, `phase`/`progress`→`last_phase`/`verification_summary`.
 
@@ -521,6 +523,7 @@ mode: interactive
 effort_level: Standard
 created: {YYYY-MM-DD}
 updated: {YYYY-MM-DD}
+parent_session_id: {OpenCode session ID}  # Key for subagent recovery
 iteration: 0
 maxIterations: 128
 loopStatus: null
@@ -603,6 +606,7 @@ Each entry: date, decision, rationale, alternatives considered.}
 | `effort_level` | string | Effort level for this task (or per-iteration effort level for loop mode) |
 | `created` | date | Creation date |
 | `updated` | date | Last modification date |
+| `parent_session_id` | string | OpenCode session ID — enables subagent recovery via `session_registry` |
 | `iteration` | number | Current iteration count (0 = not started) |
 | `maxIterations` | number | Loop ceiling (default 128) |
 | `loopStatus` | string\|null | `null`, `running`, `paused`, `stopped`, `completed`, `failed` |
