@@ -30,7 +30,7 @@ WP-E  ████████████ 100% ✅  ← PR #48 merged
 WP-N1 ████████████ 100% ✅  ← Session Registry complete, PR #50
 WP-N2 ████████████ 100% ✅  ← Compaction Intelligence complete, PR #51
 WP-N3 ████████████ 100% ✅  ← Algorithm Awareness complete, PR #52+#53
-WP-N4 ████████████ 100% ✅  ← LSP + Fork Documentation complete, PR #54
+WP-N4 ████████████ 100% ✅  ← LSP + Fork Documentation complete, PR #53
 WP-N5 ░░░░░░░░░░░░   0% ⏳  ← Plan Update
 ```
 
@@ -404,7 +404,7 @@ graph TD
 
 ---
 
-### WP-N4: LSP + Fork Documentation — ✅ Complete (PR #54)
+### WP-N4: LSP + Fork Documentation — ✅ Complete (PR #53)
 **Branch:** `feature/wp-n4-lsp-fork`
 **Spec:** ADR-014 + ADR-016
 
@@ -412,7 +412,7 @@ graph TD
 - [x] Add LSP section to AGENTS.md (LSP vs Grep table, activation)
 - [x] Document Session Fork API for safe experiments
 - [x] Add Fork section to AGENTS.md (use-cases, API reference, workflow)
-- [x] Set `OPENCODE_EXPERIMENTAL_LSP_TOOL=true` in installer .env generation
+- [x] Installer legt auskommentierten `OPENCODE_EXPERIMENTAL_LSP_TOOL=true` Eintrag in `.env` an — Anwender müssen ihn manuell aktivieren (opt-in)
 
 ---
 

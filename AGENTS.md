@@ -344,13 +344,15 @@ Or add to your shell profile for permanent activation:
 echo 'export OPENCODE_EXPERIMENTAL_LSP_TOOL=true' >> ~/.zshrc
 ```
 
-> **Note:** LSP tools are only available when `OPENCODE_EXPERIMENTAL_LSP_TOOL=true` is set. Without this flag, the tools are not registered and will not appear in the tool list.
+> [!NOTE]
+> LSP tools are only available when `OPENCODE_EXPERIMENTAL_LSP_TOOL=true` is set. Without this flag, the tools are not registered and will not appear in the tool list.
 
 ---
 
 ## Safe Experiments (Session Fork)
 
-> **Note:** Plan Mode is **not available** in OpenCode. Session Fork is the native equivalent — a checkpoint system for safe experimentation.
+> [!NOTE]
+> Plan Mode is **not available** in OpenCode. Session Fork is the native equivalent — a checkpoint system for safe experimentation.
 
 OpenCode's Session Fork creates an **exact copy** of the current session up to a specific message. The original session is untouched. If the experiment fails, discard the fork and return to the original.
 
@@ -381,7 +383,7 @@ Content-Type: application/json
 
 ### Fork Workflow
 
-```
+```text
 PLAN phase complete → identify last messageID
                     → POST /session/{id}/fork
                     → get forked_session_id
