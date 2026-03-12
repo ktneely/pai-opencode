@@ -12,63 +12,49 @@
  * Returned by security-validator.ts to indicate what action to take
  */
 export interface SecurityResult {
-  /** Action to take: block (deny), confirm (ask), or allow */
-  action: "block" | "confirm" | "allow";
-  /** Reason for the action (for logging) */
-  reason: string;
-  /** Optional detailed message for user */
-  message?: string;
-}
-
-/**
- * Context loading result
- *
- * Returned by context-loader.ts
- */
-export interface ContextResult {
-  /** The context string to inject */
-  context: string;
-  /** Whether loading was successful */
-  success: boolean;
-  /** Error message if failed */
-  error?: string;
+	/** Action to take: block (deny), confirm (ask), or allow */
+	action: "block" | "confirm" | "allow";
+	/** Reason for the action (for logging) */
+	reason: string;
+	/** Optional detailed message for user */
+	message?: string;
 }
 
 /**
  * Tool execution input (from OpenCode plugin API)
  */
 export interface ToolInput {
-  /** Tool name (Bash, Read, Write, etc.) */
-  tool: string;
-  /** Tool arguments */
-  args: Record<string, unknown>;
-  /** Session ID */
-  sessionId?: string;
+	/** Tool name (Bash, Read, Write, etc.) */
+	tool: string;
+	/** Tool arguments */
+	args: Record<string, unknown>;
+	/** Session ID */
+	sessionId?: string;
 }
 
 /**
  * Permission check input (from OpenCode plugin API)
  */
 export interface PermissionInput {
-  /** Tool name */
-  tool: string;
-  /** Tool arguments */
-  args: Record<string, unknown>;
-  /** Permission type being requested */
-  permission?: string;
+	/** Tool name */
+	tool: string;
+	/** Tool arguments */
+	args: Record<string, unknown>;
+	/** Permission type being requested */
+	permission?: string;
 }
 
 /**
  * Event input (from OpenCode plugin API)
  */
 export interface EventInput {
-  /** Event object */
-  event: {
-    /** Event type (e.g., "session.ended", "session.created") */
-    type: string;
-    /** Event data */
-    data?: Record<string, unknown>;
-  };
+	/** Event object */
+	event: {
+		/** Event type (e.g., "session.ended", "session.created") */
+		type: string;
+		/** Event data */
+		data?: Record<string, unknown>;
+	};
 }
 
 /**
@@ -77,8 +63,8 @@ export interface EventInput {
  * Used for experimental.chat.system.transform hook
  */
 export interface SystemTransformOutput {
-  /** Array of system messages to inject */
-  system: string[];
+	/** Array of system messages to inject */
+	system: string[];
 }
 
 /**
@@ -87,8 +73,8 @@ export interface SystemTransformOutput {
  * Used for permission.ask hook
  */
 export interface PermissionOutput {
-  /** Status: "ask" (prompt user), "deny" (block), or "allow" */
-  status: "ask" | "deny" | "allow";
+	/** Status: "ask" (prompt user), "deny" (block), or "allow" */
+	status: "ask" | "deny" | "allow";
 }
 
 /**
@@ -97,8 +83,8 @@ export interface PermissionOutput {
  * Used for tool.execute.before hook
  */
 export interface ToolBeforeOutput {
-  /** Modified arguments (can be mutated) */
-  args: Record<string, unknown>;
+	/** Modified arguments (can be mutated) */
+	args: Record<string, unknown>;
 }
 
 /**
@@ -107,8 +93,8 @@ export interface ToolBeforeOutput {
  * Used for tool.execute.after hook
  */
 export interface ToolAfterOutput {
-  /** Tool result (read-only in most cases) */
-  result?: unknown;
+	/** Tool result (read-only in most cases) */
+	result?: unknown;
 }
 
 /**
@@ -117,12 +103,12 @@ export interface ToolAfterOutput {
  * Maps PAI hook events to their OpenCode equivalents
  */
 export const PAI_TO_OPENCODE_HOOKS = {
-  SessionStart: "experimental.chat.system.transform",
-  PreToolUse: "tool.execute.before",
-  PreToolUseBlock: "permission.ask",
-  PostToolUse: "tool.execute.after",
-  Stop: "event",
-  SubagentStop: "tool.execute.after", // Filter for Task tool
+	SessionStart: "experimental.chat.system.transform",
+	PreToolUse: "tool.execute.before",
+	PreToolUseBlock: "permission.ask",
+	PostToolUse: "tool.execute.after",
+	Stop: "event",
+	SubagentStop: "tool.execute.after", // Filter for Task tool
 } as const;
 
 /**
@@ -131,31 +117,48 @@ export const PAI_TO_OPENCODE_HOOKS = {
  * These patterns will trigger a BLOCK action
  */
 export const DANGEROUS_PATTERNS = [
-  // Destructive file operations
-  /rm\s+-rf\s+\//,  // rm -rf / (any root-level deletion blocked)
-  /rm\s+-rf\s+~\//,        // rm -rf ~/ (home)
-  /rm\s+-rf\s+\*/,         // rm -rf * (wildcard)
-  /rm\s+-rf\s+\.\./,       // rm -rf .. (parent traversal - any path starting with ..)
-  /mkfs\./,
-  /dd\s+if=.*of=\/dev\//,
+	// Destructive file operations
+	/rm\s+-rf\s+\//, // rm -rf / (any root-level deletion blocked)
+	/rm\s+-rf\s+~\//, // rm -rf ~/ (home)
+	/rm\s+-rf\s+\*/, // rm -rf * (wildcard)
+	/rm\s+-rf\s+\.\./, // rm -rf .. (parent traversal - any path starting with ..)
+	/mkfs\./,
+	/dd\s+if=.*of=\/dev\//,
 
-  // System compromise
-  /chmod\s+777\s+\//,
-  /chown\s+-R\s+.*\s+\//,
+	// System compromise
+	/chmod\s+777\s+\//,
+	/chown\s+-R\s+.*\s+\//,
 
-  // Reverse shells
-  /bash\s+-i\s+>&/,
-  /nc\s+-e\s+\/bin\/(ba)?sh/,
-  /python.*socket.*connect/,
+	// Reverse shells
+	/bash\s+-i\s+>&/,
+	/nc\s+-e\s+\/bin\/(ba)?sh/,
+	/python.*socket.*connect/,
 
-  // Remote code execution
-  /curl.*\|\s*(ba)?sh/,
-  /wget.*\|\s*(ba)?sh/,
+	// Remote code execution
+	/curl.*\|\s*(ba)?sh/,
+	/wget.*\|\s*(ba)?sh/,
 
-  // Credential theft
-  /cat.*\.ssh\/id_/,
-  /cat.*\.aws\/credentials/,
-  /cat.*\.env/,
+	// Credential theft
+	/cat.*\.ssh\/id_/,
+	/cat.*\.aws\/credentials/,
+	/cat.*\.env/,
+
+	// === WP-B: Additional modern attack vectors ===
+	// Obfuscated RCE via base64 decode
+	/eval\s*\$\(\s*(echo|printf|cat)\s+.*\|\s*base64\s+-d/,
+	/\$\(curl\s+.*\)\s*\|\s*(ba)?sh/, // command substitution + pipe
+
+	// Environment variable exfiltration
+	/printenv\s*.*\|\s*(curl|wget|nc)/, // env dump + exfiltration
+	/env\s*\|?\s*grep\s+.*KEY.*\|\s*(curl|wget)/, // API key theft via grep
+
+	// Python/Node RCE one-liners
+	/python[23]?\s+-c\s+["'].*__import__.*os.*system/, // python -c "import os; os.system()"
+	/node\s+-e\s+["'].*require.*child_process/, // node -e "require('child_process')"
+
+	// SSH key theft / identity compromise
+	/cat\s+~\/\.ssh\/known_hosts/,
+	/ssh-keyscan/,
 ] as const;
 
 /**
@@ -164,15 +167,15 @@ export const DANGEROUS_PATTERNS = [
  * These patterns will trigger a CONFIRM action
  */
 export const WARNING_PATTERNS = [
-  // Git operations that could be destructive
-  /git\s+push\s+--force/,
-  /git\s+reset\s+--hard/,
+	// Git operations that could be destructive
+	/git\s+push\s+--force/,
+	/git\s+reset\s+--hard/,
 
-  // Package installs
-  /npm\s+install\s+-g/,
-  /pip\s+install/,
+	// Package installs
+	/npm\s+install\s+-g/,
+	/pip\s+install/,
 
-  // Docker operations
-  /docker\s+rm/,
-  /docker\s+rmi/,
+	// Docker operations
+	/docker\s+rm/,
+	/docker\s+rmi/,
 ] as const;

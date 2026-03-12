@@ -9,8 +9,8 @@
  * @module file-logger
  */
 
-import { appendFileSync, mkdirSync, existsSync, writeFileSync } from "fs";
-import { dirname } from "path";
+import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 
 const LOG_PATH = "/tmp/pai-opencode-debug.log";
 
@@ -24,24 +24,24 @@ const LOG_PATH = "/tmp/pai-opencode-debug.log";
  * @param level - Log level (info, warn, error, debug)
  */
 export function fileLog(
-  message: string,
-  level: "info" | "warn" | "error" | "debug" = "info"
+	message: string,
+	level: "info" | "warn" | "error" | "debug" = "info"
 ): void {
-  try {
-    const timestamp = new Date().toISOString();
-    const levelPrefix = level.toUpperCase().padEnd(5);
-    const logLine = `[${timestamp}] [${levelPrefix}] ${message}\n`;
+	try {
+		const timestamp = new Date().toISOString();
+		const levelPrefix = level.toUpperCase().padEnd(5);
+		const logLine = `[${timestamp}] [${levelPrefix}] ${message}\n`;
 
-    const dir = dirname(LOG_PATH);
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
-    }
+		const dir = dirname(LOG_PATH);
+		if (!existsSync(dir)) {
+			mkdirSync(dir, { recursive: true });
+		}
 
-    appendFileSync(LOG_PATH, logLine);
-  } catch {
-    // Silent fail - NEVER console.log here!
-    // TUI corruption is worse than missing logs
-  }
+		appendFileSync(LOG_PATH, logLine);
+	} catch {
+		// Silent fail - NEVER console.log here!
+		// TUI corruption is worse than missing logs
+	}
 }
 
 /**
@@ -51,11 +51,9 @@ export function fileLog(
  * @param error - The error object
  */
 export function fileLogError(message: string, error: unknown): void {
-  const errorMessage =
-    error instanceof Error
-      ? `${error.message}\n${error.stack || ""}`
-      : String(error);
-  fileLog(`${message}: ${errorMessage}`, "error");
+	const errorMessage =
+		error instanceof Error ? `${error.message}\n${error.stack || ""}` : String(error);
+	fileLog(`${message}: ${errorMessage}`, "error");
 }
 
 /**
@@ -63,7 +61,7 @@ export function fileLogError(message: string, error: unknown): void {
  * Useful for telling users where to find logs
  */
 export function getLogPath(): string {
-  return LOG_PATH;
+	return LOG_PATH;
 }
 
 /**
@@ -71,9 +69,9 @@ export function getLogPath(): string {
  * Useful at session start
  */
 export function clearLog(): void {
-  try {
-    writeFileSync(LOG_PATH, "");
-  } catch {
-    // Silent fail
-  }
+	try {
+		writeFileSync(LOG_PATH, "");
+	} catch {
+		// Silent fail
+	}
 }
