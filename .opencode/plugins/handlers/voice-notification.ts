@@ -15,6 +15,7 @@
  */
 
 import { exec, execFile } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import {
 	appendFileSync,
 	existsSync,
@@ -296,11 +297,11 @@ async function sendGoogleTTS(message: string, sessionId: string): Promise<boolea
 		const audioBuffer = Buffer.from(data.audioContent, "base64");
 
 		// Save to temp file and play (macOS)
-		const tempFile = `/tmp/pai-voice-${Date.now()}.mp3`;
+		const tempFile = `/tmp/pai-voice-${randomUUID()}.mp3`;
 		writeFileSync(tempFile, audioBuffer);
 
 		try {
-			await execFileAsync("afplay", [tempFile]);
+			await execFileAsync("afplay", [tempFile], { timeout: 10000 });
 		} finally {
 			// Cleanup temp file
 			try {

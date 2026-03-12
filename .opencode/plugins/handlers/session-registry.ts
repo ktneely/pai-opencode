@@ -47,32 +47,69 @@ function getRegistryPath(sessionId: string): string {
 	return path.join(getStateDir(), `subagent-registry-${sessionId}.json`);
 }
 
+function normalizeRegistry(data: unknown, sessionId: string): SubagentRegistry {
+	const obj = data && typeof data === "object" ? (data as Record<string, unknown>) : {};
+	return {
+		parentSessionId: typeof obj.parentSessionId === "string" ? obj.parentSessionId : sessionId,
+		entries: Array.isArray(obj.entries)
+			? (obj.entries as unknown[]).filter(
+					(e): e is SubagentEntry =>
+						!!e &&
+						typeof e === "object" &&
+						typeof (e as Record<string, unknown>).sessionId === "string" &&
+						typeof (e as Record<string, unknown>).agentType === "string" &&
+						typeof (e as Record<string, unknown>).description === "string" &&
+						typeof (e as Record<string, unknown>).spawnedAt === "string" &&
+						typeof (e as Record<string, unknown>).status === "string"
+				)
+			: [],
+		updatedAt:
+			typeof obj.updatedAt === "string" ? obj.updatedAt : new Date().toISOString(),
+		version: typeof obj.version === "number" ? obj.version : 0,
+	};
+}
+
 function readRegistry(sessionId: string): SubagentRegistry {
 	const filePath = getRegistryPath(sessionId);
-	if (fs.existsSync(filePath)) {
-		try {
-			const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-			// Ensure version field exists (for backward compatibility)
-			if (typeof data.version !== "number") {
-				data.version = 0;
-			}
-			return data;
-		} catch {
-			fileLog(`[session-registry] Corrupted registry file at ${filePath} — starting fresh`, "warn");
-		}
+	if (!fs.existsSync(filePath)) {
+		return {
+			parentSessionId: sessionId,
+			entries: [],
+			updatedAt: new Date().toISOString(),
+			version: 0,
+		};
 	}
-	return {
-		parentSessionId: sessionId,
-		entries: [],
-		updatedAt: new Date().toISOString(),
-		version: 0,
-	};
+
+	let raw: string;
+	try {
+		raw = fs.readFileSync(filePath, "utf-8");
+	} catch (err) {
+		// I/O error (e.g. EACCES) — propagate so the caller knows the registry is inaccessible
+		fileLog(`[session-registry] Failed to read registry at ${filePath}: ${err}`, "error");
+		throw err;
+	}
+
+	try {
+		const data = JSON.parse(raw);
+		return normalizeRegistry(data, sessionId);
+	} catch (err) {
+		if (err instanceof SyntaxError) {
+			fileLog(`[session-registry] Corrupted registry file at ${filePath} — starting fresh`, "warn");
+			return {
+				parentSessionId: sessionId,
+				entries: [],
+				updatedAt: new Date().toISOString(),
+				version: 0,
+			};
+		}
+		throw err;
+	}
 }
 
 /**
  * Write registry with compare-and-swap semantics.
- * Only writes if the current on-disk version matches expectedVersion.
  * Returns true if write succeeded, false if version mismatch (caller should retry).
+ * Throws on I/O errors (e.g. ENOSPC, EACCES) — these are not retryable CAS conflicts.
  */
 function writeRegistryAtomic(
 	sessionId: string,
@@ -101,12 +138,12 @@ function writeRegistryAtomic(
 		// Atomic rename
 		fs.renameSync(tempPath, filePath);
 		return true;
-	} catch (_error) {
-		// Cleanup temp file on failure
+	} catch (err) {
+		// Cleanup temp file, then rethrow — I/O errors are not CAS conflicts
 		try {
 			if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
 		} catch {}
-		return false;
+		throw err;
 	}
 }
 
