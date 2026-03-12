@@ -17,10 +17,7 @@
  * @param content - The main content to analyze
  * @param comment - Optional user comment to include in analysis
  */
-export function getLearningCategory(
-	content: string,
-	comment?: string,
-): "SYSTEM" | "ALGORITHM" {
+export function getLearningCategory(content: string, comment?: string): "SYSTEM" | "ALGORITHM" {
 	const text = `${content} ${comment || ""}`.toLowerCase();
 
 	// ALGORITHM indicators - task execution/approach issues (check first)
@@ -61,11 +58,7 @@ export function getLearningCategory(
 /**
  * Determine if a response represents a learning moment
  */
-export function isLearningCapture(
-	text: string,
-	summary?: string,
-	analysis?: string,
-): boolean {
+export function isLearningCapture(text: string, summary?: string, analysis?: string): boolean {
 	const learningIndicators = [
 		/problem|issue|bug|error|failed|broken/i,
 		/fixed|solved|resolved|discovered|realized|learned/i,

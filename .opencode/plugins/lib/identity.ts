@@ -6,8 +6,8 @@
  * All hooks and tools should import from here.
  */
 
-import { existsSync, readFileSync } from "fs";
-import { join } from "path";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 const HOME = process.env.HOME!;
 // OpenCode uses ~/.opencode/ (not ~/.claude/)
@@ -94,16 +94,8 @@ export function getIdentity(): Identity {
 
 	return {
 		name: daidentity.name || envDA || DEFAULT_IDENTITY.name,
-		fullName:
-			daidentity.fullName ||
-			daidentity.name ||
-			envDA ||
-			DEFAULT_IDENTITY.fullName,
-		displayName:
-			daidentity.displayName ||
-			daidentity.name ||
-			envDA ||
-			DEFAULT_IDENTITY.displayName,
+		fullName: daidentity.fullName || daidentity.name || envDA || DEFAULT_IDENTITY.fullName,
+		displayName: daidentity.displayName || daidentity.name || envDA || DEFAULT_IDENTITY.displayName,
 		voiceId: daidentity.voiceId || DEFAULT_IDENTITY.voiceId,
 		color: daidentity.color || DEFAULT_IDENTITY.color,
 		voice: (daidentity as any).voice as VoiceProsody | undefined,

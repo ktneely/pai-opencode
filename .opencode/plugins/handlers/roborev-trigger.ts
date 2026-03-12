@@ -27,9 +27,9 @@
  * @module roborev-trigger
  */
 
+import { spawnSync } from "node:child_process";
 import type { ToolContext } from "@opencode-ai/plugin";
 import { tool } from "@opencode-ai/plugin";
-import { spawnSync } from "child_process";
 import { fileLog, fileLogError } from "../lib/file-logger";
 
 // --- Types ---

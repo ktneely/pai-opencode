@@ -16,11 +16,11 @@
  * @module session-cleanup
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { checkDbHealth } from "../lib/db-utils";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import { getStateDir, getWorkDir } from "../lib/paths";
-import { checkDbHealth } from "../lib/db-utils";
 
 /**
  * Check database health and warn if thresholds exceeded.
@@ -31,7 +31,7 @@ export async function checkAndWarnDbHealth(): Promise<void> {
 		const { sizeMB, oldSessions, warnings } = await checkDbHealth();
 
 		if (warnings.length > 0) {
-			fileLog("[SessionCleanup] DB Health warnings: " + warnings.join(", "), "warn");
+			fileLog(`[SessionCleanup] DB Health warnings: ${warnings.join(", ")}`, "warn");
 			// Note: User-facing warning about DB health is logged to file only
 			// TUI corruption risk: Do not use console.warn here
 		} else {
@@ -74,10 +74,7 @@ export async function cleanupSession(sessionId?: string): Promise<void> {
 
 		// Guard: don't process another session's state
 		if (sessionId && state.session_id && state.session_id !== sessionId) {
-			fileLog(
-				"[SessionCleanup] State belongs to different session — skipping",
-				"warn",
-			);
+			fileLog("[SessionCleanup] State belongs to different session — skipping", "warn");
 			return;
 		}
 
@@ -93,16 +90,10 @@ export async function cleanupSession(sessionId?: string): Promise<void> {
 			if (fs.existsSync(prdPath)) {
 				let content = fs.readFileSync(prdPath, "utf-8");
 				content = content.replace(/^status: ACTIVE$/m, "status: COMPLETED");
-				content = content.replace(
-					/^completed_at: null$/m,
-					`completed_at: "${completedAt}"`,
-				);
+				content = content.replace(/^completed_at: null$/m, `completed_at: "${completedAt}"`);
 				fs.writeFileSync(prdPath, content, "utf-8");
 				marked = true;
-				fileLog(
-					`[SessionCleanup] Marked PRD.md as COMPLETED: ${workDir}`,
-					"info",
-				);
+				fileLog(`[SessionCleanup] Marked PRD.md as COMPLETED: ${workDir}`, "info");
 			}
 
 			// Legacy fallback: META.yaml
@@ -110,25 +101,16 @@ export async function cleanupSession(sessionId?: string): Promise<void> {
 			if (fs.existsSync(metaPath)) {
 				let content = fs.readFileSync(metaPath, "utf-8");
 				content = content.replace(/^status: "ACTIVE"$/m, 'status: "COMPLETED"');
-				content = content.replace(
-					/^completed_at: null$/m,
-					`completed_at: "${completedAt}"`,
-				);
+				content = content.replace(/^completed_at: null$/m, `completed_at: "${completedAt}"`);
 				fs.writeFileSync(metaPath, content, "utf-8");
 				if (!marked) {
 					marked = true;
-					fileLog(
-						`[SessionCleanup] Marked META.yaml as COMPLETED: ${workDir}`,
-						"info",
-					);
+					fileLog(`[SessionCleanup] Marked META.yaml as COMPLETED: ${workDir}`, "info");
 				}
 			}
 
 			if (!marked) {
-				fileLog(
-					`[SessionCleanup] No PRD.md or META.yaml found in ${workPath}`,
-					"debug",
-				);
+				fileLog(`[SessionCleanup] No PRD.md or META.yaml found in ${workPath}`, "debug");
 			}
 		}
 
@@ -146,17 +128,11 @@ export async function cleanupSession(sessionId?: string): Promise<void> {
 					if (names[sid]) {
 						delete names[sid];
 						fs.writeFileSync(snPath, JSON.stringify(names, null, 2), "utf-8");
-						fileLog(
-							`[SessionCleanup] Removed session ${sid} from session-names.json`,
-							"info",
-						);
+						fileLog(`[SessionCleanup] Removed session ${sid} from session-names.json`, "info");
 					}
 				}
 			} catch (err) {
-				fileLogError(
-					"[SessionCleanup] Failed to clean session-names.json",
-					err,
-				);
+				fileLogError("[SessionCleanup] Failed to clean session-names.json", err);
 			}
 		}
 

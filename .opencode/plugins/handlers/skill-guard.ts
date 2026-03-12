@@ -9,8 +9,8 @@
  * @module skill-guard
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import { getOpenCodeDir } from "../lib/paths";
 
@@ -78,9 +78,7 @@ function extractTriggers(skillName: string): string | null {
 		const content = fs.readFileSync(skillPath, "utf-8");
 
 		// Look for description in frontmatter
-		const frontmatterMatch = content.match(
-			/---\s*\n[\s\S]*?description:\s*(.+)\n[\s\S]*?---/,
-		);
+		const frontmatterMatch = content.match(/---\s*\n[\s\S]*?description:\s*(.+)\n[\s\S]*?---/);
 		if (frontmatterMatch) {
 			return frontmatterMatch[1].trim();
 		}
@@ -102,7 +100,7 @@ function extractTriggers(skillName: string): string | null {
  */
 export async function validateSkillInvocation(
 	skillName: string,
-	context: string,
+	_context: string
 ): Promise<SkillValidation> {
 	try {
 		// Block known false-positives
@@ -127,10 +125,7 @@ export async function validateSkillInvocation(
 		// Extract and log triggers for debugging
 		const triggers = extractTriggers(skillName);
 		if (triggers) {
-			fileLog(
-				`[SkillGuard] Skill "${skillName}" triggers: ${triggers.substring(0, 100)}`,
-				"debug",
-			);
+			fileLog(`[SkillGuard] Skill "${skillName}" triggers: ${triggers.substring(0, 100)}`, "debug");
 		}
 
 		fileLog(`[SkillGuard] Skill "${skillName}" invocation OK`, "debug");

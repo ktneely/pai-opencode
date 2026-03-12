@@ -18,22 +18,12 @@
  * @module handlers/response-capture
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { join } from "path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import { getLearningCategory, isLearningCapture } from "../lib/learning-utils";
-import {
-	getMemoryDir,
-	getOpenCodeDir,
-	getStateDir,
-	getWorkDir,
-} from "../lib/paths";
-import {
-	getISOTimestamp,
-	getPSTDate,
-	getPSTTimestamp,
-	getYearMonth,
-} from "../lib/time";
+import { getMemoryDir, getStateDir, getWorkDir } from "../lib/paths";
+import { getISOTimestamp, getPSTDate, getPSTTimestamp, getYearMonth } from "../lib/time";
 
 const WORK_DIR = getWorkDir();
 const STATE_DIR = getStateDir();
@@ -90,13 +80,9 @@ function extractEffortLevel(text: string): EffortLevel | null {
 	return match ? (match[1].toUpperCase() as EffortLevel) : null;
 }
 
-function extractISCSatisfaction(
-	text: string,
-): ISCDocument["satisfaction"] | null {
+function extractISCSatisfaction(text: string): ISCDocument["satisfaction"] | null {
 	// Match patterns like "6 ISC criteria, all satisfied"
-	const allSatisfied = text.match(
-		/(\d+)\s*(?:ISC\s*)?criteria?,?\s*all\s*satisfied/i,
-	);
+	const allSatisfied = text.match(/(\d+)\s*(?:ISC\s*)?criteria?,?\s*all\s*satisfied/i);
 	if (allSatisfied) {
 		const total = parseInt(allSatisfied[1], 10);
 		return { satisfied: total, partial: 0, failed: 0, total };
@@ -123,11 +109,7 @@ function extractISCSatisfaction(
 /**
  * Update task's ISC.json with extracted satisfaction data
  */
-function updateTaskISC(
-	sessionDir: string,
-	currentTask: string,
-	text: string,
-): void {
+function updateTaskISC(sessionDir: string, currentTask: string, text: string): void {
 	const taskPath = join(WORK_DIR, sessionDir, "tasks", currentTask);
 	const iscPath = join(taskPath, "ISC.json");
 
@@ -150,8 +132,7 @@ function updateTaskISC(
 		const satisfaction = extractISCSatisfaction(text);
 		if (satisfaction) {
 			doc.satisfaction = satisfaction;
-			doc.status =
-				satisfaction.satisfied === satisfaction.total ? "COMPLETE" : "PARTIAL";
+			doc.status = satisfaction.satisfied === satisfaction.total ? "COMPLETE" : "PARTIAL";
 		}
 
 		// Check for completion marker
@@ -174,7 +155,7 @@ function updateTaskISC(
 function updateTaskMeta(
 	sessionDir: string,
 	currentTask: string,
-	structured: StructuredResponse,
+	structured: StructuredResponse
 ): void {
 	const taskPath = join(WORK_DIR, sessionDir, "tasks", currentTask);
 	const threadPath = join(taskPath, "THREAD.md");
@@ -194,22 +175,15 @@ function updateTaskMeta(
 
 			// Add completedAt if not present in frontmatter
 			if (!content.includes("completedAt:")) {
-				content = content.replace(
-					/^(---\n[\s\S]*?)(---)/,
-					`$1completedAt: "${timestamp}"\n$2`,
-				);
+				content = content.replace(/^(---\n[\s\S]*?)(---)/, `$1completedAt: "${timestamp}"\n$2`);
 			}
 
 			// Add summary if not present in frontmatter
-			const summary = (
-				structured.completed ||
-				structured.summary ||
-				""
-			).substring(0, 200);
+			const summary = (structured.completed || structured.summary || "").substring(0, 200);
 			if (summary && !content.includes("summary:")) {
 				content = content.replace(
 					/^(---\n[\s\S]*?)(---)/,
-					`$1summary: "${summary.replace(/"/g, '\\"')}"\n$2`,
+					`$1summary: "${summary.replace(/"/g, '\\"')}"\n$2`
 				);
 			}
 		}
@@ -225,10 +199,7 @@ function updateTaskMeta(
 // Learning Capture
 // ============================================================================
 
-function generateFilename(
-	description: string,
-	type: "LEARNING" | "WORK",
-): string {
+function generateFilename(description: string, type: "LEARNING" | "WORK"): string {
 	const pstTimestamp = getPSTTimestamp();
 	const date = pstTimestamp.slice(0, 10);
 	const time = pstTimestamp.slice(11, 19).replace(/:/g, "");
@@ -245,7 +216,7 @@ function generateFilename(
 function generateLearningContent(
 	structured: StructuredResponse,
 	fullText: string,
-	timestamp: string,
+	timestamp: string
 ): string {
 	return `---
 capture_type: LEARNING
@@ -321,9 +292,7 @@ function parseStructuredResponse(text: string): StructuredResponse {
 	if (summaryMatch) structured.summary = summaryMatch[1].trim();
 
 	// Extract analysis
-	const analysisMatch = text.match(
-		/🔍\s*ANALYSIS:\s*(.+?)(?:\n(?:⚡|✅|📊|➡️)|$)/is,
-	);
+	const analysisMatch = text.match(/🔍\s*ANALYSIS:\s*(.+?)(?:\n(?:⚡|✅|📊|➡️)|$)/is);
 	if (analysisMatch) structured.analysis = analysisMatch[1].trim();
 
 	// Extract actions
@@ -349,10 +318,7 @@ function parseStructuredResponse(text: string): StructuredResponse {
 	return structured;
 }
 
-async function captureWorkSummary(
-	text: string,
-	structured: StructuredResponse,
-): Promise<void> {
+async function captureWorkSummary(text: string, structured: StructuredResponse): Promise<void> {
 	try {
 		const currentWork = readCurrentWork();
 
@@ -362,35 +328,22 @@ async function captureWorkSummary(
 
 			// Update task META if we have completion info
 			if (structured.summary || structured.completed) {
-				updateTaskMeta(
-					currentWork.session_dir,
-					currentWork.current_task,
-					structured,
-				);
+				updateTaskMeta(currentWork.session_dir, currentWork.current_task, structured);
 			}
 		}
 
 		// Learning capture
-		const isLearning = isLearningCapture(
-			text,
-			structured.summary,
-			structured.analysis,
-		);
+		const isLearning = isLearningCapture(text, structured.summary, structured.analysis);
 
 		if (isLearning) {
-			let description = (
-				structured.completed ||
-				structured.summary ||
-				"task-completion"
-			)
+			let description = (structured.completed || structured.summary || "task-completion")
 				.replace(/^Completed\s+/i, "")
 				.replace(/\[AGENT:\w+\]\s*/gi, "")
 				.replace(/\[.*?\]/g, "")
 				.trim();
 
 			if (!description || description.length < 3) {
-				description =
-					structured.summary || structured.analysis || "task-completion";
+				description = structured.summary || structured.analysis || "task-completion";
 				description = description.replace(/^Completed\s+/i, "").trim();
 			}
 
@@ -432,10 +385,7 @@ async function captureWorkSummary(
  * @param text - The full response text from the assistant
  * @param sessionId - Current session identifier
  */
-export async function handleResponseCapture(
-	text: string,
-	sessionId: string,
-): Promise<void> {
+export async function handleResponseCapture(text: string, _sessionId: string): Promise<void> {
 	try {
 		fileLog(`[Capture] Processing response (length: ${text.length})`, "debug");
 

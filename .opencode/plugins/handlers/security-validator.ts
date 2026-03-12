@@ -17,22 +17,12 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type {
-	PermissionInput,
-	SecurityResult,
-	ToolInput,
-} from "../adapters/types";
+import type { PermissionInput, SecurityResult, ToolInput } from "../adapters/types";
 import { DANGEROUS_PATTERNS, WARNING_PATTERNS } from "../adapters/types";
 import { fileLog, fileLogError } from "../lib/file-logger";
-import {
-	detectInjections,
-	type InjectionCategory,
-} from "../lib/injection-patterns";
+import { detectInjections, type InjectionCategory } from "../lib/injection-patterns";
 import { getStateDir } from "../lib/paths";
-import {
-	INJECTION_SCAN_FIELDS,
-	sanitizeForSecurityCheck,
-} from "../lib/sanitizer";
+import { INJECTION_SCAN_FIELDS, sanitizeForSecurityCheck } from "../lib/sanitizer";
 
 /**
  * Security audit log entry
@@ -96,7 +86,7 @@ function redactSecrets(command: string): string {
 		// PEM private keys (redact content between headers)
 		.replace(
 			/(-----BEGIN\s+(?:[A-Z0-9]+\s+)?PRIVATE\s+KEY-----)[\s\S]*?(-----END\s+(?:[A-Z0-9]+\s+)?PRIVATE\s+KEY-----)/g,
-			"$1\n[REDACTED]\n$2",
+			"$1\n[REDACTED]\n$2"
 		)
 		// Generic high-entropy tokens ( heuristic: 40+ alphanumeric chars)
 		.replace(/\b[a-zA-Z0-9_-]{40,}\b/g, "[REDACTED]");
@@ -185,8 +175,7 @@ function checkAllFieldsForInjection(args: Record<string, unknown>): {
 
 		// Check original and sanitized versions
 		const matches = detectInjections(value);
-		const sanitizedMatches =
-			sanitized !== value ? detectInjections(sanitized) : [];
+		const sanitizedMatches = sanitized !== value ? detectInjections(sanitized) : [];
 
 		const allMatches = [...matches, ...sanitizedMatches];
 		if (allMatches.length > 0) {
@@ -203,32 +192,21 @@ function checkAllFieldsForInjection(args: Record<string, unknown>): {
  * @returns SecurityResult indicating what action to take
  */
 export async function validateSecurity(
-	input: PermissionInput | ToolInput,
+	input: PermissionInput | ToolInput
 ): Promise<SecurityResult> {
 	try {
 		fileLog(`Security check for tool: ${input.tool}`);
-		fileLog(
-			`Args: ${JSON.stringify(input.args ?? {}).substring(0, 300)}`,
-			"debug",
-		);
+		fileLog(`Args: ${JSON.stringify(input.args ?? {}).substring(0, 300)}`, "debug");
 
 		const command = extractCommand(input);
 
 		// Check for prompt injection in ALL text fields FIRST (even if no command)
-		const injectionResult = input.args
-			? checkAllFieldsForInjection(input.args)
-			: null;
+		const injectionResult = input.args ? checkAllFieldsForInjection(input.args) : null;
 
 		if (injectionResult) {
 			const firstMatch = injectionResult.matches[0];
-			fileLog(
-				`BLOCKED: Prompt injection detected in field '${injectionResult.field}'`,
-				"error",
-			);
-			fileLog(
-				`Category: ${firstMatch.category}, Pattern: ${firstMatch.pattern}`,
-				"error",
-			);
+			fileLog(`BLOCKED: Prompt injection detected in field '${injectionResult.field}'`, "error");
+			fileLog(`Category: ${firstMatch.category}, Pattern: ${firstMatch.pattern}`, "error");
 			logSecurityEvent({
 				timestamp: new Date().toISOString(),
 				tool: input.tool,
@@ -238,16 +216,12 @@ export async function validateSecurity(
 				pattern: firstMatch.pattern.toString(),
 				commandPreview: command
 					? redactSecrets(command).slice(0, 100)
-					: `${injectionResult.field}:${input.args?.[injectionResult.field]}`.slice(
-							0,
-							100,
-						),
+					: `${injectionResult.field}:${input.args?.[injectionResult.field]}`.slice(0, 100),
 			});
 			return {
 				action: "block",
 				reason: `Potential prompt injection detected in field '${injectionResult.field}'`,
-				message:
-					"Content appears to contain prompt injection patterns and has been blocked.",
+				message: "Content appears to contain prompt injection patterns and has been blocked.",
 			};
 		}
 
@@ -303,8 +277,7 @@ export async function validateSecurity(
 			return {
 				action: "confirm",
 				reason: `Potentially dangerous command: ${warningMatch}`,
-				message:
-					"This command may have unintended consequences. Please confirm.",
+				message: "This command may have unintended consequences. Please confirm.",
 			};
 		}
 
@@ -335,8 +308,7 @@ export async function validateSecurity(
 					return {
 						action: "confirm",
 						reason: `Writing to sensitive path: ${filePath}`,
-						message:
-							"Writing to a potentially sensitive location. Please confirm.",
+						message: "Writing to a potentially sensitive location. Please confirm.",
 					};
 				}
 			}

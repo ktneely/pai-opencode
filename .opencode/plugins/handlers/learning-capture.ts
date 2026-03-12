@@ -8,15 +8,14 @@
  * @module learning-capture
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import {
 	ensureDir,
 	getCurrentWorkPath,
 	getLearningDir,
 	getTimestamp,
-	getWorkDir,
 	getYearMonth,
 	slugify,
 } from "../lib/paths";
@@ -59,9 +58,7 @@ const CATEGORIES = {
 function detectCategory(content: string): string {
 	const lower = content.toLowerCase();
 
-	if (
-		/algorithm|phase|isc|execute|verify|observe|think|plan|build/i.test(lower)
-	) {
+	if (/algorithm|phase|isc|execute|verify|observe|think|plan|build/i.test(lower)) {
 		return CATEGORIES.ALGORITHM;
 	}
 	if (/system|config|hook|plugin|infrastructure|architecture/i.test(lower)) {
@@ -99,10 +96,7 @@ export async function extractLearningsFromWork(): Promise<CaptureLearningResult>
 		const threadPath = path.join(workPath, "THREAD.md");
 		try {
 			const threadContent = await fs.promises.readFile(threadPath, "utf-8");
-			const threadLearnings = extractLearningsFromText(
-				threadContent,
-				"THREAD.md",
-			);
+			const threadLearnings = extractLearningsFromText(threadContent, "THREAD.md");
 			learnings.push(...threadLearnings);
 		} catch {
 			// THREAD.md might not exist
@@ -117,7 +111,7 @@ export async function extractLearningsFromWork(): Promise<CaptureLearningResult>
 			// Extract learnings from completed criteria
 			if (Array.isArray(isc.criteria)) {
 				const completed = isc.criteria.filter(
-					(c: any) => c.status === "DONE" || c.status === "VERIFIED",
+					(c: any) => c.status === "DONE" || c.status === "VERIFIED"
 				);
 
 				if (completed.length > 0) {
@@ -143,14 +137,8 @@ export async function extractLearningsFromWork(): Promise<CaptureLearningResult>
 			const scratchFiles = await fs.promises.readdir(scratchDir);
 			for (const file of scratchFiles.filter((f) => f.endsWith(".md"))) {
 				try {
-					const content = await fs.promises.readFile(
-						path.join(scratchDir, file),
-						"utf-8",
-					);
-					const scratchLearnings = extractLearningsFromText(
-						content,
-						`scratch/${file}`,
-					);
+					const content = await fs.promises.readFile(path.join(scratchDir, file), "utf-8");
+					const scratchLearnings = extractLearningsFromText(content, `scratch/${file}`);
 					learnings.push(...scratchLearnings);
 				} catch {
 					// Skip unreadable files
@@ -165,10 +153,7 @@ export async function extractLearningsFromWork(): Promise<CaptureLearningResult>
 			await persistLearning(learning);
 		}
 
-		fileLog(
-			`Extracted ${learnings.length} learnings from work session`,
-			"info",
-		);
+		fileLog(`Extracted ${learnings.length} learnings from work session`, "info");
 		return { success: true, learnings };
 	} catch (error) {
 		fileLogError("Failed to extract learnings", error);
@@ -183,10 +168,7 @@ export async function extractLearningsFromWork(): Promise<CaptureLearningResult>
 /**
  * Extract learnings from text content
  */
-function extractLearningsFromText(
-	content: string,
-	source: string,
-): LearningEntry[] {
+function extractLearningsFromText(content: string, source: string): LearningEntry[] {
 	const learnings: LearningEntry[] = [];
 
 	// Pattern: "Learning: ..." or "Learned: ..." or "Key insight: ..."
@@ -196,8 +178,8 @@ function extractLearningsFromText(
 	];
 
 	for (const pattern of patterns) {
-		let match;
-		while ((match = pattern.exec(content)) !== null) {
+		let match: RegExpExecArray | null = pattern.exec(content);
+		while (match !== null) {
 			const learningContent = match[1].trim();
 			if (learningContent.length > 20) {
 				// Skip very short matches
@@ -209,6 +191,7 @@ function extractLearningsFromText(
 					timestamp: new Date().toISOString(),
 				});
 			}
+			match = pattern.exec(content);
 		}
 	}
 
@@ -218,9 +201,7 @@ function extractLearningsFromText(
 /**
  * Persist learning to MEMORY/LEARNING/
  */
-async function persistLearning(
-	learning: LearningEntry,
-): Promise<string | null> {
+async function persistLearning(learning: LearningEntry): Promise<string | null> {
 	try {
 		const learningDir = getLearningDir();
 		const yearMonth = getYearMonth();
@@ -264,7 +245,7 @@ ${learning.content}
 export async function createLearning(
 	title: string,
 	content: string,
-	category?: string,
+	category?: string
 ): Promise<string | null> {
 	const learning: LearningEntry = {
 		title,
@@ -300,10 +281,7 @@ export async function getRecentLearnings(limit = 10): Promise<LearningEntry[]> {
 
 				for (const file of mdFiles) {
 					try {
-						const content = await fs.promises.readFile(
-							path.join(categoryDir, file),
-							"utf-8",
-						);
+						const content = await fs.promises.readFile(path.join(categoryDir, file), "utf-8");
 
 						// Parse title
 						const titleMatch = content.match(/^# (.+)/m);

@@ -7,16 +7,10 @@
  * @module rating-capture
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
-import {
-	ensureDir,
-	getLearningDir,
-	getTimestamp,
-	getYearMonth,
-	slugify,
-} from "../lib/paths";
+import { ensureDir, getLearningDir, getTimestamp, getYearMonth, slugify } from "../lib/paths";
 
 /**
  * Rating entry structure
@@ -86,11 +80,7 @@ export function detectRating(message: string): RatingEntry | null {
 	if (firstLine.length > 50) return null;
 
 	// Skip if first line starts with common non-rating patterns
-	if (
-		/^(the|a|an|i|we|it|this|that|please|can|could|would|should|let)/i.test(
-			firstLine,
-		)
-	) {
+	if (/^(the|a|an|i|we|it|this|that|please|can|could|would|should|let)/i.test(firstLine)) {
 		return null;
 	}
 
@@ -139,7 +129,7 @@ export function detectRating(message: string): RatingEntry | null {
  */
 export async function captureRating(
 	message: string,
-	context?: string,
+	context?: string
 ): Promise<CaptureRatingResult> {
 	try {
 		const rating = detectRating(message);
@@ -157,7 +147,7 @@ export async function captureRating(
 
 		// Append to ratings.jsonl
 		const ratingsFile = path.join(signalsDir, "ratings.jsonl");
-		const line = JSON.stringify(rating) + "\n";
+		const line = `${JSON.stringify(rating)}\n`;
 		await fs.promises.appendFile(ratingsFile, line);
 
 		fileLog(`Rating captured: ${rating.score}/10`, "info");

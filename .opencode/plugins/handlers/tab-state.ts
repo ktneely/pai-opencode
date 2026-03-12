@@ -21,8 +21,8 @@
  * @module handlers/tab-state
  */
 
-import { existsSync, mkdirSync, writeFileSync } from "fs";
-import { dirname, join } from "path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import { getDAName } from "../lib/identity";
 import { getStateDir } from "../lib/paths";
@@ -54,11 +54,7 @@ interface TabTitleState {
 /**
  * Persist tab title to state file for recovery after compaction/restart.
  */
-function persistTabTitle(
-	title: string,
-	rawTitle: string,
-	state: ResponseState,
-): void {
+function persistTabTitle(title: string, rawTitle: string, state: ResponseState): void {
 	try {
 		const tabStatePath = getTabStatePath();
 		const stateDir = dirname(tabStatePath);
@@ -113,10 +109,7 @@ function extractSpecificSubject(voiceLine: string): string {
 	// Strip common prefixes like "Done.", "DA name:", etc.
 	const daName = getDAName();
 	const cleaned = voiceLine
-		.replace(
-			new RegExp(`^(Done\\.?\\s*|${daName}:\\s*|I've\\s+|I\\s+)`, "i"),
-			"",
-		)
+		.replace(new RegExp(`^(Done\\.?\\s*|${daName}:\\s*|I've\\s+|I\\s+)`, "i"), "")
 		.trim();
 
 	if (!cleaned || cleaned.length < 3) return "Task done.";
@@ -136,22 +129,16 @@ function extractSpecificSubject(voiceLine: string): string {
  * Extracts first few meaningful words from voice line.
  */
 function generateFallbackSummary(voiceLine: string): string {
-	fileLog(
-		"[TabState] Using fallback summary (inference not available)",
-		"debug",
-	);
+	fileLog("[TabState] Using fallback summary (inference not available)", "debug");
 
 	const summary = extractSpecificSubject(voiceLine);
 
 	// Validate - reject if generic
 	if (hasGenericSubject(summary)) {
-		fileLog(
-			`[TabState] Fallback produced generic summary: "${summary}"`,
-			"warn",
-		);
+		fileLog(`[TabState] Fallback produced generic summary: "${summary}"`, "warn");
 		// Just use the first few words directly
 		const words = voiceLine.split(/\s+/).slice(0, 4).join(" ");
-		return words.endsWith(".") ? words : words + ".";
+		return words.endsWith(".") ? words : `${words}.`;
 	}
 
 	return summary;
@@ -266,7 +253,7 @@ async function setTabColors(stateColor: string): Promise<void> {
 			.quiet()
 			.nothrow();
 		fileLog("[TabState] Tab colors updated", "debug");
-	} catch (error) {
+	} catch (_error) {
 		fileLog("[TabState] Could not set tab colors (non-critical)", "debug");
 	}
 }
@@ -284,7 +271,7 @@ async function setTabTitle(title: string): Promise<void> {
 		// Set tab title
 		await Bun.$`kitty @ set-tab-title ${title}`.quiet().nothrow();
 		fileLog(`[TabState] Tab title set to: "${title}"`, "debug");
-	} catch (error) {
+	} catch (_error) {
 		fileLog("[TabState] Could not set tab title (non-critical)", "debug");
 	}
 }
@@ -313,7 +300,7 @@ function isValidVoiceCompletion(voiceLine: string): boolean {
  */
 export async function handleTabState(
 	voiceCompletion: string,
-	responseState: ResponseState = "completed",
+	responseState: ResponseState = "completed"
 ): Promise<void> {
 	try {
 		// Extract plain completion (remove emoji and DA name prefix)
@@ -323,10 +310,7 @@ export async function handleTabState(
 
 		// Validate completion
 		if (!isValidVoiceCompletion(plainCompletion)) {
-			fileLog(
-				`[TabState] Invalid completion: "${plainCompletion.slice(0, 50)}..."`,
-				"warn",
-			);
+			fileLog(`[TabState] Invalid completion: "${plainCompletion.slice(0, 50)}..."`, "warn");
 			plainCompletion = "Task completed.";
 		}
 

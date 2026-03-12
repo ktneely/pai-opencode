@@ -44,12 +44,8 @@ function buildPrdContext(sessionId: string): string | null {
 
 		// Extract frontmatter fields
 		const statusMatch = prdContent.match(/^status:\s*(.+)$/m);
-		const progressMatch = prdContent.match(
-			/^verification_summary:\s*"?(\d+\/\d+)"?$/m,
-		);
-		const failingMatch = prdContent.match(
-			/^failing_criteria:\s*\[([^\]]*)\]$/m,
-		);
+		const progressMatch = prdContent.match(/^verification_summary:\s*"?(\d+\/\d+)"?$/m);
+		const failingMatch = prdContent.match(/^failing_criteria:\s*\[([^\]]*)\]$/m);
 		const effortMatch = prdContent.match(/^effort_level:\s*(.+)$/m);
 		const phaseMatch = prdContent.match(/^last_phase:\s*(.+)$/m);
 
@@ -71,9 +67,7 @@ function buildPrdContext(sessionId: string): string | null {
 
 		if (criteria.length > 0) {
 			lines.push("");
-			lines.push(
-				"### ISC Criteria (carry forward — these ARE the verification checklist):",
-			);
+			lines.push("### ISC Criteria (carry forward — these ARE the verification checklist):");
 			lines.push("");
 			for (const c of criteria) {
 				lines.push(c);
@@ -95,10 +89,7 @@ function buildAlgorithmContext(sessionId: string): string | null {
 	try {
 		const stateDir = getStateDir();
 		// Session-specific state file to prevent cross-session bleed
-		const algorithmStatePath = path.join(
-			stateDir,
-			`algorithm-state-${sessionId}.json`,
-		);
+		const algorithmStatePath = path.join(stateDir, `algorithm-state-${sessionId}.json`);
 		if (!fs.existsSync(algorithmStatePath)) return null;
 
 		const state = JSON.parse(fs.readFileSync(algorithmStatePath, "utf-8"));
@@ -129,7 +120,7 @@ function buildAlgorithmContext(sessionId: string): string | null {
  */
 export async function injectCompactionContext(
 	input: { sessionID: string },
-	output: { context: string[]; prompt?: string },
+	output: { context: string[]; prompt?: string }
 ): Promise<void> {
 	try {
 		let injectedCount = 0;
@@ -166,19 +157,16 @@ export async function injectCompactionContext(
 				"",
 				"Subagent data SURVIVES compaction. It is stored in OpenCode's database.",
 				"Do NOT claim results are lost — use the tools above to recover them.",
-			].join("\n"),
+			].join("\n")
 		);
 		injectedCount++;
 
 		fileLog(
 			`[CompactionIntelligence] Injected ${injectedCount} context sections for session ${input.sessionID}`,
-			"info",
+			"info"
 		);
 	} catch (error) {
-		fileLogError(
-			"[CompactionIntelligence] Context injection failed (non-blocking)",
-			error,
-		);
+		fileLogError("[CompactionIntelligence] Context injection failed (non-blocking)", error);
 		// Non-blocking — compaction must not fail due to our plugin
 	}
 }

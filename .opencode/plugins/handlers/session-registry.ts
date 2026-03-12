@@ -16,10 +16,10 @@
  * @module session-registry
  */
 
-import * as fs from "fs";
-import * as path from "path";
-import { tool } from "@opencode-ai/plugin";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import type { ToolContext } from "@opencode-ai/plugin";
+import { tool } from "@opencode-ai/plugin";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import { getStateDir } from "../lib/paths";
 
@@ -77,7 +77,7 @@ function readRegistry(sessionId: string): SubagentRegistry {
 function writeRegistryAtomic(
 	sessionId: string,
 	registry: SubagentRegistry,
-	expectedVersion: number,
+	expectedVersion: number
 ): boolean {
 	const filePath = getRegistryPath(sessionId);
 	const dir = path.dirname(filePath);
@@ -101,7 +101,7 @@ function writeRegistryAtomic(
 		// Atomic rename
 		fs.renameSync(tempPath, filePath);
 		return true;
-	} catch (error) {
+	} catch (_error) {
 		// Cleanup temp file on failure
 		try {
 			if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
@@ -111,7 +111,7 @@ function writeRegistryAtomic(
 }
 
 // Legacy non-atomic write for compatibility (no CAS check)
-function writeRegistry(sessionId: string, registry: SubagentRegistry): void {
+function _writeRegistry(sessionId: string, registry: SubagentRegistry): void {
 	const current = readRegistry(sessionId);
 	writeRegistryAtomic(sessionId, registry, current.version);
 }
@@ -127,11 +127,7 @@ function writeRegistry(sessionId: string, registry: SubagentRegistry): void {
  * - Truncate to max length
  */
 function sanitizeForMarkdown(text: string, maxLength = 60, escapePipes = true): string {
-	let sanitized = text
-		.replace(/\r\n/g, " ")
-		.replace(/\n/g, " ")
-		.replace(/\s+/g, " ")
-		.trim();
+	let sanitized = text.replace(/\r\n/g, " ").replace(/\n/g, " ").replace(/\s+/g, " ").trim();
 
 	if (escapePipes) {
 		sanitized = sanitized.replace(/\|/g, "\\|");
@@ -152,10 +148,7 @@ function sanitizeForMarkdown(text: string, maxLength = 60, escapePipes = true): 
  *
  * Also checks the structured metadata field (output.metadata.sessionId).
  */
-export function extractSessionId(output: {
-	output?: string;
-	metadata?: any;
-}): string | null {
+export function extractSessionId(output: { output?: string; metadata?: any }): string | null {
 	// Method 1: Structured metadata (preferred)
 	if (output.metadata?.sessionId) {
 		return output.metadata.sessionId;
@@ -184,8 +177,7 @@ export function extractTaskInfo(args: any): {
 } {
 	return {
 		agentType: args?.subagent_type || args?.agent || "unknown",
-		description:
-			args?.description || args?.prompt?.substring(0, 100) || "unknown task",
+		description: args?.description || args?.prompt?.substring(0, 100) || "unknown task",
 		modelTier: args?.model_tier,
 	};
 }
@@ -199,15 +191,12 @@ export function extractTaskInfo(args: any): {
 export async function captureSubagentSession(
 	sessionId: string,
 	args: any,
-	output: { output?: string; metadata?: any; title?: string },
+	output: { output?: string; metadata?: any; title?: string }
 ): Promise<void> {
 	try {
 		const childSessionId = extractSessionId(output);
 		if (!childSessionId) {
-			fileLog(
-				"[SessionRegistry] Could not extract session_id from Task output",
-				"warn",
-			);
+			fileLog("[SessionRegistry] Could not extract session_id from Task output", "warn");
 			return;
 		}
 
@@ -221,10 +210,7 @@ export async function captureSubagentSession(
 
 			// Avoid duplicates (check if already registered)
 			if (registry.entries.some((e) => e.sessionId === childSessionId)) {
-				fileLog(
-					`[SessionRegistry] Session ${childSessionId} already registered`,
-					"debug",
-				);
+				fileLog(`[SessionRegistry] Session ${childSessionId} already registered`, "debug");
 				return;
 			}
 
@@ -241,7 +227,7 @@ export async function captureSubagentSession(
 			if (writeRegistryAtomic(sessionId, registry, expectedVersion)) {
 				fileLog(
 					`[SessionRegistry] Registered ${taskInfo.agentType} subagent: ${childSessionId} (${registry.entries.length} total, v${expectedVersion + 1})`,
-					"info",
+					"info"
 				);
 				return;
 			}
@@ -251,7 +237,7 @@ export async function captureSubagentSession(
 			if (retries > 0) {
 				fileLog(
 					`[SessionRegistry] Registry version conflict, re-reading and retrying... (${retries} left)`,
-					"warn",
+					"warn"
 				);
 				await new Promise((r) => setTimeout(r, 50));
 			}
@@ -259,7 +245,7 @@ export async function captureSubagentSession(
 
 		fileLogError(
 			"[SessionRegistry] Failed to write registry after retries",
-			new Error("Compare-and-swap failed"),
+			new Error("Compare-and-swap failed")
 		);
 	} catch (error) {
 		fileLogError("[SessionRegistry] Failed to capture subagent session", error);
@@ -297,13 +283,13 @@ export const sessionRegistryTool = tool({
 		for (let i = 0; i < registry.entries.length; i++) {
 			const e = registry.entries[i];
 			lines.push(
-				`| ${i + 1} | ${e.agentType} | ${e.sessionId} | ${sanitizeForMarkdown(e.description, 60, true)} | ${e.spawnedAt} |`,
+				`| ${i + 1} | ${e.agentType} | ${e.sessionId} | ${sanitizeForMarkdown(e.description, 60, true)} | ${e.spawnedAt} |`
 			);
 		}
 
 		lines.push("");
 		lines.push(
-			"Use `session_results` with any session_id above to retrieve registry metadata and resume instructions (full conversation requires Task tool with session_id).",
+			"Use `session_results` with any session_id above to retrieve registry metadata and resume instructions (full conversation requires Task tool with session_id)."
 		);
 
 		return lines.join("\n");
@@ -328,13 +314,10 @@ export const sessionResultsTool = tool({
 		session_id: tool.schema
 			.string()
 			.describe(
-				"The session ID of the subagent (e.g., ses_abc123). Get IDs from session_registry.",
+				"The session ID of the subagent (e.g., ses_abc123). Get IDs from session_registry."
 			),
 	},
-	async execute(
-		args: { session_id: string },
-		context: ToolContext,
-	): Promise<string> {
+	async execute(args: { session_id: string }, context: ToolContext): Promise<string> {
 		// Read the registry file to get stored metadata for this session
 		const registry = readRegistry(context.sessionID);
 		const entry = registry.entries.find((e) => e.sessionId === args.session_id);
@@ -380,9 +363,7 @@ export function buildRegistryContext(sessionId: string): string | null {
 
 	for (const e of registry.entries) {
 		const sanitizedDesc = sanitizeForMarkdown(e.description, 80, false);
-		lines.push(
-			`- **${e.agentType}** (${e.sessionId}): ${sanitizedDesc}`,
-		);
+		lines.push(`- **${e.agentType}** (${e.sessionId}): ${sanitizedDesc}`);
 	}
 
 	return lines.join("\n");

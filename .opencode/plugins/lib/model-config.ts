@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from "fs";
-import { dirname, join } from "path";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileLog } from "./file-logger";
 
 /**
@@ -40,10 +40,7 @@ export interface PaiModelConfig {
  *
  * ZEN models are FREE and don't require API keys!
  */
-const PROVIDER_PRESETS: Record<
-	"zen" | "anthropic" | "openai",
-	PaiModelConfig["models"]
-> = {
+const PROVIDER_PRESETS: Record<"zen" | "anthropic" | "openai", PaiModelConfig["models"]> = {
 	zen: {
 		// Using grok-code as default (fast, free, good for coding)
 		default: "opencode/grok-code",
@@ -84,7 +81,7 @@ const PROVIDER_PRESETS: Record<
  * Get the provider preset configuration
  */
 export function getProviderPreset(
-	provider: "zen" | "anthropic" | "openai",
+	provider: "zen" | "anthropic" | "openai"
 ): PaiModelConfig["models"] {
 	return PROVIDER_PRESETS[provider];
 }
@@ -119,7 +116,7 @@ function readOpencodeConfig(): any | null {
 		if (!configPath) {
 			fileLog(
 				"model-config",
-				`No opencode.json found in any of: ${possiblePaths.join(", ")}, using defaults`,
+				`No opencode.json found in any of: ${possiblePaths.join(", ")}, using defaults`
 			);
 			return null;
 		}
@@ -140,9 +137,7 @@ function readOpencodeConfig(): any | null {
  * @example "anthropic/claude-sonnet-4-5" -> "anthropic"
  * @example "openai/gpt-4o" -> "openai"
  */
-function detectProviderFromModel(
-	model: string,
-): "zen" | "anthropic" | "openai" | null {
+function detectProviderFromModel(model: string): "zen" | "anthropic" | "openai" | null {
 	if (model.startsWith("anthropic/")) return "anthropic";
 	if (model.startsWith("openai/")) return "openai";
 	if (model.startsWith("opencode/")) return "zen";
@@ -169,10 +164,7 @@ export function getModelConfig(): PaiModelConfig {
 
 		// Validate provider
 		if (!["zen", "anthropic", "openai"].includes(provider)) {
-			fileLog(
-				"model-config",
-				`Invalid provider "${provider}", falling back to zen`,
-			);
+			fileLog("model-config", `Invalid provider "${provider}", falling back to zen`);
 			return {
 				model_provider: "zen",
 				models: PROVIDER_PRESETS.zen,
@@ -197,7 +189,7 @@ export function getModelConfig(): PaiModelConfig {
 
 		fileLog(
 			"model-config",
-			`Using provider "${provider}" from pai config with models: ${JSON.stringify(models)}`,
+			`Using provider "${provider}" from pai config with models: ${JSON.stringify(models)}`
 		);
 
 		return {
@@ -213,7 +205,7 @@ export function getModelConfig(): PaiModelConfig {
 		if (detectedProvider) {
 			fileLog(
 				"model-config",
-				`Auto-detected provider "${detectedProvider}" from model field: ${config.model}`,
+				`Auto-detected provider "${detectedProvider}" from model field: ${config.model}`
 			);
 			return {
 				model_provider: detectedProvider,
@@ -223,10 +215,7 @@ export function getModelConfig(): PaiModelConfig {
 	}
 
 	// Final fallback: zen defaults
-	fileLog(
-		"model-config",
-		"No PAI config or model field found, using zen defaults",
-	);
+	fileLog("model-config", "No PAI config or model field found, using zen defaults");
 	return {
 		model_provider: "zen",
 		models: PROVIDER_PRESETS.zen,
@@ -245,16 +234,14 @@ export function getModel(
 		| "agents.architect"
 		| "agents.engineer"
 		| "agents.explorer"
-		| "agents.reviewer",
+		| "agents.reviewer"
 ): string {
 	const config = getModelConfig();
 	const models = config.models;
 
 	// Handle nested paths (agents.*)
 	if (purpose.startsWith("agents.")) {
-		const agentType = purpose.split(
-			".",
-		)[1] as keyof PaiModelConfig["models"]["agents"];
+		const agentType = purpose.split(".")[1] as keyof PaiModelConfig["models"]["agents"];
 		return models.agents[agentType];
 	}
 
@@ -264,10 +251,7 @@ export function getModel(
 	}
 
 	// Fallback to default
-	fileLog(
-		"model-config",
-		`Unknown purpose "${purpose}", falling back to default`,
-	);
+	fileLog("model-config", `Unknown purpose "${purpose}", falling back to default`);
 	return models.default;
 }
 

@@ -19,8 +19,8 @@
  * @module question-tracking
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import { ensureDir, getStateDir } from "../lib/paths";
 
@@ -46,7 +46,7 @@ export async function trackQuestionAnswered(
 	question: string,
 	answer: string,
 	sessionId: string,
-	toolCallId?: string,
+	toolCallId?: string
 ): Promise<void> {
 	if (!question || !answer) return;
 
@@ -63,21 +63,11 @@ export async function trackQuestionAnswered(
 		};
 
 		const logPath = path.join(stateDir, QUESTIONS_LOG);
-		await fs.promises.appendFile(
-			logPath,
-			JSON.stringify(entry) + "\n",
-			"utf-8",
-		);
+		await fs.promises.appendFile(logPath, `${JSON.stringify(entry)}\n`, "utf-8");
 
-		fileLog(
-			`[QuestionTracking] Q&A recorded: "${question.slice(0, 60)}..."`,
-			"info",
-		);
+		fileLog(`[QuestionTracking] Q&A recorded: "${question.slice(0, 60)}..."`, "info");
 	} catch (error) {
-		fileLogError(
-			"[QuestionTracking] Failed to record Q&A (non-blocking)",
-			error,
-		);
+		fileLogError("[QuestionTracking] Failed to record Q&A (non-blocking)", error);
 	}
 }
 
@@ -88,15 +78,11 @@ export async function trackQuestionAnswered(
 export function extractAskUserQuestionAnswer(
 	tool: string,
 	args: Record<string, unknown>,
-	result: unknown,
+	result: unknown
 ): { question: string; answer: string } | null {
 	// Only process AskUserQuestion tool results — whitelist to prevent false positives
 	// tool.includes("question") is too broad (matches unrelated tools like "list_questions")
-	const ALLOWED_QUESTION_TOOLS = new Set([
-		"askuserquestion",
-		"ask_user_question",
-		"ask_user",
-	]);
+	const ALLOWED_QUESTION_TOOLS = new Set(["askuserquestion", "ask_user_question", "ask_user"]);
 	const normalizedTool = tool.toLowerCase().replace(/[^a-z0-9_]/g, "");
 	if (!ALLOWED_QUESTION_TOOLS.has(normalizedTool)) {
 		return null;

@@ -17,8 +17,8 @@
  * @module last-response-cache
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import { ensureDir, getStateDir } from "../lib/paths";
 
@@ -44,10 +44,7 @@ function getCacheFilename(sessionId?: string): string {
  * @param responseText - Full assistant response text
  * @param sessionId - OpenCode session ID (optional, for scoping)
  */
-export async function cacheLastResponse(
-	responseText: string,
-	sessionId?: string,
-): Promise<void> {
+export async function cacheLastResponse(responseText: string, sessionId?: string): Promise<void> {
 	if (!responseText || responseText.trim().length === 0) return;
 
 	try {
@@ -60,7 +57,7 @@ export async function cacheLastResponse(
 		await fs.promises.writeFile(cachePath, truncated, "utf-8");
 		fileLog(
 			`[LastResponseCache] Cached ${truncated.length} chars (session: ${sessionId ?? "global"})`,
-			"debug",
+			"debug"
 		);
 	} catch (error) {
 		fileLogError("[LastResponseCache] Failed to write cache", error);
@@ -75,9 +72,7 @@ export async function cacheLastResponse(
  * @param sessionId - OpenCode session ID (optional, for scoping)
  * @returns Cached response text, or null if not available
  */
-export async function readLastResponse(
-	sessionId?: string,
-): Promise<string | null> {
+export async function readLastResponse(sessionId?: string): Promise<string | null> {
 	try {
 		const cachePath = path.join(getStateDir(), getCacheFilename(sessionId));
 		return await fs.promises.readFile(cachePath, "utf-8");

@@ -9,7 +9,7 @@
  * @module format-reminder
  */
 
-import { fileLog, fileLogError } from "../lib/file-logger";
+import { fileLogError } from "../lib/file-logger";
 
 /** Effort level tiers (v3.0) */
 const EFFORT_LEVELS = {
@@ -49,9 +49,7 @@ interface ClassificationResult {
  * Uses heuristics to classify the effort level.
  * Default is Standard (~2min).
  */
-export async function detectEffortLevel(
-	userMessage: string,
-): Promise<EffortResult> {
+export async function detectEffortLevel(userMessage: string): Promise<EffortResult> {
 	try {
 		const msg = userMessage.toLowerCase().trim();
 		const len = msg.length;
@@ -101,11 +99,7 @@ export async function detectEffortLevel(
 		const hasDeepSignal = deepSignals.some((s) => msg.includes(s));
 
 		// Comprehensive: very long prompts or explicit signals
-		if (
-			len > 2000 ||
-			msg.includes("comprehensive") ||
-			msg.includes("full system")
-		) {
+		if (len > 2000 || msg.includes("comprehensive") || msg.includes("full system")) {
 			return {
 				level: "Comprehensive",
 				budget: EFFORT_LEVELS.Comprehensive.budget,
@@ -123,14 +117,7 @@ export async function detectEffortLevel(
 		}
 
 		// Advanced: multi-domain or substantial work
-		const multiSignals = [
-			"migration",
-			"refactor",
-			"redesign",
-			"architect",
-			"parallel",
-			"multiple",
-		];
+		const multiSignals = ["migration", "refactor", "redesign", "architect", "parallel", "multiple"];
 		if (multiSignals.some((s) => msg.includes(s)) || len > 800) {
 			return {
 				level: "Advanced",
@@ -176,9 +163,7 @@ export async function detectEffortLevel(
 /**
  * Classify depth and effort level from user message
  */
-export async function classifyMessage(
-	userMessage: string,
-): Promise<ClassificationResult> {
+export async function classifyMessage(userMessage: string): Promise<ClassificationResult> {
 	const effort = await detectEffortLevel(userMessage);
 
 	let depth: Depth;

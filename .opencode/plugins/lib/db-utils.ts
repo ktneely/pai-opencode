@@ -4,8 +4,8 @@
  * DB health checks, size monitoring, and session archiving.
  */
 
-import { join } from "node:path";
 import { homedir } from "node:os";
+import { join } from "node:path";
 import { fileLog } from "./file-logger";
 
 const PAI_DIR = join(homedir(), ".opencode");
@@ -43,9 +43,11 @@ export async function getSessionsOlderThan(days: number): Promise<Session[]> {
 	if (!db) return [];
 
 	try {
-		const rows = db.query(
-			`SELECT id, created_at, updated_at, title\n    FROM conversations\n    WHERE updated_at < ?1\n    ORDER BY updated_at ASC`
-		).all(cutoffDate.toISOString());
+		const rows = db
+			.query(
+				`SELECT id, created_at, updated_at, title\n    FROM conversations\n    WHERE updated_at < ?1\n    ORDER BY updated_at ASC`
+			)
+			.all(cutoffDate.toISOString());
 
 		const sessions: Session[] = rows.map((row: Record<string, unknown>) => ({
 			id: row.id as string,
@@ -63,14 +65,12 @@ export async function getSessionsOlderThan(days: number): Promise<Session[]> {
 /**
  * Archive sessions to separate database file
  */
-export async function archiveSessions(
-	sessions: Session[],
-	archivePath: string,
-): Promise<number> {
+export async function archiveSessions(sessions: Session[], archivePath: string): Promise<number> {
 	if (sessions.length === 0) return 0;
 
 	// Open writable DB connection for read + delete
-	let db;
+	// biome-ignore lint/suspicious/noExplicitAny: bun:sqlite Database type varies by environment
+	let db: any;
 	try {
 		const { Database } = require("bun:sqlite");
 		db = new Database(DB_PATH, { readonly: false });
@@ -97,9 +97,9 @@ export async function archiveSessions(
 	try {
 		for (const session of sessions) {
 			// Get full conversation data
-			const messages = db.query(
-				"SELECT content FROM messages WHERE conversation_id = ?1"
-			).all(session.id);
+			const messages = db
+				.query("SELECT content FROM messages WHERE conversation_id = ?1")
+				.all(session.id);
 
 			const messageData = JSON.stringify(messages);
 
@@ -107,13 +107,7 @@ export async function archiveSessions(
 			archiveDb.run(
 				`INSERT OR REPLACE INTO conversations (id, created_at, updated_at, title, messages)
        VALUES (?, ?, ?, ?, ?)`,
-				[
-					session.id,
-					session.created_at,
-					session.updated_at,
-					session.title || null,
-					messageData,
-				],
+				[session.id, session.created_at, session.updated_at, session.title || null, messageData]
 			);
 
 			// Delete from source DB after successful archive
@@ -137,7 +131,8 @@ export async function archiveSessions(
  */
 export async function vacuumDb(): Promise<void> {
 	// Open writable connection for VACUUM (cannot use readonly getDb())
-	let db;
+	// biome-ignore lint/suspicious/noExplicitAny: bun:sqlite Database type varies by environment
+	let db: any;
 	try {
 		const { Database } = require("bun:sqlite");
 		db = new Database(DB_PATH, { readonly: false });
@@ -175,7 +170,7 @@ export function formatBytes(bytes: number): string {
 	const k = 1024;
 	const sizes = ["B", "KB", "MB", "GB", "TB"];
 	const i = Math.floor(Math.log(bytes) / Math.log(k));
-	return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+	return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
 }
 
 /**
@@ -192,16 +187,14 @@ export async function checkDbHealth(): Promise<{
 	const sizeMB = await getDbSizeMB();
 	if (sizeMB > 500) {
 		warnings.push(
-			`Database size is ${sizeMB}MB (>500MB threshold). Consider archiving old sessions.`,
+			`Database size is ${sizeMB}MB (>500MB threshold). Consider archiving old sessions.`
 		);
 	}
 
 	// Check old sessions
 	const oldSessions = (await getSessionsOlderThan(90)).length;
 	if (oldSessions > 0) {
-		warnings.push(
-			`${oldSessions} sessions are older than 90 days. Consider archiving.`,
-		);
+		warnings.push(`${oldSessions} sessions are older than 90 days. Consider archiving.`);
 	}
 
 	return { sizeMB, oldSessions, warnings };

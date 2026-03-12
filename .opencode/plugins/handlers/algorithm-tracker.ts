@@ -9,22 +9,14 @@
  * @module algorithm-tracker
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import { getStateDir } from "../lib/paths";
 import { updateISC } from "./work-tracker";
 
 /** Algorithm phases in order */
-const PHASES = [
-	"OBSERVE",
-	"THINK",
-	"PLAN",
-	"BUILD",
-	"EXECUTE",
-	"VERIFY",
-	"LEARN",
-] as const;
+const PHASES = ["OBSERVE", "THINK", "PLAN", "BUILD", "EXECUTE", "VERIFY", "LEARN"] as const;
 
 type Phase = (typeof PHASES)[number];
 
@@ -83,19 +75,13 @@ function detectPhaseFromOutput(text: string): Phase | null {
 	const str = typeof text === "string" ? text : JSON.stringify(text);
 
 	// Check for phase headers in voice curls or output
-	if (str.includes("Observe phase") || str.includes("━━━ 👁️ OBSERVE"))
-		return "OBSERVE";
-	if (str.includes("Think phase") || str.includes("━━━ 🧠 THINK"))
-		return "THINK";
+	if (str.includes("Observe phase") || str.includes("━━━ 👁️ OBSERVE")) return "OBSERVE";
+	if (str.includes("Think phase") || str.includes("━━━ 🧠 THINK")) return "THINK";
 	if (str.includes("Plan phase") || str.includes("━━━ 📋 PLAN")) return "PLAN";
-	if (str.includes("Build phase") || str.includes("━━━ 🔨 BUILD"))
-		return "BUILD";
-	if (str.includes("Execute phase") || str.includes("━━━ ⚡ EXECUTE"))
-		return "EXECUTE";
-	if (str.includes("Verify phase") || str.includes("━━━ ✅ VERIFY"))
-		return "VERIFY";
-	if (str.includes("Learn phase") || str.includes("━━━ 📚 LEARN"))
-		return "LEARN";
+	if (str.includes("Build phase") || str.includes("━━━ 🔨 BUILD")) return "BUILD";
+	if (str.includes("Execute phase") || str.includes("━━━ ⚡ EXECUTE")) return "EXECUTE";
+	if (str.includes("Verify phase") || str.includes("━━━ ✅ VERIFY")) return "VERIFY";
+	if (str.includes("Learn phase") || str.includes("━━━ 📚 LEARN")) return "LEARN";
 
 	return null;
 }
@@ -107,7 +93,7 @@ export async function trackAlgorithmState(
 	toolName: string,
 	toolArgs: any,
 	toolResult: any,
-	sessionId: string,
+	sessionId: string
 ): Promise<AlgorithmState | null> {
 	try {
 		let state = readState(sessionId);
@@ -129,9 +115,7 @@ export async function trackAlgorithmState(
 		}
 
 		const resultStr =
-			typeof toolResult === "string"
-				? toolResult
-				: JSON.stringify(toolResult ?? "");
+			typeof toolResult === "string" ? toolResult : JSON.stringify(toolResult ?? "");
 
 		// Detect phase from Bash output (voice curls)
 		if (toolName.toLowerCase().includes("bash") || toolName === "mcp_bash") {
@@ -148,20 +132,15 @@ export async function trackAlgorithmState(
 		}
 
 		// Track ISC criteria via TodoWrite
-		if (
-			toolName === "mcp_todowrite" ||
-			toolName.toLowerCase().includes("todo")
-		) {
+		if (toolName === "mcp_todowrite" || toolName.toLowerCase().includes("todo")) {
 			const todos = toolArgs?.todos;
 			if (Array.isArray(todos)) {
 				state.criteriaCount = todos.length;
-				state.criteriaCompleted = todos.filter(
-					(t: any) => t.status === "completed",
-				).length;
+				state.criteriaCompleted = todos.filter((t: any) => t.status === "completed").length;
 				state.active = true;
 				fileLog(
 					`[AlgorithmTracker] ISC: ${state.criteriaCompleted}/${state.criteriaCount}`,
-					"info",
+					"info"
 				);
 
 				// === ISC BRIDGE (Phase 3 — Issue #24) ===
@@ -173,15 +152,9 @@ export async function trackAlgorithmState(
 						priority: t.priority || "medium",
 					}));
 					await updateISC(criteria);
-					fileLog(
-						`[AlgorithmTracker] ISC.json updated with ${criteria.length} criteria`,
-						"info",
-					);
+					fileLog(`[AlgorithmTracker] ISC.json updated with ${criteria.length} criteria`, "info");
 				} catch (error) {
-					fileLogError(
-						"[AlgorithmTracker] ISC bridge failed (non-blocking)",
-						error,
-					);
+					fileLogError("[AlgorithmTracker] ISC bridge failed (non-blocking)", error);
 				}
 			}
 		}
@@ -189,10 +162,7 @@ export async function trackAlgorithmState(
 		// Track agent spawns via Task
 		if (toolName === "mcp_task" || toolName.toLowerCase().includes("task")) {
 			state.agentCount++;
-			fileLog(
-				`[AlgorithmTracker] Agent spawned (#${state.agentCount})`,
-				"info",
-			);
+			fileLog(`[AlgorithmTracker] Agent spawned (#${state.agentCount})`, "info");
 		}
 
 		writeState(state);

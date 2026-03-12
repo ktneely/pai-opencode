@@ -21,8 +21,7 @@ export function decodeBase64Payloads(content: string): string {
 			// Only replace if decoded result is printable ASCII (avoid binary noise)
 			// Use character ranges instead of hex escapes to avoid control char lint issues
 			const printableAsciiPattern = /^[ -~\n\r\t]+$/;
-			if (printableAsciiPattern.test(decoded))
-				return `${match}[decoded:${decoded}]`;
+			if (printableAsciiPattern.test(decoded)) return `${match}[decoded:${decoded}]`;
 		} catch {
 			/* Not valid base64 */
 		}
@@ -43,10 +42,7 @@ export function normalizeUnicode(content: string): string {
 
 	// Build regex from char codes to avoid control character lint warning
 	// Match any character outside ASCII range (0-127)
-	const nonAsciiRegex = new RegExp(
-		`[^${String.fromCharCode(0)}-${String.fromCharCode(127)}]`,
-		"g",
-	);
+	const nonAsciiRegex = new RegExp(`[^${String.fromCharCode(0)}-${String.fromCharCode(127)}]`, "g");
 
 	return normalized.replace(nonAsciiRegex, (char) => {
 		// Map common Cyrillic/Greek lookalikes to ASCII

@@ -14,7 +14,7 @@
  * @module voice-notification
  */
 
-import { exec } from "child_process";
+import { exec } from "node:child_process";
 import {
 	appendFileSync,
 	existsSync,
@@ -22,9 +22,9 @@ import {
 	readFileSync,
 	unlinkSync,
 	writeFileSync,
-} from "fs";
-import { join } from "path";
-import { promisify } from "util";
+} from "node:fs";
+import { join } from "node:path";
+import { promisify } from "node:util";
 import { fileLog } from "../lib/file-logger";
 import { getIdentity, getSettings } from "../lib/identity";
 import { getOpenCodeDir, getStateDir, getWorkDir } from "../lib/paths";
@@ -96,7 +96,7 @@ function getActiveWorkDir(): string | null {
 }
 
 function logVoiceEvent(event: VoiceEvent): void {
-	const line = JSON.stringify(event) + "\n";
+	const line = `${JSON.stringify(event)}\n`;
 
 	try {
 		const voiceDir = join(getOpenCodeDir(), "MEMORY", "VOICE");
@@ -146,10 +146,7 @@ function getVoiceFallback(): string {
 // ElevenLabs TTS (PAI 2.5 Standard)
 // ============================================================================
 
-async function sendElevenLabs(
-	message: string,
-	sessionId: string,
-): Promise<boolean> {
+async function sendElevenLabs(message: string, sessionId: string): Promise<boolean> {
 	const identity = getIdentity();
 	const voiceId = identity.voiceId || "s3TPKV1kjDlVtZbl4Ksh";
 	const voiceSettings = identity.voice;
@@ -187,10 +184,7 @@ async function sendElevenLabs(
 		});
 
 		if (!response.ok) {
-			fileLog(
-				`[Voice:ElevenLabs] Server error: ${response.statusText}`,
-				"error",
-			);
+			fileLog(`[Voice:ElevenLabs] Server error: ${response.statusText}`, "error");
 			logVoiceEvent({
 				...baseEvent,
 				event_type: "failed",
@@ -205,10 +199,7 @@ async function sendElevenLabs(
 			event_type: "sent",
 			status_code: response.status,
 		});
-		fileLog(
-			`[Voice:ElevenLabs] Sent: "${message.substring(0, 50)}..."`,
-			"info",
-		);
+		fileLog(`[Voice:ElevenLabs] Sent: "${message.substring(0, 50)}..."`, "info");
 		return true;
 	} catch (error) {
 		const errorMsg = error instanceof Error ? error.message : String(error);
@@ -235,19 +226,12 @@ interface GoogleTTSRequest {
 	};
 }
 
-async function sendGoogleTTS(
-	message: string,
-	sessionId: string,
-): Promise<boolean> {
+async function sendGoogleTTS(message: string, sessionId: string): Promise<boolean> {
 	const settings = getSettings();
-	const googleApiKey =
-		settings.env?.GOOGLE_TTS_API_KEY || process.env.GOOGLE_TTS_API_KEY;
+	const googleApiKey = settings.env?.GOOGLE_TTS_API_KEY || process.env.GOOGLE_TTS_API_KEY;
 
 	if (!googleApiKey) {
-		fileLog(
-			"[Voice:Google] No API key configured (GOOGLE_TTS_API_KEY)",
-			"debug",
-		);
+		fileLog("[Voice:Google] No API key configured (GOOGLE_TTS_API_KEY)", "debug");
 		return false;
 	}
 
@@ -339,13 +323,10 @@ async function sendGoogleTTS(
 
 async function isElevenLabsAvailable(): Promise<boolean> {
 	try {
-		const response = await fetch(
-			ELEVENLABS_SERVER_URL.replace("/notify", "/health"),
-			{
-				method: "GET",
-				signal: AbortSignal.timeout(1000),
-			},
-		);
+		const response = await fetch(ELEVENLABS_SERVER_URL.replace("/notify", "/health"), {
+			method: "GET",
+			signal: AbortSignal.timeout(1000),
+		});
 		return response.ok;
 	} catch {
 		return false;
@@ -365,10 +346,7 @@ function isMacOS(): boolean {
 // macOS say Command (Fallback)
 // ============================================================================
 
-async function sendMacOSSay(
-	message: string,
-	sessionId: string,
-): Promise<boolean> {
+async function sendMacOSSay(message: string, sessionId: string): Promise<boolean> {
 	if (!isMacOS()) {
 		return false;
 	}
@@ -390,13 +368,8 @@ async function sendMacOSSay(
 
 	try {
 		// Escape message for shell
-		const escapedMessage = message
-			.replace(/"/g, '\\"')
-			.replace(/`/g, "\\`")
-			.replace(/\$/g, "\\$");
-		await execAsync(
-			`say -v "${macosConfig.voice}" -r ${macosConfig.rate} "${escapedMessage}"`,
-		);
+		const escapedMessage = message.replace(/"/g, '\\"').replace(/`/g, "\\`").replace(/\$/g, "\\$");
+		await execAsync(`say -v "${macosConfig.voice}" -r ${macosConfig.rate} "${escapedMessage}"`);
 
 		logVoiceEvent({ ...baseEvent, event_type: "sent" });
 		fileLog(`[Voice:macOS] Spoke: "${message.substring(0, 50)}..."`, "info");
@@ -426,14 +399,11 @@ async function sendMacOSSay(
  */
 export async function handleVoiceNotification(
 	voiceCompletion: string,
-	sessionId: string = "unknown",
+	sessionId: string = "unknown"
 ): Promise<boolean> {
 	// Validate voice completion
 	if (!isValidVoiceCompletion(voiceCompletion)) {
-		fileLog(
-			`[Voice] Invalid completion: "${voiceCompletion?.slice(0, 50)}..."`,
-			"warn",
-		);
+		fileLog(`[Voice] Invalid completion: "${voiceCompletion?.slice(0, 50)}..."`, "warn");
 		voiceCompletion = getVoiceFallback();
 	}
 

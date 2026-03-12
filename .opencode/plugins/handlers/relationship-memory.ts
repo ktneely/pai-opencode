@@ -20,16 +20,11 @@
  * @module relationship-memory
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import { getDAName, getPrincipal } from "../lib/identity";
-import {
-	ensureDir,
-	getDateString,
-	getMemoryDir,
-	getYearMonth,
-} from "../lib/paths";
+import { ensureDir, getDateString, getMemoryDir, getYearMonth } from "../lib/paths";
 
 interface RelationshipNote {
 	type: "W" | "B" | "O";
@@ -40,13 +35,10 @@ interface RelationshipNote {
 
 // Patterns that signal relationship-relevant content
 const PATTERNS = {
-	preference:
-		/(?:prefer|like|want|appreciate|enjoy|love|hate|dislike)\s+(?:when|that|to)/i,
+	preference: /(?:prefer|like|want|appreciate|enjoy|love|hate|dislike)\s+(?:when|that|to)/i,
 	frustration: /(?:frustrat|annoy|bother|irritat)/i,
-	positive:
-		/(?:great|awesome|perfect|excellent|good job|well done|nice work|danke|super)/i,
-	milestone:
-		/(?:first time|finally|breakthrough|success|accomplish|geschafft|fertig)/i,
+	positive: /(?:great|awesome|perfect|excellent|good job|well done|nice work|danke|super)/i,
+	milestone: /(?:first time|finally|breakthrough|success|accomplish|geschafft|fertig)/i,
 	summary: /(?:📋\s*SUMMARY|SUMMARY:|✅\s*RESULTS)/i,
 };
 
@@ -55,7 +47,7 @@ const PATTERNS = {
  */
 function analyzeForRelationship(
 	userMessages: string[],
-	assistantMessages: string[],
+	assistantMessages: string[]
 ): RelationshipNote[] {
 	const notes: RelationshipNote[] = [];
 
@@ -77,7 +69,7 @@ function analyzeForRelationship(
 		}
 		if (PATTERNS.milestone.test(text)) {
 			const snippet = text.match(
-				/[^.]*(?:first time|finally|breakthrough|success|geschafft|fertig)[^.]*/i,
+				/[^.]*(?:first time|finally|breakthrough|success|geschafft|fertig)[^.]*/i
 			)?.[0];
 			if (snippet) sessionSummaries.push(snippet.trim().slice(0, 150));
 		}
@@ -107,8 +99,7 @@ function analyzeForRelationship(
 		notes.push({
 			type: "O",
 			entity: principalEntity,
-			content:
-				"Experienced friction during this session (tooling or complexity)",
+			content: "Experienced friction during this session (tooling or complexity)",
 			confidence: 0.75,
 		});
 	}
@@ -133,7 +124,7 @@ function formatNotes(notes: RelationshipNote[]): string {
 		lines.push(`- ${note.type}${conf} ${note.entity}: ${note.content}`);
 	}
 
-	return lines.join("\n") + "\n";
+	return `${lines.join("\n")}\n`;
 }
 
 /**
@@ -144,7 +135,7 @@ function formatNotes(notes: RelationshipNote[]): string {
  */
 export async function captureRelationshipMemory(
 	userMessages: string[],
-	assistantMessages: string[],
+	assistantMessages: string[]
 ): Promise<void> {
 	try {
 		if (userMessages.length === 0 && assistantMessages.length === 0) return;
@@ -173,14 +164,8 @@ export async function captureRelationshipMemory(
 		const formatted = formatNotes(notes);
 		await fs.promises.appendFile(filepath, formatted, "utf-8");
 
-		fileLog(
-			`[RelationshipMemory] Captured ${notes.length} notes → ${filepath}`,
-			"info",
-		);
+		fileLog(`[RelationshipMemory] Captured ${notes.length} notes → ${filepath}`, "info");
 	} catch (error) {
-		fileLogError(
-			"[RelationshipMemory] Failed to capture (non-blocking)",
-			error,
-		);
+		fileLogError("[RelationshipMemory] Failed to capture (non-blocking)", error);
 	}
 }

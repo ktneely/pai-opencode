@@ -23,14 +23,8 @@
  * - .claude/ → .opencode/
  */
 
-import {
-	existsSync,
-	readdirSync,
-	readFileSync,
-	statSync,
-	writeFileSync,
-} from "fs";
-import { join } from "path";
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import { getOpenCodeDir } from "../lib/paths";
 import { getISOTimestamp } from "../lib/time";
@@ -150,9 +144,7 @@ function getCounts(openCodeDir: string): Counts {
 		skills: countSkills(openCodeDir),
 		workflows: countWorkflowFiles(join(openCodeDir, "skills")),
 		plugins: countPlugins(openCodeDir), // Changed from 'hooks'
-		signals: countRatingsLines(
-			join(openCodeDir, "MEMORY/LEARNING/SIGNALS/ratings.jsonl"),
-		),
+		signals: countRatingsLines(join(openCodeDir, "MEMORY/LEARNING/SIGNALS/ratings.jsonl")),
 		files: countFilesRecursive(join(openCodeDir, "skills/PAI/USER")),
 		updatedAt: getISOTimestamp(), // Using time.ts utility
 	};
@@ -183,11 +175,11 @@ export async function handleUpdateCounts(): Promise<void> {
 		settings.counts = counts;
 
 		// Write back
-		writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
+		writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
 
 		fileLog(
 			`[UpdateCounts] Updated settings.json: ${counts.skills} skills, ${counts.workflows} workflows, ${counts.plugins} plugins, ${counts.signals} signals, ${counts.files} files`,
-			"info",
+			"info"
 		);
 	} catch (error) {
 		fileLogError("[UpdateCounts] Failed to update counts", error);

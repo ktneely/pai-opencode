@@ -15,8 +15,8 @@
  * @module observability-emitter
  */
 
-import { randomUUID } from "crypto";
-import { fileLog, fileLogError } from "../lib/file-logger";
+import { randomUUID } from "node:crypto";
+import { fileLog } from "../lib/file-logger";
 
 // Configuration
 const OBSERVABILITY_URL = `http://localhost:${process.env.PAI_OBSERVABILITY_PORT || "8889"}/events`;
@@ -68,7 +68,7 @@ export interface ObservabilityEvent {
  */
 export async function emitEvent(
 	eventType: EventType,
-	data: Record<string, any> = {},
+	data: Record<string, any> = {}
 ): Promise<void> {
 	// Skip if disabled
 	if (!ENABLED) return;
@@ -152,9 +152,7 @@ export function resetSession(): void {
  *
  * Accepts metadata object with any additional properties
  */
-export async function emitSessionStart(
-	metadata: Record<string, any> = {},
-): Promise<void> {
+export async function emitSessionStart(metadata: Record<string, any> = {}): Promise<void> {
 	// Only generate new session ID if not already set (avoid double-emit)
 	if (!currentSessionId) {
 		const sessionId = generateSessionId();
@@ -178,7 +176,7 @@ export async function emitSessionEnd(
 		duration_ms?: number;
 		eventType?: string;
 		timestamp?: string;
-	} & Record<string, any> = {},
+	} & Record<string, any> = {}
 ): Promise<void> {
 	const { duration_ms, ...rest } = input;
 	await emitEvent("session.end", {
@@ -342,8 +340,7 @@ export async function emitImplicitSentiment(input: {
 	triggers?: string[];
 	messageId?: string;
 }): Promise<void> {
-	const { score, sentiment, confidence, indicators, triggers, messageId } =
-		input;
+	const { score, sentiment, confidence, indicators, triggers, messageId } = input;
 	await emitEvent("rating.implicit", {
 		score,
 		sentiment,
@@ -387,16 +384,8 @@ export async function emitAgentComplete(input: {
 	outputPath?: string;
 	error?: string;
 }): Promise<void> {
-	const {
-		taskId,
-		agentType,
-		agent_type,
-		result_length,
-		duration_ms,
-		success,
-		outputPath,
-		error,
-	} = input;
+	const { taskId, agentType, agent_type, result_length, duration_ms, success, outputPath, error } =
+		input;
 	await emitEvent("agent.complete", {
 		task_id: taskId,
 		agent_type: agentType ?? agent_type,
@@ -461,15 +450,7 @@ export async function emitISCValidated(input: {
 	warnings?: string[];
 	messageId?: string;
 }): Promise<void> {
-	const {
-		valid,
-		all_passed,
-		criteriaCount,
-		criteria_count,
-		issues,
-		warnings,
-		messageId,
-	} = input;
+	const { valid, all_passed, criteriaCount, criteria_count, issues, warnings, messageId } = input;
 	const warnList = issues ?? warnings ?? [];
 	await emitEvent("isc.validated", {
 		criteria_count: criteriaCount ?? criteria_count ?? 0,

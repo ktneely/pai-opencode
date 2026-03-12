@@ -9,9 +9,9 @@
  * @module check-version
  */
 
-import * as fs from "fs";
-import * as path from "path";
-import { fileLog, fileLogError } from "../lib/file-logger";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { fileLog } from "../lib/file-logger";
 
 interface VersionCheckResult {
 	updateAvailable: boolean;
@@ -75,7 +75,7 @@ export async function checkForUpdates(): Promise<VersionCheckResult> {
 					"User-Agent": "pai-opencode",
 				},
 				signal: controller.signal,
-			},
+			}
 		);
 
 		clearTimeout(timeout);
@@ -95,16 +95,13 @@ export async function checkForUpdates(): Promise<VersionCheckResult> {
 		const updateAvailable = compareSemver(latestVersion, currentVersion) > 0;
 
 		if (updateAvailable) {
-			fileLog(
-				`[VersionCheck] Update available: ${currentVersion} → ${latestVersion}`,
-				"info",
-			);
+			fileLog(`[VersionCheck] Update available: ${currentVersion} → ${latestVersion}`, "info");
 		} else {
 			fileLog(`[VersionCheck] Up to date: ${currentVersion}`, "debug");
 		}
 
 		return { updateAvailable, currentVersion, latestVersion };
-	} catch (error) {
+	} catch (_error) {
 		// Network errors are expected (offline, rate limited, etc.)
 		fileLog("[VersionCheck] Check failed (offline or rate limited)", "debug");
 		return { updateAvailable: false, currentVersion };
@@ -114,9 +111,7 @@ export async function checkForUpdates(): Promise<VersionCheckResult> {
 /**
  * Format a user-facing update notification
  */
-export function formatUpdateNotification(
-	result: VersionCheckResult,
-): string | null {
+export function formatUpdateNotification(result: VersionCheckResult): string | null {
 	if (!result.updateAvailable) return null;
 	return `PAI-OpenCode update available: ${result.currentVersion} → ${result.latestVersion}. Run: git pull && bun install`;
 }

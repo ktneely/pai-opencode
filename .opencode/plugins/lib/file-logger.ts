@@ -9,8 +9,8 @@
  * @module file-logger
  */
 
-import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "fs";
-import { dirname } from "path";
+import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 
 const LOG_PATH = "/tmp/pai-opencode-debug.log";
 
@@ -25,7 +25,7 @@ const LOG_PATH = "/tmp/pai-opencode-debug.log";
  */
 export function fileLog(
 	message: string,
-	level: "info" | "warn" | "error" | "debug" = "info",
+	level: "info" | "warn" | "error" | "debug" = "info"
 ): void {
 	try {
 		const timestamp = new Date().toISOString();
@@ -52,9 +52,7 @@ export function fileLog(
  */
 export function fileLogError(message: string, error: unknown): void {
 	const errorMessage =
-		error instanceof Error
-			? `${error.message}\n${error.stack || ""}`
-			: String(error);
+		error instanceof Error ? `${error.message}\n${error.stack || ""}` : String(error);
 	fileLog(`${message}: ${errorMessage}`, "error");
 }
 

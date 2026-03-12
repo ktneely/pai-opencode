@@ -42,7 +42,7 @@ export async function validateAgentExecution(args: any): Promise<GuardResult> {
 				if (pattern.test(prompt)) {
 					fileLog(
 						`[AgentGuard] Warning: Explore agent for simple operation — consider using Grep/Glob/Read directly`,
-						"warn",
+						"warn"
 					);
 					return {
 						allowed: true,
@@ -57,12 +57,11 @@ export async function validateAgentExecution(args: any): Promise<GuardResult> {
 		if (prompt.length < 50) {
 			fileLog(
 				`[AgentGuard] Warning: Agent prompt is very short (${prompt.length} chars) — agents need full context`,
-				"warn",
+				"warn"
 			);
 			return {
 				allowed: true,
-				reason:
-					"Agent prompt is very short. Include: context, task, effort level, output format",
+				reason: "Agent prompt is very short. Include: context, task, effort level, output format",
 			};
 		}
 
@@ -70,7 +69,7 @@ export async function validateAgentExecution(args: any): Promise<GuardResult> {
 		if (modelTier === "advanced" && prompt.length < 200) {
 			fileLog(
 				`[AgentGuard] Warning: Advanced tier for short prompt — consider quick/standard tier`,
-				"warn",
+				"warn"
 			);
 			return {
 				allowed: true,
@@ -78,10 +77,7 @@ export async function validateAgentExecution(args: any): Promise<GuardResult> {
 			};
 		}
 
-		fileLog(
-			`[AgentGuard] Agent execution OK: ${subagentType} (${modelTier})`,
-			"debug",
-		);
+		fileLog(`[AgentGuard] Agent execution OK: ${subagentType} (${modelTier})`, "debug");
 		return { allowed: true };
 	} catch (error) {
 		fileLogError("[AgentGuard] Validation failed", error);

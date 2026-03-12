@@ -9,8 +9,8 @@
  * @module integrity-check
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import { getMemoryDir, getOpenCodeDir } from "../lib/paths";
 
@@ -118,9 +118,7 @@ export async function runIntegrityCheck(): Promise<IntegrityResult> {
 		// Check 6: Handler files exist
 		const handlersDir = path.join(openCodeDir, "plugins", "handlers");
 		if (fs.existsSync(handlersDir)) {
-			const handlers = fs
-				.readdirSync(handlersDir)
-				.filter((f) => f.endsWith(".ts"));
+			const handlers = fs.readdirSync(handlersDir).filter((f) => f.endsWith(".ts"));
 			checks.push({
 				name: "Plugin handlers",
 				passed: handlers.length >= 14,
@@ -139,10 +137,7 @@ export async function runIntegrityCheck(): Promise<IntegrityResult> {
 		if (healthy) {
 			fileLog("[IntegrityCheck] System healthy — all checks passed", "info");
 		} else {
-			fileLog(
-				`[IntegrityCheck] ${issues.length} issues: ${issues.join("; ")}`,
-				"warn",
-			);
+			fileLog(`[IntegrityCheck] ${issues.length} issues: ${issues.join("; ")}`, "warn");
 		}
 
 		return { healthy, issues, checks };

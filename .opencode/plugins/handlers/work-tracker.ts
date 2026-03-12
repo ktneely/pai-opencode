@@ -7,13 +7,12 @@
  * @module work-tracker
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import {
 	clearCurrentWork,
 	ensureDir,
-	generateSessionId,
 	getCurrentWorkPath,
 	getTimestamp,
 	getWorkDir,
@@ -37,8 +36,7 @@ const TRIVIAL_PATTERNS = {
 	acknowledgments:
 		/^(ok(ay)?|thanks?|thx|got\s*it|sounds?\s*good|alright|sure|yep|yeah|yes|no|nope|klar|danke|passt|ja|nein|cool|nice|great|perfect|awesome)\b/i,
 	ratings: /^\d{1,2}\s*(\/\s*10)?(\s*[-–—]\s*.{0,80})?$/,
-	farewells:
-		/^(bye|goodbye|ciao|tsch[uü]ss?|see\s*you|good\s*night|gn|later)\b/i,
+	farewells: /^(bye|goodbye|ciao|tsch[uü]ss?|see\s*you|good\s*night|gn|later)\b/i,
 };
 
 /** Minimum character length for a message to be considered meaningful work */
@@ -56,11 +54,7 @@ export function isTrivialMessage(content: string): boolean {
 	// Empty or very short messages are trivial
 	if (trimmed.length < MIN_MEANINGFUL_LENGTH) {
 		// Exception: commands (/) and code snippets should still create sessions
-		if (
-			trimmed.startsWith("/") ||
-			trimmed.startsWith("!") ||
-			trimmed.includes("```")
-		) {
+		if (trimmed.startsWith("/") || trimmed.startsWith("!") || trimmed.includes("```")) {
 			return false;
 		}
 		return true;
@@ -136,9 +130,7 @@ function inferTitle(prompt: string): string {
  * Called on first user prompt if no active session exists.
  * Creates MEMORY/WORK/{timestamp}_{title}/ structure.
  */
-export async function createWorkSession(
-	prompt: string,
-): Promise<CreateWorkResult> {
+export async function createWorkSession(prompt: string): Promise<CreateWorkResult> {
 	try {
 		// Check if session already exists
 		const existingPath = await getCurrentWorkPath();
@@ -172,19 +164,19 @@ export async function createWorkSession(
 
 		await fs.promises.writeFile(
 			path.join(sessionPath, "META.yaml"),
-			`status: ${meta.status}\nstarted_at: ${meta.started_at}\ntitle: "${meta.title}"\nsession_id: ${meta.session_id}\n`,
+			`status: ${meta.status}\nstarted_at: ${meta.started_at}\ntitle: "${meta.title}"\nsession_id: ${meta.session_id}\n`
 		);
 
 		// Create empty ISC.json
 		await fs.promises.writeFile(
 			path.join(sessionPath, "ISC.json"),
-			JSON.stringify({ criteria: [], anti_criteria: [] }, null, 2),
+			JSON.stringify({ criteria: [], anti_criteria: [] }, null, 2)
 		);
 
 		// Create THREAD.md
 		await fs.promises.writeFile(
 			path.join(sessionPath, "THREAD.md"),
-			`# ${title}\n\n**Started:** ${meta.started_at}\n**Status:** ACTIVE\n\n---\n\n`,
+			`# ${title}\n\n**Started:** ${meta.started_at}\n**Status:** ACTIVE\n\n---\n\n`
 		);
 
 		// Update state
@@ -242,9 +234,7 @@ export async function completeWorkSession(): Promise<CompleteWorkResult> {
 		}
 
 		// Update status
-		metaContent = metaContent
-			.replace(/status: ACTIVE/, "status: COMPLETED")
-			.trim();
+		metaContent = metaContent.replace(/status: ACTIVE/, "status: COMPLETED").trim();
 		metaContent += `\ncompleted_at: ${completed_at}\n`;
 
 		await fs.promises.writeFile(metaPath, metaContent);
@@ -289,7 +279,7 @@ export async function appendToThread(content: string): Promise<void> {
  * the persistent work session (ISC.json on disk).
  */
 export async function updateISC(
-	criteria: { description: string; status: string; priority?: string }[],
+	criteria: { description: string; status: string; priority?: string }[]
 ): Promise<void> {
 	const sessionPath = await getCurrentWorkPath();
 	if (!sessionPath) return;

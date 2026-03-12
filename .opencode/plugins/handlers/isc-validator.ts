@@ -16,8 +16,8 @@
  * @module isc-validator
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
 import { getCurrentWorkPath } from "../lib/paths";
 
@@ -116,7 +116,7 @@ function detectAlgorithmExecution(responseText: string): boolean {
 	];
 
 	return algorithmMarkers.some((marker) =>
-		responseText.toUpperCase().includes(marker.toUpperCase()),
+		responseText.toUpperCase().includes(marker.toUpperCase())
 	);
 }
 
@@ -126,9 +126,7 @@ function detectAlgorithmExecution(responseText: string): boolean {
  * @param responseText - The assistant's response text (to detect algorithm execution)
  * @returns Validation result with warnings and errors
  */
-export async function validateISC(
-	responseText: string = "",
-): Promise<ISCValidationResult> {
+export async function validateISC(responseText: string = ""): Promise<ISCValidationResult> {
 	const result: ISCValidationResult = {
 		valid: true,
 		warnings: [],
@@ -159,14 +157,12 @@ export async function validateISC(
 		}
 
 		// Count criteria
-		result.criteriaCount = Array.isArray(isc.criteria)
-			? isc.criteria.length
-			: 0;
+		result.criteriaCount = Array.isArray(isc.criteria) ? isc.criteria.length : 0;
 
 		// Rule 1: If algorithm was attempted, criteria should be non-empty
 		if (result.algorithmDetected && result.criteriaCount === 0) {
 			result.warnings.push(
-				"ISC.json criteria array is EMPTY - algorithm may not have executed properly",
+				"ISC.json criteria array is EMPTY - algorithm may not have executed properly"
 			);
 		}
 
@@ -178,7 +174,7 @@ export async function validateISC(
 		if (sessionStart && iscModTime && iscModTime <= sessionStart) {
 			if (result.algorithmDetected) {
 				result.warnings.push(
-					"ISC.json not modified since session start - no updates during algorithm execution",
+					"ISC.json not modified since session start - no updates during algorithm execution"
 				);
 			}
 		}
@@ -189,7 +185,7 @@ export async function validateISC(
 			const pendingCount = (thread.match(/_Pending\.\.\._/g) || []).length;
 			if (pendingCount > 0) {
 				result.warnings.push(
-					`THREAD.md has ${pendingCount} phases still marked _Pending..._ - algorithm phases not logged`,
+					`THREAD.md has ${pendingCount} phases still marked _Pending..._ - algorithm phases not logged`
 				);
 			}
 		}
@@ -197,20 +193,22 @@ export async function validateISC(
 		// Log results
 		if (result.errors.length > 0) {
 			fileLog("[ISCValidator] ERRORS:");
-			result.errors.forEach((e) => fileLog(`  ❌ ${e}`, "error"));
+			for (const e of result.errors) {
+				fileLog(`  ❌ ${e}`, "error");
+			}
 			result.valid = false;
 		}
 
 		if (result.warnings.length > 0) {
 			fileLog("[ISCValidator] WARNINGS:");
-			result.warnings.forEach((w) => fileLog(`  ⚠️  ${w}`, "warn"));
+			for (const w of result.warnings) {
+				fileLog(`  ⚠️  ${w}`, "warn");
+			}
 		}
 
 		if (result.valid && result.warnings.length === 0) {
 			if (result.algorithmDetected) {
-				fileLog(
-					`[ISCValidator] ✓ Validation passed (${result.criteriaCount} criteria)`,
-				);
+				fileLog(`[ISCValidator] ✓ Validation passed (${result.criteriaCount} criteria)`);
 			}
 		}
 
@@ -244,7 +242,7 @@ export async function getISCCriteriaCount(): Promise<number> {
  * Called when algorithm creates/updates ISC
  */
 export async function updateISCCriteria(
-	criteria: { description: string; status: string }[],
+	criteria: { description: string; status: string }[]
 ): Promise<boolean> {
 	try {
 		const sessionPath = await getCurrentWorkPath();

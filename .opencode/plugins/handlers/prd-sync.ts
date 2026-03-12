@@ -16,10 +16,10 @@
  * @module prd-sync
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
-import { ensureDir, getMemoryDir, getStateDir } from "../lib/paths";
+import { ensureDir, getStateDir } from "../lib/paths";
 
 interface PRDFrontmatter {
 	id?: string;
@@ -136,16 +136,13 @@ function readRegistry(registryPath: string): WorkRegistry {
  */
 export async function syncPRDToRegistry(
 	filePath: string,
-	sessionId?: string,
+	_sessionId?: string
 ): Promise<{ synced: boolean; prdId?: string }> {
 	try {
 		// Normalize path separators for cross-platform compatibility (Windows backslash fix)
 		const normalizedPath = filePath.replace(/\\/g, "/");
 		// Only process PRD.md files in MEMORY/WORK/
-		if (
-			!normalizedPath.includes("MEMORY/WORK/") ||
-			!normalizedPath.endsWith("PRD.md")
-		) {
+		if (!normalizedPath.includes("MEMORY/WORK/") || !normalizedPath.endsWith("PRD.md")) {
 			return { synced: false };
 		}
 
@@ -192,7 +189,7 @@ export async function syncPRDToRegistry(
 
 		fileLog(
 			`[PRDSync] Synced PRD ${fm.id} — status=${entry.status} phase=${entry.phase} iter=${entry.iteration}`,
-			"info",
+			"info"
 		);
 
 		return { synced: true, prdId: fm.id };

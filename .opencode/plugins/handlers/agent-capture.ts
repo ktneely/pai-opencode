@@ -7,16 +7,10 @@
  * @module agent-capture
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { fileLog, fileLogError } from "../lib/file-logger";
-import {
-	ensureDir,
-	getResearchDir,
-	getTimestamp,
-	getYearMonth,
-	slugify,
-} from "../lib/paths";
+import { ensureDir, getResearchDir, getTimestamp, getYearMonth, slugify } from "../lib/paths";
 
 /**
  * Agent output structure
@@ -93,7 +87,7 @@ function extractResultText(result: unknown): string {
 function generateSummary(text: string): string {
 	const firstLine = text.split("\n")[0].trim();
 	const truncated = firstLine.slice(0, 100);
-	return truncated.length < firstLine.length ? truncated + "..." : truncated;
+	return truncated.length < firstLine.length ? `${truncated}...` : truncated;
 }
 
 /**
@@ -104,7 +98,7 @@ function generateSummary(text: string): string {
  */
 export async function captureAgentOutput(
 	args: Record<string, unknown>,
-	result: unknown,
+	result: unknown
 ): Promise<CaptureAgentResult> {
 	try {
 		const agentType = extractAgentType(args);
@@ -177,9 +171,7 @@ export function isTaskTool(toolName: string): boolean {
 /**
  * Get recent agent outputs
  */
-export async function getRecentAgentOutputs(
-	limit = 10,
-): Promise<AgentOutput[]> {
+export async function getRecentAgentOutputs(limit = 10): Promise<AgentOutput[]> {
 	try {
 		const researchDir = getResearchDir();
 		const yearMonth = getYearMonth();
@@ -196,10 +188,7 @@ export async function getRecentAgentOutputs(
 
 		for (const file of agentFiles) {
 			try {
-				const content = await fs.promises.readFile(
-					path.join(monthDir, file),
-					"utf-8",
-				);
+				const content = await fs.promises.readFile(path.join(monthDir, file), "utf-8");
 
 				// Parse agent type from filename
 				const match = file.match(/^AGENT-([^_]+)_/);

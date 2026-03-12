@@ -10,7 +10,7 @@
  * @module skill-restore
  */
 
-import { execSync } from "child_process";
+import { execSync } from "node:child_process";
 import { fileLog, fileLogError } from "../lib/file-logger";
 
 export interface RestoreResult {
@@ -44,7 +44,7 @@ export async function restoreSkillFiles(): Promise<RestoreResult> {
 		// Find modified SKILL.md files in .opencode/skills/
 		const statusOutput = execSync(
 			'git status --porcelain ".opencode/skills/**/SKILL.md" 2>/dev/null || true',
-			{ encoding: "utf-8" },
+			{ encoding: "utf-8" }
 		).trim();
 
 		if (!statusOutput) {
@@ -93,7 +93,7 @@ export async function restoreSkillFiles(): Promise<RestoreResult> {
 		if (result.restored.length > 0) {
 			fileLog(
 				`Skill restore complete: ${result.restored.length} restored, ${result.errors.length} errors`,
-				result.success ? "info" : "warn",
+				result.success ? "info" : "warn"
 			);
 		}
 
