@@ -64,7 +64,7 @@ function shiftSrtTimestamps(srtContent: string, offsetSeconds: number, startInde
 async function splitAudioFile(
   filePath: string,
   chunkSizeMB: number = 20
-): Promise<{chunks: ChunkInfo[], tempDir: string}> {
+): Promise<{chunks: ChunkInfo[], tempDir: string, chunkMinutes: number}> {
   const tempDir = `/tmp/transcript-${Date.now()}`;
   mkdirSync(tempDir, { recursive: true });
 
@@ -116,7 +116,7 @@ async function splitAudioFile(
       }));
 
       console.log(`✓ Split into ${chunks.length} chunks`);
-      resolve({ chunks, tempDir });
+      resolve({ chunks, tempDir, chunkMinutes });
     });
 
     ffmpeg.on("error", reject);
@@ -161,7 +161,7 @@ export async function splitAndTranscribe(
   console.log("Splitting file for transcription...");
 
   // Split file into 20MB chunks (safe margin under 25MB)
-  const { chunks, tempDir } = await splitAudioFile(filePath, 20);
+  const { chunks, tempDir, chunkMinutes } = await splitAudioFile(filePath, 20);
 
   try {
     const transcripts: string[] = [];

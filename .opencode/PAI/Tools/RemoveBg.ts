@@ -94,7 +94,7 @@ async function removeBackground(
   inputPath: string,
   outputPath?: string
 ): Promise<void> {
-  const apiKey = process.env.REMOVEBG_API_KEY;
+  const apiKey = process.env.REMOVEBG_API_KEY; // pragma: allowlist secret
   if (!apiKey) {
     // Throw so batch mode can continue with remaining files instead of aborting
     throw new Error("Missing environment variable: REMOVEBG_API_KEY\n   Add it to ${PAI_DIR}/.env or export it in your shell");

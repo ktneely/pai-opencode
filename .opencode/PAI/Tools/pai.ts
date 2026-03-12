@@ -327,7 +327,10 @@ function setWallpaper(filename: string): boolean {
 
   // Set macOS desktop background
   try {
-    const script = `tell application "System Events" to tell every desktop to set picture to "${fullPath}"`;
+    // Escape path for AppleScript: backslashes and double quotes must be escaped
+    // to prevent injection via malicious filenames containing special characters.
+    const safePath = fullPath.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    const script = `tell application "System Events" to tell every desktop to set picture to "${safePath}"`;
     const macResult = spawnSync(["osascript", "-e", script]);
     if (macResult.exitCode === 0) {
       log("macOS desktop set", "✅");
