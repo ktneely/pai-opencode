@@ -231,7 +231,6 @@ ln -s $(pwd)/.opencode ~/.opencode
 opencode
 ```
 
-**Note:** OpenCode automatically connects to the **ZEN provider** (free models) on first run. No API key required to get started! However, for full PAI functionality (agents, advanced features), you'll need to configure your own API keys. See [API Configuration](#api-configuration) below.
 
 ---
 
@@ -402,8 +401,6 @@ bun run .opencode/tools/switch-provider.ts --researchers
 |--------|-----|----------|
 | **Subscription login** | Run `/login` in OpenCode | Claude Pro/Max, ChatGPT Plus users |
 | **API key** | Add to `~/.opencode/.env` | Pay-per-use, multiple providers |
-| **ZEN free** | No setup needed | Trying PAI-OpenCode |
-| **Ollama local** | `ollama serve` | Privacy, offline use |
 
 ### API Keys for Multi-Provider Research (Optional)
 
@@ -471,7 +468,6 @@ See [.opencode/observability-server/README.md](.opencode/observability-server/RE
 
 - Read [docs/WHAT-IS-PAI.md](docs/WHAT-IS-PAI.md) for PAI fundamentals
 - Explore [docs/OPENCODE-FEATURES.md](docs/OPENCODE-FEATURES.md) for OpenCode features
-- Check [ROADMAP.md](ROADMAP.md) for upcoming features
 - See [ADVANCED-SETUP.md](docs/ADVANCED-SETUP.md) for custom configuration
 
 ---
