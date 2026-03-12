@@ -231,8 +231,9 @@ Bun or build errors:
     → Fix type errors before testing
 
 □ Module not found errors
-    → Check import has .ts extension: import { foo } from './bar.ts'
-    → Bun requires explicit .ts extensions in imports
+    → Bun resolves relative imports without extension automatically, trying .tsx/.ts/.js in order
+    → import { foo } from './bar' is valid; no extension required in most cases
+    → Add explicit .ts only if resolution fails: import { foo } from './bar.ts'
 
 □ Environment variables not loading
     → Bun auto-loads .env — do NOT use dotenv package
