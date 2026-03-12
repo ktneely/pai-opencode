@@ -19,7 +19,7 @@
  */
 
 import { spawn, spawnSync } from "bun";
-import { getDAName, getIdentity } from "../../hooks/lib/identity";
+import { getDAName, getIdentity } from "../../plugins/lib/identity";
 import { existsSync, readFileSync, writeFileSync, readdirSync, symlinkSync, unlinkSync, lstatSync } from "fs";
 import { homedir } from "os";
 import { join, basename } from "path";
