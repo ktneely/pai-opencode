@@ -81,7 +81,7 @@ function writeRegistryAtomic(
 ): boolean {
 	const filePath = getRegistryPath(sessionId);
 	const dir = path.dirname(filePath);
-	const tempPath = `${filePath}.tmp.${Date.now()}`;
+	const tempPath = `${filePath}.tmp.${process.pid}.${Date.now()}`;
 
 	if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 

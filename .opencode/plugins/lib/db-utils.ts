@@ -103,12 +103,22 @@ export async function archiveSessions(sessions: Session[], archivePath: string):
 
 			const messageData = JSON.stringify(messages);
 
-			// Insert into archive
-			archiveDb.run(
-				`INSERT OR REPLACE INTO conversations (id, created_at, updated_at, title, messages)
-       VALUES (?, ?, ?, ?, ?)`,
-				[session.id, session.created_at, session.updated_at, session.title || null, messageData]
-			);
+			// Only overwrite archive row when we have messages to preserve.
+			// If messages is empty (e.g. on a retry after partial failure), use
+			// INSERT OR IGNORE so an existing full archive row is never clobbered.
+			if (messages.length > 0) {
+				archiveDb.run(
+					`INSERT OR REPLACE INTO conversations (id, created_at, updated_at, title, messages)
+         VALUES (?, ?, ?, ?, ?)`,
+					[session.id, session.created_at, session.updated_at, session.title || null, messageData]
+				);
+			} else {
+				archiveDb.run(
+					`INSERT OR IGNORE INTO conversations (id, created_at, updated_at, title, messages)
+         VALUES (?, ?, ?, ?, ?)`,
+					[session.id, session.created_at, session.updated_at, session.title || null, messageData]
+				);
+			}
 
 			// Delete from source DB after successful archive
 			db.run("DELETE FROM messages WHERE conversation_id = ?", [session.id]);

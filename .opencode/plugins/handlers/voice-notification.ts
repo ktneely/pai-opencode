@@ -14,7 +14,7 @@
  * @module voice-notification
  */
 
-import { exec } from "node:child_process";
+import { exec, execFile } from "node:child_process";
 import {
 	appendFileSync,
 	existsSync,
@@ -31,6 +31,7 @@ import { getOpenCodeDir, getStateDir, getWorkDir } from "../lib/paths";
 import { getISOTimestamp } from "../lib/time";
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 // ============================================================================
 // Types
@@ -367,9 +368,9 @@ async function sendMacOSSay(message: string, sessionId: string): Promise<boolean
 	};
 
 	try {
-		// Escape message for shell
-		const escapedMessage = message.replace(/"/g, '\\"').replace(/`/g, "\\`").replace(/\$/g, "\\$");
-		await execAsync(`say -v "${macosConfig.voice}" -r ${macosConfig.rate} "${escapedMessage}"`);
+		// Use execFile to avoid shell injection — args passed as array, no escaping needed
+		const rate = Math.max(1, Math.min(500, Math.round(Number(macosConfig.rate) || 200)));
+		await execFileAsync("say", ["-v", String(macosConfig.voice || "Daniel"), "-r", String(rate), message]);
 
 		logVoiceEvent({ ...baseEvent, event_type: "sent" });
 		fileLog(`[Voice:macOS] Spoke: "${message.substring(0, 50)}..."`, "info");

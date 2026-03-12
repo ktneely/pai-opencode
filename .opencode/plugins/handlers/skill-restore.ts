@@ -10,7 +10,7 @@
  * @module skill-restore
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { fileLog, fileLogError } from "../lib/file-logger";
 
 export interface RestoreResult {
@@ -78,7 +78,7 @@ export async function restoreSkillFiles(): Promise<RestoreResult> {
 		// Restore each file
 		for (const file of modifiedFiles) {
 			try {
-				execSync(`git restore "${file}"`, { stdio: "pipe" });
+				execFileSync("git", ["restore", "--", file], { stdio: "pipe" });
 				result.restored.push(file);
 				fileLog(`Restored: ${file}`, "info");
 			} catch (error) {
