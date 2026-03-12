@@ -10,7 +10,7 @@
  */
 
 import { readFile, readdir } from "node:fs/promises";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import type {
   ActionManifest,
   ActionImplementation,
@@ -83,7 +83,9 @@ async function createLocalCapabilities(
         capabilities.shell = async (cmd: string) => {
           const { $ } = await import("bun");
           try {
-            const result = await $`sh -c ${cmd}`.quiet();
+            // Use Bun Shell directly (cross-platform) instead of "sh -c" wrapper.
+            // Bun Shell handles Windows/POSIX transparently.
+            const result = await $.raw`${cmd}`.quiet();
             return { stdout: result.text(), stderr: "", code: 0 };
           } catch (err: unknown) {
             const e = err as { stderr?: { toString(): string }; exitCode?: number };
@@ -301,6 +303,17 @@ export async function runAction<TInput = unknown, TOutput = unknown>(
 
     // Execute
     const output = await implementation.execute(input, ctx);
+
+    // Validate output against the declared output schema
+    if (manifest.output) {
+      const outputValidation = await validateSchema(output, manifest.output);
+      if (!outputValidation.valid) {
+        return {
+          success: false,
+          error: `Output validation failed for action '${manifest.name}' v${manifest.version || "1.0.0"}: ${outputValidation.errors?.join(", ")}`,
+        };
+      }
+    }
 
     return {
       success: true,
