@@ -260,7 +260,7 @@ ${providerEnvVar}=${state.collected.apiKey || ""}
 	
 	// Generate opencode.json — full agent-tier structure matching the repo template
 	const provider = (state.collected.provider || "zen") as ProviderName;
-	const tiers = PROVIDER_MODELS[provider] ?? PROVIDER_MODELS.anthropic;
+	const tiers = PROVIDER_MODELS[provider] ?? PROVIDER_MODELS.zen;
 
 	/**
 	 * Build a standard agent entry with quick/standard/advanced tiers.
@@ -344,12 +344,11 @@ ${providerEnvVar}=${state.collected.apiKey || ""}
 				try {
 					currentTarget = realpathSync(globalOpencodeLink);
 				} catch {
-					// Symlink target doesn't exist (broken symlink) — remove and recreate
-					unlinkSync(globalOpencodeLink);
-					symlinkSync(localOpencodeDir, globalOpencodeLink, "dir");
-					// Symlink is now correct; nothing more to do in this block
-					return;
-				}
+				// Symlink target doesn't exist (broken symlink) — remove and recreate
+				unlinkSync(globalOpencodeLink);
+				symlinkSync(localOpencodeDir, globalOpencodeLink, "dir");
+				// Symlink repaired; fall through to onProgress(100) below
+			}
 				
 				if (currentTarget !== localOpencodeDir) {
 					// Remove old symlink and create new one
