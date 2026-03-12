@@ -1,6 +1,6 @@
 ---
 title: PAI-OpenCode v3.0 - Corrected PR Plan
-description: Port complete — WP-N1..N5 shipped (PR #50–#54), WP-N6 fix commit in progress
+description: Port complete — WP-N1..N5 shipped (PR #50–#54), WP-N6 in progress (PR #55 open)
 version: "3.0-native-1"
 status: active
 authors: [Jeremy]
@@ -218,10 +218,10 @@ Current state (dev branch):
 |--------|------------|------------|--------------------------|
 | Port WPs done | 8 ✅ | 9 ✅ (WP-E) | **9 ✅** |
 | Native WPs done | 0 | 4 ✅ (N1–N4) | **5 ✅ (N1–N5), N6 in progress** |
-| Open PRs | 2 (C, D) | 1 (#55) | **1 (#55 — fix commit applied)** |
-| Remaining native work | Not planned | WP-N6 in progress | **WP-N6 fix commit, then WP-N7 planned** |
+| Open PRs | 2 (C, D) | 1 (#55) | **1 (#55 — open, in progress)** |
+| Remaining native work | Not planned | WP-N6 in progress | **WP-N6 in progress (#55), then WP-N7 planned** |
 
-**Status:** Port complete. Native transformation: WP-N1 through WP-N5 merged. WP-N6 fix commit applied (PR #55). WP-N7 planned (Obsidian CLI + Agent Matrix).
+**Status:** Port complete. Native transformation: WP-N1 through WP-N5 merged. WP-N6 in progress (PR #55 open). WP-N7 planned (Obsidian CLI + Agent Matrix).
 
 **Native transformation plan:** `docs/epic/EPIC-v3.0-OpenCode-Native.md`
 **Full gap analysis:** `docs/epic/GAP-ANALYSIS-v3.0.md`
@@ -233,4 +233,4 @@ Current state (dev branch):
 *Correction 1 (2026-03-06): Fixed WP3 completion status — was never fully done*
 *Correction 2 (2026-03-08): WP-A (#42) + WP-B (#43) merged; WP-C scope verified against v4.0.3 upstream*
 *Correction 3 (2026-03-11): WP-N1–N4 complete (PR #50–#53); WP-N5 plan sync in progress*
-*Correction 4 (2026-03-12): WP-N5 merged (PR #54); WP-N6 fix commit applied (PR #55); WP-N7 planned*
+*Correction 4 (2026-03-12): WP-N5 merged (PR #54); WP-N6 in progress (PR #55 open); WP-N7 planned*

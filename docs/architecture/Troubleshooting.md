@@ -146,6 +146,7 @@ Files being written to wrong location:
 
 □ If files were written to ~/.claude/:
     → First backup: cp -r ~/.claude/MEMORY/ ~/.claude/MEMORY.bak/
+    → Ensure target exists: mkdir -p ~/.opencode/MEMORY/
     → Then move: rsync -av ~/.claude/MEMORY/ ~/.opencode/MEMORY/
     → Verify: ls ~/.opencode/MEMORY/ (confirm files arrived)
     → Only then remove source: rm -rf ~/.claude/MEMORY/
