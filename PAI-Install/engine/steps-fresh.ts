@@ -337,27 +337,27 @@ ${providerEnvVar}=${state.collected.apiKey || ""}
 		// Check if ~/.opencode exists
 		if (existsSync(globalOpencodeLink)) {
 			const stats = lstatSync(globalOpencodeLink);
-			
-		if (stats.isSymbolicLink()) {
-			// It's already a symlink - check if it points to our location
-			let currentTarget: string;
-			try {
-				currentTarget = realpathSync(globalOpencodeLink);
-			} catch {
-				// Symlink target doesn't exist (broken symlink) — remove and recreate
-				unlinkSync(globalOpencodeLink);
-				symlinkSync(localOpencodeDir, globalOpencodeLink, "dir");
-				// Assign so the subsequent check sees a defined, correct value
-				// and doesn't attempt a redundant remove+recreate
-				currentTarget = localOpencodeDir;
-			}
 
-			if (currentTarget !== localOpencodeDir) {
-				// Remove old symlink and create new one
-				unlinkSync(globalOpencodeLink);
-				symlinkSync(localOpencodeDir, globalOpencodeLink, "dir");
-			}
-			// If it already points to our location, nothing to do
+			if (stats.isSymbolicLink()) {
+				// It's already a symlink - check if it points to our location
+				let currentTarget: string;
+				try {
+					currentTarget = realpathSync(globalOpencodeLink);
+				} catch {
+					// Symlink target doesn't exist (broken symlink) — remove and recreate
+					unlinkSync(globalOpencodeLink);
+					symlinkSync(localOpencodeDir, globalOpencodeLink, "dir");
+					// Assign so the subsequent check sees a defined, correct value
+					// and doesn't attempt a redundant remove+recreate
+					currentTarget = localOpencodeDir;
+				}
+
+				if (currentTarget !== localOpencodeDir) {
+					// Remove old symlink and create new one
+					unlinkSync(globalOpencodeLink);
+					symlinkSync(localOpencodeDir, globalOpencodeLink, "dir");
+				}
+				// If it already points to our location, nothing to do
 			} else if (stats.isDirectory()) {
 				// It's a real directory - backup and replace with symlink
 				const backupPath = `${globalOpencodeLink}.backup-${Date.now()}`;
