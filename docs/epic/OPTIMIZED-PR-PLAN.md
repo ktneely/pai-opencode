@@ -35,7 +35,8 @@ tags: [architecture, migration, v3.0, PR-strategy, native-transformation]
 | **WP-N5** | Plan Update | #54 | ✅ **Merged** | Sync all planning docs to reflect N1-N4 complete |
 | **WP-N6** | System Self-Awareness | #55 | ✅ **Merged** | OpenCodeSystem skill, 4 architecture reference docs, ADR-017 |
 | **WP-N7** | roborev + Biome CI | #56 | ✅ **Merged** | roborev plugin handler, CodeReview skill, GitHub Actions CI, ADR-018 |
-| **WP-N8** | Obsidian Formatting Guidelines | — | 🔄 **In Progress** | Formatting guidelines, agent capability matrix (split from WP-N7) |
+| **WP-N8** | Obsidian Formatting Guidelines | #57 | ✅ **Merged** | Formatting guidelines, agent capability matrix (split from WP-N7) |
+| **WP-N9** | Installer opencode.json Fix | — | 🔄 **In Progress** | provider-models.ts, full agent-tier generation, principalName in username |
 
 > [!NOTE]
 > **2026-03-08 Live Audit:** WP-C scope significantly reduced after comparing repo against v4.0.3.
@@ -218,11 +219,11 @@ Current state (dev branch):
 | Metric | 2026-03-08 | 2026-03-11 | **Current (2026-03-12)** |
 |--------|------------|------------|--------------------------|
 | Port WPs done | 8 ✅ | 9 ✅ (WP-E) | **9 ✅** |
-| Native WPs done | 0 | 4 ✅ (N1–N4) | **7 ✅ (N1–N7), N8 in progress** |
-| Open PRs | 2 (C, D) | 1 (#55) | **1 (WP-N8 — open, in progress)** |
-| Remaining native work | Not planned | WP-N6 in progress | **WP-N8 in progress (Obsidian formatting)** |
+| Native WPs done | 0 | 4 ✅ (N1–N4) | **8 ✅ (N1–N8), N9 in progress** |
+| Open PRs | 2 (C, D) | 1 (#55) | **1 (WP-N9 — open, in progress)** |
+| Remaining native work | Not planned | WP-N6 in progress | **WP-N9 in progress (installer opencode.json fix)** |
 
-**Status:** Port complete. Native transformation: WP-N1 through WP-N7 merged (PR #50–#56). WP-N8 in progress (Obsidian formatting guidelines + agent capability matrix).
+**Status:** Port complete. Native transformation: WP-N1 through WP-N8 merged (PR #50–#57). WP-N9 in progress (installer opencode.json full agent-tier generation).
 
 **Native transformation plan:** `docs/epic/EPIC-v3.0-OpenCode-Native.md`
 **Full gap analysis:** `docs/epic/GAP-ANALYSIS-v3.0.md`

@@ -34,7 +34,8 @@ WP-N4 ████████████ 100% ✅  ← LSP + Fork Documentatio
 WP-N5 ████████████ 100% ✅  ← Plan Update complete, PR #54
 WP-N6 ████████████ 100% ✅  ← System Self-Awareness, PR #55 merged
 WP-N7 ████████████ 100% ✅  ← roborev + Biome CI, PR #56 merged
-WP-N8 ████████░░░░  80% 🔄  ← Obsidian formatting + agent matrix, PR open
+WP-N8 ████████████ 100% ✅  ← Obsidian formatting + agent matrix, PR #57 merged
+WP-N9 ██████████░░  90% 🔄  ← Installer opencode.json fix, PR #58 open
 ```
 
 > **The port is done. The native transformation starts with WP-N1.**

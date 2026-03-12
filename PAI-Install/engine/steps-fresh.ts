@@ -1,14 +1,16 @@
 #!/usr/bin/env bun
 /**
  * PAI-OpenCode Installer — Fresh Install Steps
- * 
+ *
  * 7-step fresh installation flow with OpenCode-Zen as default provider.
  */
 
-import type { InstallState } from "./types";
-import { buildOpenCodeBinary } from "./build-opencode";
-import type { BuildResult } from "./build-opencode";
-import { existsSync, mkdirSync, writeFileSync, chmodSync, copyFileSync, symlinkSync, unlinkSync, lstatSync, realpathSync } from "node:fs";
+import type { InstallState } from "./types.ts";
+import { buildOpenCodeBinary } from "./build-opencode.ts";
+import type { BuildResult } from "./build-opencode.ts";
+import { PROVIDER_MODELS, PROVIDER_LABELS } from "./provider-models.ts";
+import type { ProviderName } from "./provider-models.ts";
+import { existsSync, mkdirSync, writeFileSync, chmodSync, symlinkSync, unlinkSync, lstatSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { homedir } from "node:os";
 
@@ -110,39 +112,19 @@ export async function stepBuildOpenCode(
 // ═══════════════════════════════════════════════════════════
 
 export interface ProviderConfig {
-	provider: "zen" | "anthropic" | "openrouter" | "openai";
+	provider: ProviderName;
 	apiKey: string;
-	modelTier: "quick" | "standard" | "advanced";
-	models: {
-		quick: string;
-		standard: string;
-		advanced: string;
-	};
 }
 
-export const ZEN_FREE_MODELS = {
-	quick: "minimax-m2.5-free", // FREE
-	standard: "gpt-5.1-codex-mini", // $0.25/M
-	advanced: "claude-haiku-3.5", // $0.80/M
-};
+// Re-export for consumers that imported these from this module
+export { PROVIDER_MODELS, PROVIDER_LABELS } from "./provider-models.ts";
 
-export const ANTHROPIC_MODELS = {
-	quick: "claude-haiku-3.5",
-	standard: "claude-sonnet-4.6",
-	advanced: "claude-opus-4.6",
-};
-
-export const OPENROUTER_MODELS = {
-	quick: "google/gemini-flash-1.5",
-	standard: "anthropic/claude-3.5-sonnet",
-	advanced: "anthropic/claude-3-opus",
-};
-
-export const OPENAI_MODELS = {
-	quick: "gpt-4o-mini",
-	standard: "gpt-4o",
-	advanced: "gpt-5",
-};
+// Legacy aliases kept for CLI quick-install.ts compatibility.
+// Spread into new objects so mutations by consumers cannot corrupt PROVIDER_MODELS.
+export const ZEN_FREE_MODELS = { ...PROVIDER_MODELS.zen };
+export const ANTHROPIC_MODELS = { ...PROVIDER_MODELS.anthropic };
+export const OPENROUTER_MODELS = { ...PROVIDER_MODELS.openrouter };
+export const OPENAI_MODELS = { ...PROVIDER_MODELS.openai };
 
 export async function stepProviderConfig(
 	state: InstallState,
@@ -150,14 +132,12 @@ export async function stepProviderConfig(
 	onProgress: (percent: number, message: string) => void
 ): Promise<void> {
 	onProgress(75, "Configuring AI provider...");
-	
-	// Save provider settings
+
+	// Save provider + key; model strings are resolved from PROVIDER_MODELS at write time
 	state.collected.provider = config.provider;
 	state.collected.apiKey = config.apiKey;
-	state.collected.modelTier = config.modelTier;
-	state.collected.models = config.models;
-	
-	// API key will be saved to .env by config generation step
+
+	// API key will be saved to .env by the install step
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -245,8 +225,7 @@ export async function stepInstallPAI(
 			default: state.collected.provider || "zen",
 			[state.collected.provider || "zen"]: {
 				// apiKey is stored in .env, not here
-				modelTier: state.collected.modelTier || "standard",
-				models: state.collected.models || [],
+				// model strings are written to opencode.json via PROVIDER_MODELS
 			},
 		},
 	};
@@ -280,35 +259,75 @@ ${providerEnvVar}=${state.collected.apiKey || ""}
 	chmodSync(envPath, 0o600);
 	onProgress(95, "Created .env with secure permissions...");
 	
-	// Generate opencode.json
-	const modelProvider = state.collected.provider || "anthropic";
-	const modelTier = state.collected.modelTier || "standard";
-	const modelMap = state.collected.models;
-	const modelName = modelMap && typeof modelMap === 'object' ? 
-		(modelMap[modelTier] || modelMap['standard']) : 
-		"claude-sonnet-4.6";
-	const modelString = `${modelProvider}/${modelName}`;
-	
+	// Generate opencode.json — full agent-tier structure matching the repo template
+	const provider = (state.collected.provider || "zen") as ProviderName;
+	const tiers = PROVIDER_MODELS[provider] ?? PROVIDER_MODELS.zen;
+
+	/**
+	 * Build a standard agent entry with quick/standard/advanced tiers.
+	 * The top-level `model` mirrors the standard tier so opencode has a
+	 * sensible default when no tier is specified by a caller.
+	 */
+	function agentEntry(standard: string, quick: string, advanced: string) {
+		return {
+			model: standard,
+			model_tiers: {
+				quick: { model: quick },
+				standard: { model: standard },
+				advanced: { model: advanced },
+			},
+		};
+	}
+
 	const opencode = {
-		ai: {
-			name: state.collected.aiName || "PAI",
-			model: modelString,
+		$schema: "https://opencode.ai/config.json",
+		theme: "dark",
+		model: tiers.standard,
+		snapshot: true,
+		username: state.collected.principalName || "User",
+		permission: {
+			"*": "allow",
+			websearch: "allow",
+			codesearch: "allow",
+			webfetch: "allow",
+			doom_loop: "ask",
+			external_directory: "ask",
 		},
-		voice: {
-			enabled: state.collected.voiceEnabled || false,
-			provider: state.collected.voiceProvider || "none",
-			voiceId: state.collected.voiceId || "default",
+		mode: {
+			build: {
+				prompt: "You are a Personal AI assistant powered by PAI-OpenCode infrastructure.",
+			},
+			plan: {
+				prompt: "You are a Personal AI assistant powered by PAI-OpenCode infrastructure.",
+			},
 		},
-		memory: {
-			enabled: true,
-		},
-		skills: {
-			autoLoad: true,
+		agent: {
+			// Algorithm agent always uses the highest-quality model for orchestration
+			Algorithm: { model: tiers.advanced },
+			Architect: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
+			Engineer: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
+			general: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
+			// explore is always the quick model — speed matters more than quality
+			explore: { model: tiers.quick },
+			Intern: agentEntry(tiers.quick, tiers.quick, tiers.standard),
+			Writer: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
+			DeepResearcher: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
+			// Specialised researchers keep their primary model but fall back to provider tiers
+			GeminiResearcher: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
+			GrokResearcher: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
+			PerplexityResearcher: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
+			CodexResearcher: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
+			// QATester has no tier override — single model is intentional
+			QATester: { model: tiers.standard },
+			Pentester: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
+			Designer: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
+			Artist: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
 		},
 	};
+
 	writeFileSync(
 		join(localOpencodeDir, "opencode.json"),
-		JSON.stringify(opencode, null, 2)
+		JSON.stringify(opencode, null, 2),
 	);
 	onProgress(97, "Generated opencode.json...");
 	
@@ -319,20 +338,21 @@ ${providerEnvVar}=${state.collected.apiKey || ""}
 		// Check if ~/.opencode exists
 		if (existsSync(globalOpencodeLink)) {
 			const stats = lstatSync(globalOpencodeLink);
-			
+
 			if (stats.isSymbolicLink()) {
 				// It's already a symlink - check if it points to our location
 				let currentTarget: string;
 				try {
 					currentTarget = realpathSync(globalOpencodeLink);
-				} catch (err) {
-					// Symlink target doesn't exist (broken symlink)
-					// Remove and recreate
+				} catch {
+					// Symlink target doesn't exist (broken symlink) — remove and recreate
 					unlinkSync(globalOpencodeLink);
 					symlinkSync(localOpencodeDir, globalOpencodeLink, "dir");
-					continue;
+					// Assign so the subsequent check sees a defined, correct value
+					// and doesn't attempt a redundant remove+recreate
+					currentTarget = localOpencodeDir;
 				}
-				
+
 				if (currentTarget !== localOpencodeDir) {
 					// Remove old symlink and create new one
 					unlinkSync(globalOpencodeLink);
@@ -388,25 +408,17 @@ export async function runFreshInstall(
   // Step 3: Provider Configuration (API Keys)
   await emit({ event: "step_start", step: "api-keys" });
   // Collect provider config via interactive callbacks
-  const providerChoices = [
-    { label: "OpenCode Zen (FREE tier available)", value: "zen", description: "Recommended - 60x cost optimization" },
-    { label: "Anthropic (Claude)", value: "anthropic", description: "Premium quality, higher cost" },
-    { label: "OpenRouter", value: "openrouter", description: "Multi-provider flexibility" },
-  ];
-  const provider = await requestChoice("provider", "Choose your AI provider:", providerChoices);
+  const providerChoices = Object.entries(PROVIDER_LABELS).map(([value, { label, description }]) => ({
+    label,
+    value,
+    description,
+  }));
+  const provider = (await requestChoice("provider", "Choose your AI provider:", providerChoices)) as ProviderName || "zen";
   const apiKey = await requestInput("api-key", `Enter your ${provider} API key:`, "key", "sk-...");
-  
-  // Select models based on provider
-  const models = provider === "zen" ? ZEN_FREE_MODELS : 
-    provider === "anthropic" ? ANTHROPIC_MODELS :
-    provider === "openrouter" ? OPENROUTER_MODELS :
-    provider === "openai" ? OPENAI_MODELS : ZEN_FREE_MODELS;
-  
+
   await stepProviderConfig(state, {
-    provider: provider || "zen",
+    provider,
     apiKey: apiKey || "",
-    modelTier: "standard",
-    models,
   }, (percent, message) => {
     emit({ event: "progress", step: "api-keys", percent, detail: message });
   });

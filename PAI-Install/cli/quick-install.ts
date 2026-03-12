@@ -16,7 +16,9 @@ import { join } from "node:path";
 import { homedir } from "node:os";
 import type { InstallState } from "../engine/types";
 import { createFreshState } from "../engine/state";
-import { stepPrerequisites, stepBuildOpenCode, stepProviderConfig, ZEN_FREE_MODELS, stepIdentity, stepVoice, stepInstallPAI } from "../engine/steps-fresh";
+import { stepPrerequisites, stepBuildOpenCode, stepProviderConfig, stepIdentity, stepVoice, stepInstallPAI } from "../engine/steps-fresh";
+import { PROVIDER_MODELS } from "../engine/provider-models";
+import type { ProviderName } from "../engine/provider-models";
 import { stepDetectMigration, stepCreateBackup, stepMigrate, stepBinaryUpdate, stepMigrationDone } from "../engine/steps-migrate";
 import { stepDetectUpdate, stepApplyUpdate, stepUpdateDone } from "../engine/steps-update";
 
@@ -153,25 +155,17 @@ async function runFreshInstall(): Promise<void> {
 	
 	// Step 4: Provider Config
 	onProgress(75, "Configuring provider...");
+	const validProviders = Object.keys(PROVIDER_MODELS) as ProviderName[];
 	const preset = values.preset || "zen";
-	
-	// Type guard for valid presets
-	const validPresets = ["zen", "quick", "standard", "advanced", "anthropic", "openrouter", "openai"];
-	const validatedPreset = validPresets.includes(preset) ? preset : "zen";
-	
-	const models = validatedPreset === "zen" ? ZEN_FREE_MODELS : {
-		quick: "claude-haiku-3.5",
-		standard: "claude-sonnet-4.6",
-		advanced: "claude-opus-4.6",
-	};
-	
+	const provider: ProviderName = validProviders.includes(preset as ProviderName)
+		? (preset as ProviderName)
+		: "zen";
+
 	await stepProviderConfig(
 		state,
 		{
-			provider: validatedPreset,
+			provider,
 			apiKey: values["api-key"] || "",
-			modelTier: "standard",
-			models,
 		},
 		onProgress
 	);
