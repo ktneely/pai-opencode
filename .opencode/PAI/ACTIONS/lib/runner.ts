@@ -19,7 +19,7 @@
  * ============================================================================
  */
 
-import { resolve, dirname, join, relative } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import type { ActionSpec, ActionContext, ActionResult } from "./types";
 
 const ACTIONS_DIR = dirname(import.meta.dir);
@@ -141,7 +141,8 @@ async function dispatchToCloud<TInput, TOutput>(
 
   // Worker URL pattern: pai-{category}-{name}.{subdomain}.workers.dev
   // CF_ACCOUNT_SUBDOMAIN is required — a missing/default value produces an invalid URL.
-  const subdomain = process.env.CF_ACCOUNT_SUBDOMAIN;
+  // Read from ctx.env (caller-supplied env) consistent with ACTION_TIMEOUT_MS usage.
+  const subdomain = ctx.env?.CF_ACCOUNT_SUBDOMAIN;
   if (!subdomain) {
     return {
       success: false,
@@ -233,18 +234,18 @@ async function dispatchToCloud<TInput, TOutput>(
 }
 
 /**
- * List all available actions
+ * List all available actions using Bun's native glob (no external dependency).
  */
 export async function listActions(): Promise<string[]> {
-  const { glob } = await import("glob");
-  const pattern = join(ACTIONS_DIR, "**/*.action.ts");
-  const files = await glob(pattern);
+  const glob = new Bun.Glob("**/*.action.ts");
+  const files: string[] = [];
+  for await (const file of glob.scan({ cwd: ACTIONS_DIR, absolute: false })) {
+    files.push(file);
+  }
 
   return files.map(f => {
-    // Use path.relative for cross-platform compatibility
-    const relativePath = relative(ACTIONS_DIR, f);
     // Remove .action.ts extension
-    return relativePath.replace(/\.action\.ts$/, "");
+    return relative(ACTIONS_DIR, join(ACTIONS_DIR, f)).replace(/\.action\.ts$/, "");
   });
 }
 
