@@ -60,7 +60,9 @@ function normalizeRegistry(data: unknown, sessionId: string): SubagentRegistry {
 						typeof (e as Record<string, unknown>).agentType === "string" &&
 						typeof (e as Record<string, unknown>).description === "string" &&
 						typeof (e as Record<string, unknown>).spawnedAt === "string" &&
-						typeof (e as Record<string, unknown>).status === "string"
+						(["running", "completed", "failed"] as const).includes(
+							(e as Record<string, unknown>).status as SubagentEntry["status"]
+						)
 				)
 			: [],
 		updatedAt:
@@ -298,7 +300,13 @@ export const sessionRegistryTool = tool({
 		"The results are always available — subagent data survives compaction.",
 	args: {},
 	async execute(_args: {}, context: ToolContext): Promise<string> {
-		const registry = readRegistry(context.sessionID);
+		let registry: SubagentRegistry;
+		try {
+			registry = readRegistry(context.sessionID);
+		} catch (err) {
+			fileLog(`[session-registry] sessionRegistryTool: failed to read registry: ${err}`, "error");
+			return "Registry unavailable: could not read session data (I/O error). Check file permissions on the state directory.";
+		}
 
 		if (registry.entries.length === 0) {
 			return "No subagent sessions found for this session. No subagents have been spawned via the Task tool yet.";
@@ -350,7 +358,13 @@ export const sessionResultsTool = tool({
 	},
 	async execute(args: { session_id: string }, context: ToolContext): Promise<string> {
 		// Read the registry file to get stored metadata for this session
-		const registry = readRegistry(context.sessionID);
+		let registry: SubagentRegistry;
+		try {
+			registry = readRegistry(context.sessionID);
+		} catch (err) {
+			fileLog(`[session-registry] sessionResultsTool: failed to read registry: ${err}`, "error");
+			return "Registry unavailable: could not read session data (I/O error). Check file permissions on the state directory.";
+		}
 		const entry = registry.entries.find((e) => e.sessionId === args.session_id);
 
 		if (!entry) {
@@ -380,7 +394,13 @@ export const sessionResultsTool = tool({
  * Called by WP-N2 compaction intelligence handler.
  */
 export function buildRegistryContext(sessionId: string): string | null {
-	const registry = readRegistry(sessionId);
+	let registry: SubagentRegistry;
+	try {
+		registry = readRegistry(sessionId);
+	} catch (err) {
+		fileLog(`[session-registry] buildRegistryContext: failed to read registry: ${err}`, "error");
+		return null;
+	}
 	if (registry.entries.length === 0) return null;
 
 	const lines = [

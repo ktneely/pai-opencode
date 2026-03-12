@@ -24,7 +24,7 @@ import {
 	unlinkSync,
 	writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { fileLog } from "../lib/file-logger";
 import { getIdentity, getSettings } from "../lib/identity";
@@ -88,8 +88,12 @@ function getActiveWorkDir(): string | null {
 		const content = readFileSync(currentWorkPath, "utf-8");
 		const state = JSON.parse(content);
 		if (state.work_dir) {
-			const workPath = join(getWorkDir(), state.work_dir);
-			if (existsSync(workPath)) return workPath;
+			const workRoot = resolve(getWorkDir());
+			const workPath = resolve(join(getWorkDir(), state.work_dir));
+			// Guard against path traversal (e.g. work_dir = "../../etc")
+			if (workPath.startsWith(workRoot + "/") || workPath === workRoot) {
+				if (existsSync(workPath)) return workPath;
+			}
 		}
 	} catch {
 		// Silent fail
@@ -457,8 +461,8 @@ export async function handleVoiceNotification(
 export function extractVoiceCompletion(text: string): string | null {
 	if (!text) return null;
 
-	// Pattern: 🗣️ Name: message
-	const match = text.match(/🗣️\s*[\w\s]+:\s*(.+?)(?:\n|$)/);
+	// Pattern: 🗣️ Name: message (Unicode-aware to support non-ASCII names like "Ava", accented chars)
+	const match = text.match(/🗣️\s*[\p{L}\p{M}\w\s\-.']+:\s*(.+?)(?:\n|$)/u);
 	if (match) {
 		return match[1].trim();
 	}
