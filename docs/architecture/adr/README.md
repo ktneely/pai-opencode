@@ -145,11 +145,11 @@ to "genuinely native". See `docs/epic/EPIC-v3.0-OpenCode-Native.md` for context.
 
 | ADR | Title | Status | WP |
 |-----|-------|--------|----|
-| ADR-012 | Session Registry as Custom Plugin Tool | 🔄 Planned | WP-N1 |
-| ADR-013 | Algorithm Session Awareness Post-Compaction | 🔄 Planned | WP-N3 |
-| ADR-014 | LSP-Native Code Navigation | 🔄 Planned | WP-N4 |
-| ADR-015 | Compaction Intelligence via Plugin Hook | 🔄 Planned | WP-N2 |
-| ADR-016 | Session Fork for Experiment Isolation | 🔄 Planned | WP-N4 |
+| ADR-012 | Session Registry as Custom Plugin Tool | ✅ Merged | WP-N1 |
+| ADR-013 | Algorithm Session Awareness Post-Compaction | ✅ Merged | WP-N3 |
+| ADR-014 | LSP-Native Code Navigation | ✅ Merged | WP-N4 |
+| ADR-015 | Compaction Intelligence via Plugin Hook | ✅ Merged | WP-N2 |
+| ADR-016 | Session Fork for Experiment Isolation | ✅ Merged | WP-N4 |
 
 ## Legacy Future ADRs
 
@@ -191,4 +191,4 @@ to "genuinely native". See `docs/epic/EPIC-v3.0-OpenCode-Native.md` for context.
 ---
 
 *Last Updated: 2026-03-10*
-*ADRs Created: 16 (ADR-011: Security Hardening — WP-B; ADR-012–016: OpenCode-Native Transformation)*
+*ADRs Created: 16 (ADR-011: Security Hardening — WP-B; ADR-012–016: OpenCode-Native Transformation — all merged)*

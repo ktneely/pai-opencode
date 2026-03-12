@@ -1,6 +1,6 @@
 ---
 title: PAI-OpenCode v3.0 - Corrected PR Plan
-description: Port complete — WP-E (Installer Refactor) in review, native transformation defined (WP-N1..WP-N5)
+description: Port complete — WP-N1..N4 shipped (PR #50–#53), WP-N5 plan sync in progress
 version: "3.0-native-1"
 status: active
 authors: [Jeremy]
@@ -27,7 +27,12 @@ tags: [architecture, migration, v3.0, PR-strategy, native-transformation]
 | **WP-B** | Security Hardening / Prompt Injection | #43 | ✅ **Merged** | injection-guard + sanitizer + patterns |
 | **WP-C** | Core PAI System + Skill Fixes | #45 | ✅ **Merged** | PAI docs, skill structure fixes, BuildOpenCode.ts |
 | **WP-D** | Installer & Migration | #47 | ✅ **Merged** | PAI-Install, migration script, DB health |
-| **WP-E** | Installer Refactor (Electron-first) | #48 | 🔄 **In Review** | Symlink architecture, Google TTS, Electron flows |
+| **WP-E** | Installer Refactor (Electron-first) | #48 | ✅ **Merged** | Symlink architecture, Google TTS, Electron flows |
+| **WP-N1** | Session Registry | #50 | ✅ **Merged** | Custom tools: session_registry + session_results |
+| **WP-N2** | Compaction Intelligence | #51 | ✅ **Merged** | experimental.session.compacting hook + context injection |
+| **WP-N3** | Algorithm Awareness | #52+#53 | ✅ **Merged** | SKILL.md context recovery, PRD parent_session_id |
+| **WP-N4** | LSP + Fork Documentation | #53 | ✅ **Merged** | AGENTS.md LSP + Fork sections, installer .env |
+| **WP-N5** | Plan Update | #54 | 🔄 **In Progress** | Sync all planning docs to reflect N1-N4 complete |
 
 > [!NOTE]
 > **2026-03-08 Live Audit:** WP-C scope significantly reduced after comparing repo against v4.0.3.
@@ -191,46 +196,28 @@ Current state (dev branch):
 ├── WP3  ✅ Category Structure (completed via WP-A)
 ├── WP4  ✅ Integration & Validation
 ├── WP-A ✅ Plugin System + 5 Hooks (PR #42)
-└── WP-B ✅ Security Hardening (PR #43)
-
-    │
-    ▼
-┌─────────────────────────────────────────────────┐
-│  PR #C: WP5 Core PAI System  (~3.5h)            │
-│  - Flatten USMetrics + Telos nested structure   │
-│  - Port 5 missing skill items                   │
-│  - Port 9 PAI/ flat docs + 3 subdirs            │
-│  - BuildOpenCode.ts (adapt BuildCLAUDE.ts)      │
-│  - Update MINIMAL_BOOTSTRAP.md + skill index    │
-└─────────────────────────────────────────────────┘
-    │
-    ▼
-┌─────────────────────────────────────────────────┐
-│  PR #D: WP6 Installer & Migration  (~1–2 days)  │
-│  - PAI-Install/ port + OpenCode adapt           │
-│  - Migration script v2→v3                       │
-│  - DB Health: plugin + CLI tool + GUI tab       │
-│  - Release documentation                        │
-└─────────────────────────────────────────────────┘
-    │
-    ▼
-🎉 v3.0.0 RELEASE
+├── WP-B ✅ Security Hardening (PR #43)
+├── WP-C ✅ Core PAI System (PR #45)
+├── WP-D ✅ Installer & Migration (PR #47)
+├── WP-E ✅ Installer Refactor (PR #48)
+├── WP-N1 ✅ Session Registry (PR #50)
+├── WP-N2 ✅ Compaction Intelligence (PR #51)
+├── WP-N3 ✅ Algorithm Awareness (PR #52+#53)
+└── WP-N4 ✅ LSP + Fork Documentation (PR #53)
 ```
 
 ---
 
-## Summary (Updated 2026-03-10)
+## Summary (Updated 2026-03-11)
 
-| Metric | 2026-03-08 | **Current (2026-03-10)** |
+| Metric | 2026-03-08 | **Current (2026-03-11)** |
 |--------|------------|--------------------------|
-| Port WPs done | 8 ✅ | **9 ✅ (WP-C + WP-D merged)** |
-| Open PRs | 2 (C, D) | **1 (WP-E #48 in review)** |
-| Remaining port work | WP-C + WP-D | **WP-E only** |
-| Native transformation | Not planned | **WP-N1 through WP-N5 defined** |
+| Port WPs done | 8 ✅ | **9 ✅ (WP-E merged PR #48)** |
+| Native WPs done | 0 | **4 ✅ (WP-N1–N4, PR #50–#53)** |
+| Open PRs | 2 (C, D) | **1 (WP-N5 #54 in progress)** |
+| Remaining native work | Not planned | **WP-N5 (docs sync), WP-N6 (system awareness)** |
 
-**Status:** The port is complete. WP-E (Installer Refactor) is in review.
-The next phase is the OpenCode-Native transformation — 5 new work packages that
-turn PAI from a Claude Code port into a genuinely native OpenCode system.
+**Status:** Port complete (WP-E merged). Native transformation underway — WP-N1 through WP-N4 shipped. WP-N5 (plan sync) and WP-N6 (system self-awareness) remain.
 
 **Native transformation plan:** `docs/epic/EPIC-v3.0-OpenCode-Native.md`
 **Full gap analysis:** `docs/epic/GAP-ANALYSIS-v3.0.md`
@@ -241,3 +228,4 @@ turn PAI from a Claude Code port into a genuinely native OpenCode system.
 *Original plan: 2026-03-06*
 *Correction 1 (2026-03-06): Fixed WP3 completion status — was never fully done*
 *Correction 2 (2026-03-08): WP-A (#42) + WP-B (#43) merged; WP-C scope verified against v4.0.3 upstream*
+*Correction 3 (2026-03-11): WP-N1–N4 complete (PR #50–#53); WP-N5 plan sync in progress*

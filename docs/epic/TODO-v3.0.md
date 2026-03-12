@@ -31,7 +31,7 @@ WP-N1 ████████████ 100% ✅  ← Session Registry comple
 WP-N2 ████████████ 100% ✅  ← Compaction Intelligence complete, PR #51
 WP-N3 ████████████ 100% ✅  ← Algorithm Awareness complete, PR #52+#53
 WP-N4 ████████████ 100% ✅  ← LSP + Fork Documentation complete, PR #53
-WP-N5 ░░░░░░░░░░░░   0% ⏳  ← Plan Update
+WP-N5 ████████████ 100% ✅  ← Plan Update complete, PR #54
 ```
 
 > **The port is done. The native transformation starts with WP-N1.**
@@ -416,13 +416,13 @@ graph TD
 
 ---
 
-### WP-N5: Plan Update — ⏳ Planned
-**Branch:** `feature/wp-n5-plan-update` (or part of N1)
+### WP-N5: Plan Update — ✅ Complete (PR #54)
+**Branch:** `feature/wp-n5-plan-update`
 
-- [ ] Update EPIC-v3.0-Synthesis-Architecture.md — WP-N section
-- [ ] Update OPTIMIZED-PR-PLAN.md — PR #N1..#N5 as upcoming
-- [ ] Update TODO-v3.0.md — this file (make N1 active)
-- [ ] Update ADR README — ensure all 17 ADRs indexed
+- [x] Update OPTIMIZED-PR-PLAN.md — WP-N1..N4 complete, WP-E merged, summary/progress updated
+- [x] Update EPIC-v3.0-OpenCode-Native.md — WP-N1..N5 status lines added
+- [x] Update ADR README — ADR-012..016 Planned → Merged
+- [x] Update TODO-v3.0.md — this file (WP-N5 complete)
 
 ---
 
