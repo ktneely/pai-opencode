@@ -9,8 +9,8 @@
  * ============================================================================
  */
 
-import { readFile, readdir } from "fs/promises";
-import { join, dirname, resolve } from "path";
+import { readFile, readdir } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 import type {
   ActionManifest,
   ActionImplementation,
@@ -36,7 +36,7 @@ const LEGACY_SEGMENT_RE = /^[A-Za-z0-9_-]+$/;
  */
 async function createLocalLLM(): Promise<ActionCapabilities["llm"]> {
   const inferenceModule = await import(
-    join(process.env.HOME!, ".opencode/PAI/Tools/Inference.ts")
+    join(process.env.HOME ?? "/root", ".opencode/PAI/Tools/Inference.ts")
   );
   const { inference } = inferenceModule;
 
@@ -139,7 +139,7 @@ export async function loadImplementation<TInput, TOutput>(
 function isContained(baseDir: string, candidatePath: string): boolean {
   const resolvedBase = resolve(baseDir);
   const resolvedCandidate = resolve(candidatePath);
-  return resolvedCandidate.startsWith(resolvedBase + "/") || resolvedCandidate === resolvedBase;
+  return resolvedCandidate.startsWith(`${resolvedBase}/`) || resolvedCandidate === resolvedBase;
 }
 
 /**
