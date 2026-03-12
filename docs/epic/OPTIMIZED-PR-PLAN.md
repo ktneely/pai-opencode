@@ -35,7 +35,8 @@ tags: [architecture, migration, v3.0, PR-strategy, native-transformation]
 | **WP-N5** | Plan Update | #54 | ✅ **Merged** | Sync all planning docs to reflect N1-N4 complete |
 | **WP-N6** | System Self-Awareness | #55 | ✅ **Merged** | OpenCodeSystem skill, 4 architecture reference docs, ADR-017 |
 | **WP-N7** | roborev + Biome CI | #56 | ✅ **Merged** | roborev plugin handler, CodeReview skill, GitHub Actions CI, ADR-018 |
-| **WP-N8** | Obsidian Formatting Guidelines | — | 🔄 **In Progress** | Formatting guidelines, agent capability matrix (split from WP-N7) |
+| **WP-N8** | Obsidian Formatting Guidelines | #57 | ✅ **Merged** | Formatting guidelines, agent capability matrix (split from WP-N7) |
+| **WP-N9** | Installer opencode.json Fix | — | 🔄 **In Progress** | provider-models.ts, full agent-tier generation, principalName in username |
 
 > [!NOTE]
 > **2026-03-08 Live Audit:** WP-C scope significantly reduced after comparing repo against v4.0.3.
