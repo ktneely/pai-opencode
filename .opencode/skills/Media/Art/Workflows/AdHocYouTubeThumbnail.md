@@ -339,4 +339,4 @@ Dark base:        #1a1b26
 - Every generation is visibly different
 
 ### Output Location
-All outputs: `~/Downloads/yt-thumbnail-{timestamp}.png`
+All outputs: `~/Downloads/yt-thumbnail-${TIMESTAMP}.png`
