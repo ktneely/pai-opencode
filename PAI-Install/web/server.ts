@@ -4,12 +4,14 @@
  * Serves static files and handles WebSocket communication.
  */
 
-// Prevent unhandled errors from crashing the server
+// Prevent unhandled errors from crashing silently — log then exit cleanly
 process.on("uncaughtException", (err) => {
   console.error("[PAI Installer] Uncaught exception:", err.message);
+  process.exit(1);
 });
 process.on("unhandledRejection", (err: any) => {
   console.error("[PAI Installer] Unhandled rejection:", err?.message || err);
+  process.exit(1);
 });
 
 import { resolve, relative, join, extname } from "path";
@@ -104,13 +106,17 @@ const server = Bun.serve({
       });
     }
 
-    // Fallback to index.html for SPA routing
-    const indexPath = join(PUBLIC_DIR, "index.html");
-    const indexFile = Bun.file(indexPath);
-    if (await indexFile.exists()) {
-      return new Response(indexFile, {
-        headers: { "content-type": "text/html", "cache-control": "no-cache" },
-      });
+    // SPA fallback: only for HTML navigation requests, not missing assets
+    // Avoids serving text/html for missing .js/.css which confuses module loaders
+    const acceptsHtml = req.method === "GET" && (req.headers.get("accept") ?? "").includes("text/html");
+    if (acceptsHtml) {
+      const indexPath = join(PUBLIC_DIR, "index.html");
+      const indexFile = Bun.file(indexPath);
+      if (await indexFile.exists()) {
+        return new Response(indexFile, {
+          headers: { "content-type": "text/html", "cache-control": "no-cache" },
+        });
+      }
     }
 
     return new Response("Not Found", { status: 404 });

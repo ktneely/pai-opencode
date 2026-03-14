@@ -55,12 +55,24 @@ function getCurrentVersion(): string {
 		}
 		return "unknown";
 	}
-	
-	return readFileSync(CURRENT_VERSION_FILE, "utf-8").trim();
+
+	try {
+		return readFileSync(CURRENT_VERSION_FILE, "utf-8").trim();
+	} catch (err) {
+		throw new Error(
+			`Could not read version file at ${CURRENT_VERSION_FILE}: ${err instanceof Error ? err.message : String(err)}`
+		);
+	}
 }
 
 function setCurrentVersion(version: string): void {
-	writeFileSync(CURRENT_VERSION_FILE, version, "utf-8");
+	try {
+		writeFileSync(CURRENT_VERSION_FILE, version, "utf-8");
+	} catch (err) {
+		throw new Error(
+			`Could not write version file at ${CURRENT_VERSION_FILE}: ${err instanceof Error ? err.message : String(err)}`
+		);
+	}
 }
 
 function compareVersions(v1: string, v2: string): number {
@@ -100,26 +112,36 @@ function compareVersions(v1: string, v2: string): number {
 
 function detectChanges(currentVersion: string, targetVersion: string): string[] {
 	const changes: string[] = [];
-	
-	// Parse versions
-	const current = currentVersion.split(".").map(Number);
-	const target = targetVersion.split(".").map(Number);
-	
-	// Major version change (shouldn't happen within v3)
-	if (target[0] !== current[0]) {
+
+	// Parse only the numeric major.minor.patch prefix; pre-release tags are ignored
+	const parsePart = (v: string, idx: number): number => {
+		const seg = v.split(".")[idx];
+		const n = seg !== undefined ? parseInt(seg, 10) : 0;
+		return isNaN(n) ? 0 : n;
+	};
+
+	const curMajor = parsePart(currentVersion, 0);
+	const curMinor = parsePart(currentVersion, 1);
+	const curPatch = parsePart(currentVersion, 2);
+	const tgtMajor = parsePart(targetVersion, 0);
+	const tgtMinor = parsePart(targetVersion, 1);
+	const tgtPatch = parsePart(targetVersion, 2);
+
+	// Major version change
+	if (tgtMajor !== curMajor) {
 		changes.push("major-version-change");
 	}
-	
-	// Minor version change (new features)
-	if (target[1] > (current[1] || 0)) {
+
+	// Minor version change — only meaningful when major versions are equal
+	if (tgtMajor === curMajor && tgtMinor > curMinor) {
 		changes.push("new-features");
 	}
-	
-	// Patch version change (bug fixes)
-	if (target[2] > (current[2] || 0)) {
+
+	// Patch change — only when major and minor are both equal
+	if (tgtMajor === curMajor && tgtMinor === curMinor && tgtPatch > curPatch) {
 		changes.push("bug-fixes");
 	}
-	
+
 	return changes;
 }
 

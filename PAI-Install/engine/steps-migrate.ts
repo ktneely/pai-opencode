@@ -216,9 +216,12 @@ exec bun "${join(paiDir, "PAI", "Tools", "pai.ts")}" "$@"
 	const isFish = userShell.includes("fish");
 	const rcFile = userShell.includes("bash") ? ".bashrc" : isFish ? ".config/fish/config.fish" : ".zshrc";
 	const rcPath = join(homedir(), rcFile);
+	// Escape single quotes in the path so the alias is safe for all shell quote styles
+	const rawPath = join(paiDir, "PAI", "Tools", "pai.ts");
+	const quotedPath = `'${rawPath.replace(/'/g, "'\\''")}'`;
 	const aliasLine = isFish
-		? `alias pai 'bun ${join(paiDir, "PAI", "Tools", "pai.ts")}'`
-		: `alias pai='bun ${join(paiDir, "PAI", "Tools", "pai.ts")}'`;
+		? `alias pai 'bun ${quotedPath}'`
+		: `alias pai='bun ${quotedPath}'`;
 	const marker = "# PAI alias (v3)";
 	
 	try {
@@ -262,8 +265,7 @@ export async function runMigration(
     return;
   }
 
-  // Step 2: Create Backup (with explicit consent)
-  await emit({ event: "step_start", step: "backup" });
+  // Step 2: Consent — prompt BEFORE opening the backup step so cancel leaves no open step
   await emit({ 
     event: "message", 
     content: MIGRATION_CONSENT_TEXT.title + "\n" + 
@@ -280,6 +282,9 @@ export async function runMigration(
     await emit({ event: "message", content: "Migration cancelled by user." });
     return;
   }
+
+  // Open the backup step only after consent is confirmed
+  await emit({ event: "step_start", step: "backup" });
 
   let backupResult: { success: boolean; backupPath: string; error?: string };
   try {
