@@ -54,7 +54,7 @@ const server = Bun.serve({
   port: PORT,
   hostname: "127.0.0.1", // Localhost only — never expose to network
 
-  fetch(req, server) {
+  async fetch(req, server) {
     resetInactivity();
 
     const url = new URL(req.url);

@@ -64,16 +64,33 @@ function setCurrentVersion(version: string): void {
 }
 
 function compareVersions(v1: string, v2: string): number {
-	const parts1 = v1.split(".").map(Number);
-	const parts2 = v2.split(".").map(Number);
-	
+	const parts1 = v1.split(".");
+	const parts2 = v2.split(".");
+
 	for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
-		const p1 = parts1[i] || 0;
-		const p2 = parts2[i] || 0;
-		if (p1 < p2) return -1;
-		if (p1 > p2) return 1;
+		const s1 = parts1[i] ?? "0";
+		const s2 = parts2[i] ?? "0";
+		const n1 = parseInt(s1, 10);
+		const n2 = parseInt(s2, 10);
+		const num1 = isNaN(n1) ? null : n1;
+		const num2 = isNaN(n2) ? null : n2;
+
+		if (num1 !== null && num2 !== null) {
+			// Both numeric: compare numerically
+			if (num1 < num2) return -1;
+			if (num1 > num2) return 1;
+		} else if (num1 !== null) {
+			// Numeric beats non-numeric (e.g. "1" > "beta")
+			return 1;
+		} else if (num2 !== null) {
+			return -1;
+		} else {
+			// Both non-numeric: compare lexicographically
+			const cmp = s1.localeCompare(s2);
+			if (cmp !== 0) return cmp;
+		}
 	}
-	
+
 	return 0;
 }
 

@@ -9,6 +9,7 @@ import { existsSync, cpSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import type { InstallState } from "./types";
+import { PAI_VERSION } from "./types";
 import { migrateV2ToV3, isMigrationNeeded } from "./migrate";
 import { buildOpenCodeBinary } from "./build-opencode";
 import type { MigrationResult } from "./migrate";
@@ -187,7 +188,7 @@ export async function stepMigrationDone(
 	onProgress(96, "Writing version marker...");
 	const versionFile = join(paiDir, ".version");
 	try {
-		writeFileSync(versionFile, "3.0.0\n", "utf-8");
+		writeFileSync(versionFile, `${PAI_VERSION}\n`, "utf-8");
 	} catch (err) {
 		// Non-fatal - version can be detected from settings.json
 		console.warn("Could not write version file:", err);
@@ -249,15 +250,21 @@ export async function runMigration(
   requestChoice: (id: string, prompt: string, choices: { label: string; value: string; description?: string }[]) => Promise<string>
 ): Promise<void> {
   // Step 1: Detect Migration
-  emit({ event: "step_start", step: "detect" });
+  await emit({ event: "step_start", step: "detect" });
   const detection = await stepDetectMigration(state, (percent, message) => {
-    emit({ event: "progress", step: "detect", percent, detail: message });
+    void emit({ event: "progress", step: "detect", percent, detail: message }).catch(() => {});
   });
-  emit({ event: "step_complete", step: "detect" });
+  await emit({ event: "step_complete", step: "detect" });
+
+  // Early return if no migration is needed
+  if (!detection.needed || (detection.flatSkills || []).length === 0) {
+    await emit({ event: "message", content: "No migration needed — installation is already up to date." });
+    return;
+  }
 
   // Step 2: Create Backup (with explicit consent)
-  emit({ event: "step_start", step: "backup" });
-  emit({ 
+  await emit({ event: "step_start", step: "backup" });
+  await emit({ 
     event: "message", 
     content: MIGRATION_CONSENT_TEXT.title + "\n" + 
              MIGRATION_CONSENT_TEXT.description((detection.flatSkills || []).length)
@@ -270,38 +277,63 @@ export async function runMigration(
   const consent = await requestChoice("migration-consent", MIGRATION_CONSENT_TEXT.warning, consentChoices);
   
   if (consent !== "proceed") {
-    throw new Error("Migration cancelled by user");
+    await emit({ event: "message", content: "Migration cancelled by user." });
+    return;
   }
-  
-  const backupResult = await stepCreateBackup(state, "", (percent, message) => {
-    emit({ event: "progress", step: "backup", percent, detail: message });
-  });
-  emit({ event: "step_complete", step: "backup" });
+
+  let backupResult: { success: boolean; backupPath: string; error?: string };
+  try {
+    backupResult = await stepCreateBackup(state, "", (percent, message) => {
+      void emit({ event: "progress", step: "backup", percent, detail: message }).catch(() => {});
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await emit({ event: "message", content: `Backup failed unexpectedly: ${msg}` });
+    throw err;
+  }
+
+  if (!backupResult.success) {
+    await emit({ event: "message", content: `Backup failed: ${backupResult.error || "Unknown error"}` });
+    throw new Error(`Backup failed: ${backupResult.error || "Unknown error"}`);
+  }
+  await emit({ event: "step_complete", step: "backup" });
 
   // Step 3: Migrate Configuration
-  emit({ event: "step_start", step: "migrate-config" });
-  const migrationResult = await stepMigrate(state, (percent, message) => {
-    emit({ event: "progress", step: "migrate-config", percent, detail: message });
-  }, false);
-  emit({ event: "step_complete", step: "migrate-config" });
+  await emit({ event: "step_start", step: "migrate-config" });
+  let migrationResult: MigrationResult;
+  try {
+    migrationResult = await stepMigrate(state, (percent, message) => {
+      void emit({ event: "progress", step: "migrate-config", percent, detail: message }).catch(() => {});
+    }, false);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await emit({ event: "message", content: `Migration failed unexpectedly: ${msg}` });
+    throw err;
+  }
+
+  if (!migrationResult.success) {
+    await emit({ event: "message", content: `Migration failed: ${migrationResult.error || "Unknown error"}` });
+    throw new Error(`Migration failed: ${migrationResult.error || "Unknown error"}`);
+  }
+  await emit({ event: "step_complete", step: "migrate-config" });
 
   // Step 4: Build Binary
-  emit({ event: "step_start", step: "build" });
+  await emit({ event: "step_start", step: "build" });
   const binaryResult = await stepBinaryUpdate(state, (percent, message) => {
-    emit({ event: "progress", step: "build", percent, detail: message });
+    void emit({ event: "progress", step: "build", percent, detail: message }).catch(() => {});
   }, false);
   
   if (!binaryResult.success) {
     throw new Error(`Binary build failed: ${binaryResult.error || "Unknown error"}`);
   }
-  emit({ event: "step_complete", step: "build" });
+  await emit({ event: "step_complete", step: "build" });
 
   // Step 5: Verify Migration
-  emit({ event: "step_start", step: "verify" });
+  await emit({ event: "step_start", step: "verify" });
   await stepMigrationDone(state, migrationResult, (percent, message) => {
-    emit({ event: "progress", step: "verify", percent, detail: message });
+    void emit({ event: "progress", step: "verify", percent, detail: message }).catch(() => {});
   });
-  emit({ event: "step_complete", step: "verify" });
+  await emit({ event: "step_complete", step: "verify" });
 }
 
 // ═══════════════════════════════════════════════════════════
