@@ -16,7 +16,7 @@ Create the following output sections:
 
 SUMMARY:
 
-A 50 word summary of what happened in a heroic storytelling style.
+A 50-word summary of what happened in a heroic storytelling style.
 
 KEY EVENTS:
 

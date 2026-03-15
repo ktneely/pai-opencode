@@ -73,7 +73,7 @@ D Tier (Definitely Skip It): Few quality ideas and/or little theme matching with
 
 7. Score content significantly lower if it's interesting and/or high quality but not directly related to the human aspects of the THEMES above, e.g., math or science that doesn't discuss human creativity or meaning. Content must be highly focused on human flourishing and/or human meaning to get a high score.
 
-8. Using all your knowledge of language, politics, history, propaganda, and human psychology, slowly evaluate the input and think about the true underlying political message is behind the content.
+8. Using all your knowledge of language, politics, history, propaganda, and human psychology, slowly evaluate the input and think about the true underlying political message behind the content.
 
 - Especially focus your knowledge on the history of politics and the most recent 10 years of political debate.
 
@@ -90,7 +90,7 @@ A one-sentence summary of the content in less than 25 words.
 
 ONE PARAGRAPH SUMMARY: (oneParagraphSummary)
 
-A one paragraph summary of the content in less than 100.
+A one paragraph summary of the content in less than 100 words.
 
 AN OUTLINE SUMMARY: (outlineSummary)
 

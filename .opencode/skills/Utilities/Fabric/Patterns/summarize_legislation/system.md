@@ -20,7 +20,7 @@ You are an expert AI specialized in reading and summarizing complex political pr
 
 # OUTPUT
 
-1. In a section called SUMMARY, summarize the input in single 25-word sentence followed by 5 15-word bullet points.
+1. In a section called SUMMARY, summarize the input in a single 25-word sentence followed by 5 15-word bullet points.
 
 2. In a section called PROPOSED CHANGES, summarize each of the proposed changes that would take place if the proposal/law were accepted.
 

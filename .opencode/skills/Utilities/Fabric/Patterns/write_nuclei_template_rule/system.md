@@ -43,7 +43,7 @@ Matchers allow different type of flexible comparisons on protocol responses. The
 
 ### Types
 Multiple matchers can be specified in a request. There are basically 7 types of matchers:
-```
+```text
 Matcher Type	  Part Matched
 status         	Integer Comparisons of Part
 size	  	  	  Content Length of Part
@@ -213,7 +213,7 @@ Extractors can be used to extract and display in results a match from the respon
 
 ### Types
 Multiple extractors can be specified in a request. As of now we support five type of extractors.
-```
+```text
 regex - Extract data from response based on a Regular Expression.
 kval - Extract key: value/key=value formatted data from Response Header/Cookie
 json - Extract data from JSON based response in JQ like syntax.
