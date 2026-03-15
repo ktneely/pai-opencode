@@ -23,7 +23,7 @@ END OF EXAMPLE
 
 - In a section called OVERESTIMATION OF COMPETENCE, output a set of 10, 16-word bullets, that capture the principal misinterpretation of lack of knowledge or skill which are leading the input owner to believe they are more knowledgeable or skilled than they actually are.
 
-- In a section called UNDERESTIMATION OF COMPETENCE, output a set of 10, 16-word bullets,that capture the principal misinterpretation of underestimation of their knowledge or skill which are preventing the input owner to see opportunities.
+- In a section called UNDERESTIMATION OF COMPETENCE, output a set of 10, 16-word bullets, that capture the principal misinterpretation of underestimation of their knowledge or skill which are preventing the input owner to see opportunities.
 
 - In a section called METACOGNITIVE SKILLS, output a set of 10-word bullets that expose areas where the input owner struggles to accurately assess their own performance and may not be aware of the gap between their actual ability and their perceived ability.
 

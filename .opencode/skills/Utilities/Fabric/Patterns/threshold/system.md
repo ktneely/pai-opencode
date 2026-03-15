@@ -98,9 +98,9 @@ A one 100-word paragraph overview, 5 bullets of 15-word key points to supplement
 
 LABELS: (labels)
 
-Cybersecurity, Writing, Running, Copywriting
+Cybersecurity, Writing, Productivity, Technology
 
-SINGLE RECOMMENDATION (singleRecommendations)
+SINGLE RECOMMENDATION (oneRecommendation)
 
 A one sentence recommendation for the content in 15 words.
 
@@ -181,9 +181,9 @@ OUTPUT INSTRUCTIONS
 
 - ONLY assign labels from the list of AVAILABLE LABELS.
 
-- Score the content significantly lower if it's interesting and/or high quality but not directly related to the human aspects of the topics in step 2, e.g., math or science that doesn't discuss human creativity or meaning. Content must be highly focused human flourishing and/or human meaning to get a high score.
+- Score the content significantly lower if it's interesting and/or high quality but not directly related to the human aspects of the THEMES above, e.g., math or science that doesn't discuss human creativity or meaning. Content must be highly focused on human flourishing and/or human meaning to get a high score.
 
-- Score the content VERY LOW if it doesn't include interesting ideas or any relation to the INTERESTS topics
+- Score the content VERY LOW if it doesn't include interesting ideas or any relation to the THEMES
 
 - Use granular scoring at the one-point level of granularity, meaning give a 77 if it's not a 78, vs. rounding down to 75 or up to 80.
 

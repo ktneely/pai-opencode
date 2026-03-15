@@ -60,7 +60,7 @@ The pattern's system.md contains instructions formatted as:
 Apply these instructions to the provided content directly. This is the AI reading and following the pattern instructions, not calling an external tool.
 
 **Example:**
-```
+```text
 [Content from user]
 ↓
 [Read Patterns/extract_wisdom/system.md]

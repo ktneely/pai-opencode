@@ -403,12 +403,12 @@ base64_py(src interface) string	Encodes string to base64 like python (with new l
 
 bin_to_dec(binaryNumber number | string) float64	Transforms the input binary number into a decimal format	bin_to_dec(\"0b1010\")<br>bin_to_dec(1010)	10
 compare_versions(versionToCheck string, constraints …string) bool	Compares the first version argument with the provided constraints	compare_versions(\'v1.0.0\', \'\>v0.0.1\', \'\<v1.0.1\')	true
-concat(arguments …interface) string	Concatenates the given number of arguments to form a string	concat(\"Hello\", 123, \"world)	Hello123world
+concat(arguments …interface) string	Concatenates the given number of arguments to form a string	concat(\"Hello\", 123, \"world\")	Hello123world
 contains(input, substring interface) bool	Verifies if a string contains a substring	contains(\"Hello\", \"lo\")	true
 contains_all(input interface, substrings …string) bool	Verifies if any input contains all of the substrings	contains(\"Hello everyone\", \"lo\", \"every\")	true
 contains_any(input interface, substrings …string) bool	Verifies if an input contains any of substrings	contains(\"Hello everyone\", \"abc\", \"llo\")	true
 date_time(dateTimeFormat string, optionalUnixTime interface) string	Returns the formatted date time using simplified or go style layout for the current or the given unix time	date_time(\"%Y-%M-%D %H:%m\")<br>date_time(\"%Y-%M-%D %H:%m\", 1654870680)<br>date_time(\"2006-01-02 15:04\", unix_time())	2022-06-10 14:18
-dec_to_hex(number number | string) string	Transforms the input number into hexadecimal format	dec_to_hex(7001)\"	1b59
+dec_to_hex(number number | string) string	Transforms the input number into hexadecimal format	dec_to_hex(7001)	1b59
 ends_with(str string, suffix …string) bool	Checks if the string ends with any of the provided substrings	ends_with(\"Hello\", \"lo\")	true
 generate_java_gadget(gadget, cmd, encoding interface) string	Generates a Java Deserialization Gadget	generate_java_gadget(\"dns\", \"{{interactsh-url}}\", \"base64\")	rO0ABXNyABFqYXZhLnV0aWwuSGFzaE1hcAUH2sHDFmDRAwACRgAKbG9hZEZhY3RvckkACXRocmVzaG9sZHhwP0AAAAAAAAx3CAAAABAAAAABc3IADGphdmEubmV0LlVSTJYlNzYa/ORyAwAHSQAIaGFzaENvZGVJAARwb3J0TAAJYXV0aG9yaXR5dAASTGphdmEvbGFuZy9TdHJpbmc7TAAEZmlsZXEAfgADTAAEaG9zdHEAfgADTAAIcHJvdG9jb2xxAH4AA0wAA3JlZnEAfgADeHD//////////3QAAHQAAHEAfgAFdAAFcHh0ACpjYWhnMmZiaW41NjRvMGJ0MHRzMDhycDdlZXBwYjkxNDUub2FzdC5mdW54
 generate_jwt(json, algorithm, signature, unixMaxAge) []byte	Generates a JSON Web Token (JWT) using the claims provided in a JSON string, the signature, and the specified algorithm	generate_jwt("{\\"name\\":\\"John Doe\\",\\"foo\\":\\"bar\\"}", "HS256", "hello-world")	[EXAMPLE_JWT_TOKEN]
@@ -550,7 +550,7 @@ variables:
   alg: \"HS256\" # optional
   sig: \"this_is_secret\" # optional
   age: \'{{to_unix_time(\"2032-12-30T16:30:10+00:00\")}}\' # optional
-  jwt: \'{{generate_jwt(json, \"{{alg}}\", \"{{sig}}\", \"{{age}}\")}}\'
+  jwt: \'{{generate_jwt(json, alg, sig, age)}}\'
 ```
 The maxAgeUnix argument is to set the expiration \"exp\" JWT standard claim, as well as the \"iat\" claim when you call the function.
 
@@ -570,7 +570,7 @@ variables:
       \"foo\": \"bar\",
       \"name\": \"John Doe\"
     }
-  minify: \"{{json_minify(json}}\"
+  minify: \"{{json_minify(json)}}\"
 ```
 minify variable output:
 
@@ -589,7 +589,7 @@ Example:
 ```
 variables:
   json: \'{\"foo\":\"bar\",\"name\":\"John Doe\"}\'
-  pretty: \"{{json_prettify(json}}\"
+  pretty: \"{{json_prettify(json)}}\"
 ```
 pretty variable output:
 
@@ -1065,7 +1065,7 @@ http:
         PUT / HTTP/1.1
         Host: {{Hostname}}
 
-        {{html_escape(\'§param_a§\')}} + {{hex_encode(\'§param_b§\'))}}
+{{html_escape(\'§param_a§\')}} + {{hex_encode(\'§param_b§\')}}	
 
     attack: clusterbomb # Available types: batteringram,pitchfork,clusterbomb
     payloads:
