@@ -58,6 +58,8 @@ export class BugBountyTracker {
 
     const currentState = await this.state.loadState();
 
+    const PLATFORM_COUNT = 4; // hackerone, bugcrowd, intigriti, yeswehack
+
     if (!currentState.initialized) {
       console.log('⚠️  Tracker not initialized. Run initialization first.');
       await this.initialize();
@@ -83,7 +85,7 @@ export class BugBountyTracker {
         new_programs: [],
         scope_expansions: [],
         upgraded_programs: [],
-        total_checked: 5,
+        total_checked: PLATFORM_COUNT,
         check_duration_ms: Date.now() - startTime,
       };
     }
@@ -125,7 +127,7 @@ export class BugBountyTracker {
 
     return {
       ...results,
-      total_checked: 4, // four platforms: hackerone, bugcrowd, intigriti, yeswehack
+      total_checked: PLATFORM_COUNT,
       check_duration_ms: duration,
     };
   }
@@ -197,7 +199,7 @@ export class BugBountyTracker {
 
             upgradedPrograms.push(meta);
             metadata.set(key, meta);
-          } else if (program.key_scopes.length > existing.key_scopes.length) {
+          } else if (program.key_scopes.some(s => !existing.key_scopes.includes(s))) {
             const meta: ProgramMetadata = {
               ...existing,
               key_scopes: program.key_scopes,

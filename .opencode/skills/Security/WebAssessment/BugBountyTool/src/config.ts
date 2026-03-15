@@ -18,10 +18,10 @@ export const CONFIG = {
 
   // Local paths
   paths: {
-    root: '~/.opencode/skills/hacking/bug-bounties',
-    state: '~/.opencode/skills/hacking/bug-bounties/state.json',
-    cache: '~/.opencode/skills/hacking/bug-bounties/cache',
-    logs: '~/.opencode/skills/hacking/bug-bounties/logs',
+    root: '~/.opencode/skills/Security/WebAssessment/BugBountyTool',
+    state: '~/.opencode/skills/Security/WebAssessment/BugBountyTool/state.json',
+    cache: '~/.opencode/skills/Security/WebAssessment/BugBountyTool/cache',
+    logs: '~/.opencode/skills/Security/WebAssessment/BugBountyTool/logs',
   },
 
   // GitHub API
