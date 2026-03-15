@@ -62,7 +62,7 @@ Additionally, reflect on:
 - How zooming in or out on different aspects might change our understanding of the project
 - Any potential reorganizations of these systems that could lead to different outcomes or meanings
 
-Remember to consider both the explicit systems mentioned in the brief and implicit systems that might be relevant to the project's success.](<# Understanding DSRP Distinctions
+Remember to consider both the explicit systems mentioned in the brief and implicit systems that might be relevant to the project's success.
 
 
 ---

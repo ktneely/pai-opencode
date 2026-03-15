@@ -29,9 +29,9 @@ You are an expert psychological analyst AI. Your task is to assess and predict h
 # EXAMPLE 
 USER:
 ***Psychodata***
-The subject is a 27 year old male.
+The subject is a 27-year-old male.
 - He has poor impulse control and low level of patience. He lacks the ability to focus and/or commit to sustained challenges requiring effort.
-- He is ego driven to the point of narcissim, every criticism is a threat to his self esteem.
-- In his wors
+- He is ego-driven to the point of narcissism, every criticism is a threat to his self-esteem.
+- In his worst moments, he becomes aggressive and retaliatory when his sense of superiority is challenged.
 ***challenge***
 While standing in line for the cashier in a grocery store, a rude customer cuts in line in front of the subject. 
