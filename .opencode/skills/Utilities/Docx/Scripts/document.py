@@ -27,11 +27,14 @@ Usage:
 """
 
 import html
+import logging
 import random
 import shutil
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from defusedxml import minidom
 from Ooxml.Scripts.pack import pack_document
@@ -127,8 +130,6 @@ class DocxXMLEditor(XMLEditor):
         Args:
             nodes: List of DOM nodes to process
         """
-        from datetime import datetime, timezone
-
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         def is_inside_deletion(elem):
@@ -649,7 +650,7 @@ class Document:
 
         # Generate RSID if not provided
         self.rsid = rsid if rsid else _generate_rsid()
-        print(f"Using RSID: {self.rsid}")
+        logger.debug("Using RSID: %s", self.rsid)
 
         # Set default author and initials
         self.author = author

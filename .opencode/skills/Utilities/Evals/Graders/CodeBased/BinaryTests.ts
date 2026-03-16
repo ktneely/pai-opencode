@@ -53,11 +53,11 @@ export class BinaryTestsGrader extends BaseGrader {
     }
 
     const passCount = results.filter(r => r.passed).length;
-    const score = passCount / params.test_files.length;
-    const passed = passCount === params.test_files.length;
+    const score = results.length ? passCount / results.length : 0;
+    const passed = results.length > 0 && passCount === results.length;
 
     return this.createResult(score, passed, performance.now() - start, {
-      reasoning: `${passCount}/${params.test_files.length} tests passed`,
+      reasoning: `${passCount}/${results.length} tests passed`,
       details: {
         results,
         working_dir: workingDir,

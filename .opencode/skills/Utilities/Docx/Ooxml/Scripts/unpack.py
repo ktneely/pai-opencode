@@ -8,7 +8,9 @@ import zipfile
 from pathlib import Path
 
 # Get command line arguments
-assert len(sys.argv) == 3, "Usage: python unpack.py <office_file> <output_dir>"
+if len(sys.argv) != 3:
+    print("Usage: python unpack.py <office_file> <output_dir>", file=sys.stderr)
+    sys.exit(1)
 input_file, output_dir = sys.argv[1], sys.argv[2]
 
 # Extract and format
@@ -16,10 +18,13 @@ output_path = Path(output_dir)
 output_path.mkdir(parents=True, exist_ok=True)
 
 # Safe extraction: prevent zip-slip by validating all member paths
+out_resolved = output_path.resolve()
 with zipfile.ZipFile(input_file) as zf:
     for member in zf.namelist():
         member_path = (output_path / member).resolve()
-        if not str(member_path).startswith(str(output_path.resolve())):
+        try:
+            member_path.relative_to(out_resolved)
+        except ValueError:
             raise ValueError(f"Unsafe zip entry rejected (zip-slip): {member}")
     zf.extractall(output_path)
 
@@ -32,5 +37,5 @@ for xml_file in xml_files:
 
 # For .docx files, suggest an RSID for tracked changes
 if input_file.endswith(".docx"):
-    suggested_rsid = "".join(random.choices("0123456789ABCDEF", k=8))
+    suggested_rsid = "".join(random.choices("0123456789ABCDEF", k=8))  # noqa: S311 — local-only, non-cryptographic RSID for user hinting, not stored or reused
     print(f"Suggested RSID for edit session: {suggested_rsid}")
