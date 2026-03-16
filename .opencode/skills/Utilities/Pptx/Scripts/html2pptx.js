@@ -376,14 +376,21 @@ async function extractSlideData(page) {
       // Extract color first (rgba or rgb at start)
       const colorMatch = boxShadow.match(/rgba?\([^)]+\)/);
 
-      // Extract numeric values (handles both px and pt units)
+      // Extract numeric values with units (handles both px and pt)
       const parts = boxShadow.match(/([-\d.]+)(px|pt)/g);
 
       if (!parts || parts.length < 2) return null;
 
-      const offsetX = parseFloat(parts[0]);
-      const offsetY = parseFloat(parts[1]);
-      const blur = parts.length > 2 ? parseFloat(parts[2]) : 0;
+      // Convert each value to px, respecting its declared unit
+      const toPx = (part) => {
+        const unit = part.endsWith('pt') ? 'pt' : 'px';
+        const val = parseFloat(part);
+        return unit === 'pt' ? val / PT_PER_PX : val;
+      };
+
+      const offsetX = toPx(parts[0]);
+      const offsetY = toPx(parts[1]);
+      const blur = parts.length > 2 ? toPx(parts[2]) : 0;
 
       // Calculate angle from offsets (in degrees, 0 = right, 90 = down)
       let angle = 0;
@@ -395,12 +402,12 @@ async function extractSlideData(page) {
       // Calculate offset distance (hypotenuse)
       const offset = Math.sqrt(offsetX * offsetX + offsetY * offsetY) * PT_PER_PX;
 
-      // Extract opacity from rgba
+      // Extract opacity from rgba(...) only — rgb() has no alpha component
       let opacity = 0.5;
-      if (colorMatch) {
-        const opacityMatch = colorMatch[0].match(/[\d.]+\)$/);
-        if (opacityMatch) {
-          opacity = parseFloat(opacityMatch[0].replace(')', ''));
+      if (colorMatch && colorMatch[0].startsWith('rgba')) {
+        const rgbaMatch = colorMatch[0].match(/rgba\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*,\s*([\d.]+)\s*\)/);
+        if (rgbaMatch) {
+          opacity = parseFloat(rgbaMatch[1]);
         }
       }
 
@@ -905,7 +912,7 @@ async function html2pptx(htmlFile, pres, options = {}) {
 
   try {
     // Use Chrome on macOS, default Chromium on Unix
-    const launchOptions = { env: { TMPDIR: tmpDir } };
+    const launchOptions = { env: { ...process.env, TMPDIR: tmpDir } };
     if (process.platform === 'darwin') {
       launchOptions.channel = 'chrome';
     }
