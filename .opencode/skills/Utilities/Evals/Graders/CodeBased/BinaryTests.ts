@@ -30,7 +30,8 @@ export class BinaryTestsGrader extends BaseGrader {
         // Detect test command based on file extension
         const command = params.test_command ?? this.detectTestCommand(testFile);
 
-        const result = await $`cd ${workingDir} && timeout ${Math.ceil(timeout/1000)} ${command} ${testFile}`
+        const commandParts = command.split(/\s+/);
+        const result = await $`cd ${workingDir} && timeout ${Math.ceil(timeout/1000)} ${commandParts} ${testFile}`
           .quiet()
           .nothrow();
 

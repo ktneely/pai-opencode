@@ -14,7 +14,14 @@ input_file, output_dir = sys.argv[1], sys.argv[2]
 # Extract and format
 output_path = Path(output_dir)
 output_path.mkdir(parents=True, exist_ok=True)
-zipfile.ZipFile(input_file).extractall(output_path)
+
+# Safe extraction: prevent zip-slip by validating all member paths
+with zipfile.ZipFile(input_file) as zf:
+    for member in zf.namelist():
+        member_path = (output_path / member).resolve()
+        if not str(member_path).startswith(str(output_path.resolve())):
+            raise ValueError(f"Unsafe zip entry rejected (zip-slip): {member}")
+    zf.extractall(output_path)
 
 # Pretty print all XML files
 xml_files = list(output_path.rglob("*.xml")) + list(output_path.rglob("*.rels"))
