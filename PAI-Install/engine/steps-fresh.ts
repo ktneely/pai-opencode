@@ -12,7 +12,7 @@ import type { BuildResult } from "./build-opencode.ts";
 import { PROVIDER_MODELS, PROVIDER_LABELS } from "./provider-models.ts";
 import type { ProviderName } from "./provider-models.ts";
 import { existsSync, mkdirSync, writeFileSync, chmodSync, symlinkSync, unlinkSync, lstatSync, realpathSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, resolve, dirname } from "node:path";
 import { homedir } from "node:os";
 
 // ═══════════════════════════════════════════════════════════
@@ -227,7 +227,9 @@ export async function stepInstallPAI(
 		},
 		daidentity: {
 			name: state.collected.aiName || "PAI",
-			// voices.main.voiceId is the path validate.ts checks
+			// Legacy flat field — read by getIdentity() in identity.ts until reader migration lands
+			voiceId: state.collected.voiceId || "",
+			// Nested schema — read by validate.ts and future callers
 			voices: {
 				main: {
 					voiceId: state.collected.voiceId || "",
@@ -409,15 +411,22 @@ ${providerEnvVar}=${state.collected.apiKey || ""}
 	};
 	const shellConfig = shellConfigMap[shellName] ?? join(homedir(), ".zshrc");
 
-	const aliasBlock = `\n# PAI alias — added by PAI installer\nalias pai='cd ${installDir} && bun run .opencode/tools/pai.ts'\n`;
+	// Use a shell function so the subshell owns the cd — caller's $PWD is never changed.
+	// installDir is double-quoted inside the function body to handle paths with spaces.
+	const aliasBlock = `\n# PAI alias — added by PAI installer\npai() { (cd "${installDir}" && bun run .opencode/tools/pai.ts "$@"); }\n`;
 
 	try {
+		// Ensure parent directory exists (matters for fish: ~/.config/fish/ may be absent)
+		mkdirSync(dirname(shellConfig), { recursive: true });
+
 		// Only append if the alias isn't already there
 		const existing = existsSync(shellConfig)
 			? readFileSync(shellConfig, "utf-8")
 			: "";
 		if (!existing.includes("# PAI alias")) {
-			writeFileSync(shellConfig, existing + aliasBlock, { flag: "a" });
+			// Append only aliasBlock — do NOT pass existing as content with flag:"a"
+			// (that would write existing twice and corrupt the shell config)
+			writeFileSync(shellConfig, aliasBlock, { flag: "a" });
 		}
 	} catch (err) {
 		console.error(`Warning: Could not write shell alias to ${shellConfig}: ${err}`);
