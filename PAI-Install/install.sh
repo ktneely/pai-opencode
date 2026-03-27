@@ -62,9 +62,9 @@ if [ "${1:-}" = "--cli" ]; then
 	shift
 fi
 
-# Hard fail if someone tries to use the removed GUI mode
-if [ "${1:-}" = "--gui" ] || [ "${1:-}" = "--mode" ]; then
-	error "GUI mode was removed. Use CLI options."
+# Hard fail only when GUI mode is explicitly requested
+if [ "${1:-}" = "--gui" ] || [ "${1:-}" = "--mode=gui" ] || { [ "${1:-}" = "--mode" ] && [ "${2:-}" = "gui" ]; }; then
+	error "Requested GUI mode was removed. Use CLI options."
 	exec bun "$INSTALLER_DIR/cli/quick-install.ts" --help
 fi
 

@@ -11,7 +11,7 @@ maxIterations: 128
 loopStatus: null
 last_phase: VERIFY
 failing_criteria: []
-verification_summary: "12/12"
+verification_summary: "13/13"
 parent: null
 children: []
 ---
@@ -24,7 +24,7 @@ Delete retired install artifacts (wizard + GUI), make CLI installer canonical, a
 
 | What | State |
 |---|---|
-| Progress | 12/12 criteria passing |
+| Progress | 13/13 criteria passing |
 | Phase | COMPLETE |
 | Next action | None |
 | Blocked by | Nothing |
@@ -64,6 +64,7 @@ The repo currently documents multiple install paths (wizard vs PAI-Install) and 
 - [x] ISC-C6: INSTALL.md uses only PAI-Install/install.sh CLI flow | Verify: Read: INSTALL.md contains no wizard invocation
 - [x] ISC-C7: docs/ contain no references to removed wizard path | Verify: Grep: PAIOpenCodeWizard has 0 matches in docs/
 - [x] ISC-C8: docs/ contain no instructions to run removed GUI mode | Verify: Grep: "--mode gui" has 0 matches in docs/
+- [x] ISC-C12: Root docs exclude wizard/GUI installer instructions | Verify: Grep: patterns have 0 matches in *.md excluding .prd/
 - [x] ISC-C9: PAI-Install/README.md matches actual directory structure | Verify: Read: PAI-Install/README.md list is accurate
 - [x] ISC-C10: CLI installer help runs without throwing | Verify: CLI: bun PAI-Install/cli/quick-install.ts --help
 - [x] ISC-C11: install.sh CLI mode works and forwards args | Verify: CLI: bash PAI-Install/install.sh --cli --help
@@ -73,5 +74,5 @@ The repo currently documents multiple install paths (wizard vs PAI-Install) and 
 
 ### Iteration 0 — 2026-03-27
 - Phase reached: VERIFY
-- Criteria progress: 12/12
+- Criteria progress: 13/13
 - Work done: CLI-only installer enforced, GUI/wizard artifacts deleted, docs updated repo-wide

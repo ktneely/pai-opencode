@@ -85,7 +85,7 @@ This normalizes your `opencode.json` and `~/.opencode/` before migration.
 bash PAI-Install/install.sh --cli --preset zen --name "Your Name" --ai-name "Jeremy"
 ```
 
-### Step 3: Preview Migration (Dry Run)
+### Step 4: Preview Migration (Dry Run)
 
 ```bash
 bun Tools/pai-to-opencode-converter.ts \
@@ -99,7 +99,7 @@ bun Tools/pai-to-opencode-converter.ts \
 - What will be transformed
 - What requires manual work
 
-### Step 4: Run Migration
+### Step 5: Run Migration
 
 ```bash
 bun Tools/pai-to-opencode-converter.ts \
@@ -107,7 +107,7 @@ bun Tools/pai-to-opencode-converter.ts \
   --target .opencode
 ```
 
-### Step 5: Verify Migration
+### Step 6: Verify Migration
 
 ```bash
 # Check structure
@@ -117,7 +117,7 @@ ls -la .opencode/
 grep -r "\.claude" .opencode/ --exclude-dir=node_modules
 ```
 
-### Step 6: Test OpenCode
+### Step 7: Test OpenCode
 
 ```bash
 opencode

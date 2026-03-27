@@ -10,14 +10,14 @@ PAI OpenCode's installer currently supports cloud providers only (`zen`, `anthro
 
 For a local-only (Ollama) setup you must configure `opencode.json` manually.
 
-2. Make sure Ollama is running:
+1. Make sure Ollama is running:
    ```bash
    ollama serve
    ```
 
-3. Disable external tools (see below)
+2. Disable external tools (see below)
 
-4. Start OpenCode:
+3. Start OpenCode:
    ```bash
    opencode
    ```

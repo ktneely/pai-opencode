@@ -126,7 +126,7 @@ opencode
 
 The installer will:
 - **Build OpenCode** from our fork with model tier support (using Bun's native compiler)
-- **Choose your preset** — Anthropic (recommended), ZEN PAID, ZEN FREE, or Ollama (local)
+- **Choose your preset** — zen (recommended), anthropic, openrouter, or openai
 - Set your name and timezone
 - Name your AI assistant
 
@@ -345,9 +345,9 @@ PAI-OpenCode includes a **3-tier research system** that optimizes for both quali
 
 ### Setup
 
-Install with a single preset first, then add research agents anytime:
+Enable multi-provider research routing anytime:
 ```bash
-bun run .opencode/tools/switch-provider.ts --add-researchers
+bun run .opencode/tools/switch-provider.ts anthropic --multi-research
 ```
 
 **Required API keys** (add to `~/.opencode/.env`):

@@ -20,7 +20,7 @@ bash PAI-Install/install.sh --cli --preset zen --name "Your Name" --ai-name "Jer
 
 ## Directory Structure
 
-```
+```text
 PAI-Install/
 ├── install.sh              # Bootstrap (Bun + CLI entrypoint)
 ├── cli/

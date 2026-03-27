@@ -209,7 +209,7 @@ cd ~/.opencode && git checkout v2.x-branch
 | Plugin Event Bus | Cleaner code, better testability |
 | Model Tiers | 60x cost optimization (quick/standard/advanced) |
 | Prompt Injection Guard | Security against adversarial attacks |
-| Electron GUI | Visual installer, no CLI needed |
+| Installer (CLI-only) | Deterministic install flow (no GUI path) |
 | DB Archiving | Automated session cleanup |
 | Hierarchical Skills | Better organization, lazy loading |
 
