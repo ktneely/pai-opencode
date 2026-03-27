@@ -24,10 +24,10 @@ export function generateSettingsJson(config: PAIConfig): Record<string, any> {
     },
 
     contextFiles: [
-      "skills/PAI/SKILL.md",
-      "skills/PAI/AISTEERINGRULES.md",
-      "skills/PAI/USER/AISTEERINGRULES.md",
-      "skills/PAI/USER/DAIDENTITY.md",
+      "PAI/SKILL.md",
+      "PAI/AISTEERINGRULES.md",
+      "PAI/README.md",
+      "PAI/USER/README.md",
     ],
 
     daidentity: {
@@ -35,6 +35,7 @@ export function generateSettingsJson(config: PAIConfig): Record<string, any> {
       fullName: `${config.aiName} — Personal AI`,
       displayName: config.aiName.toUpperCase(),
       color: "#3B82F6",
+      voiceId,
       voices: {
         main: {
           voiceId,

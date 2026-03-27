@@ -130,12 +130,12 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
     });
   }
 
-  // 4. PAI skill present
-  const skillPath = join(paiDir, "skills", "PAI", "SKILL.md");
+  // 4. PAI core present (post-refactor location)
+  const skillPath = join(paiDir, "PAI", "SKILL.md");
   checks.push({
-    name: "PAI core skill",
+    name: "PAI core",
     passed: existsSync(skillPath),
-    detail: existsSync(skillPath) ? "Present" : "Not found — clone PAI repo to enable",
+    detail: existsSync(skillPath) ? "Present" : "Not found — expected PAI/SKILL.md",
     critical: false,
   });
 
@@ -210,12 +210,14 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
         // Check for PAI alias marker
         if (!content.includes("# PAI alias")) continue;
         
-        // POSIX syntax: alias pai=...
+        // POSIX syntax: alias pai=... or pai() { ... }
         const hasPosixAlias = content.includes("alias pai=");
-        // Fish syntax: alias pai '...' or alias pai (...)
+        const hasPosixFunction = /^pai\(\)\s*\{/m.test(content);
+        // Fish syntax: alias pai '...' or function pai ... end
         const hasFishAlias = /alias pai\s+['"]/.test(content);
+        const hasFishFunction = /^function pai$/m.test(content);
         
-        if (hasPosixAlias || hasFishAlias) {
+        if (hasPosixAlias || hasPosixFunction || hasFishAlias || hasFishFunction) {
           aliasConfigured = true;
           aliasSource = shell.name;
           break;

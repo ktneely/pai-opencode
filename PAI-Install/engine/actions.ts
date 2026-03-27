@@ -333,21 +333,21 @@ export async function runPrerequisites(
   }
 
   // Install OpenCode if missing
-  if (!det.tools.claude.installed) {
+  if (!det.tools.opencode.installed) {
     await emit({ event: "progress", step: "prerequisites", percent: 70, detail: "Installing OpenCode..." });
 
     // Use bun only (per PAI stack preferences)
-    const result = await tryExec("bun install -g @anthropic-ai/claude-code", 120000);
+    const result = await tryExec("bun install -g @opencode-ai/opencode", 120000);
     if (result !== null) {
       await emit({ event: "message", content: "OpenCode installed via bun." });
     } else {
       await emit({
         event: "message",
-        content: "Could not install OpenCode automatically. Please install manually: bun install -g @anthropic-ai/claude-code",
+          content: "Could not install OpenCode automatically. Please install manually: bun install -g @opencode-ai/opencode",
       });
     }
   } else {
-    await emit({ event: "progress", step: "prerequisites", percent: 80, detail: `OpenCode found: v${det.tools.claude.version}` });
+    await emit({ event: "progress", step: "prerequisites", percent: 80, detail: `OpenCode found: v${det.tools.opencode.version}` });
   }
 
   await emit({ event: "progress", step: "prerequisites", percent: 100, detail: "All prerequisites ready" });
@@ -632,11 +632,10 @@ export async function runConfiguration(
       } catch { return 0; }
     };
 
-    const skillCount = countDirs(join(paiDir, "skills"), (name) =>
-      existsSync(join(paiDir, "skills", name, "SKILL.md")));
+    const skillCount = countFiles(join(paiDir, "skills"), "SKILL.md");
     const hookCount = countFiles(join(paiDir, "hooks"), ".ts");
     const signalCount = countFiles(join(paiDir, "MEMORY", "LEARNING"), ".md");
-    const fileCount = countFiles(join(paiDir, "skills", "PAI", "USER"));
+    const fileCount = countFiles(join(paiDir, "PAI", "USER"));
     // Count workflows by scanning skill Tools directories for .ts files
     let workflowCount = 0;
     const skillsDir = join(paiDir, "skills");

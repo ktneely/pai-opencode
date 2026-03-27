@@ -136,7 +136,7 @@ export function detectSystem(): DetectionResult {
     tools: {
       bun: detectTool("bun", "bun --version"),
       git: detectTool("git", "git --version"),
-      claude: detectTool("claude", "claude --version 2>&1"),
+      opencode: detectTool("opencode", "opencode --version 2>&1"),
       node: detectTool("node", "node --version"),
       brew: (() => {
         const brewPath = tryExec("which brew");
