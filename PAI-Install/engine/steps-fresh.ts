@@ -197,11 +197,16 @@ export async function stepInstallPAI(
 ): Promise<void> {
 	onProgress(90, "Installing PAI-OpenCode files...");
 	
-	// Install location: current working directory (where install.sh was run)
-	const installDir = process.cwd();
+	// Install location: repository root, not process.cwd().
+	// Electron launches from PAI-Install/electron, so cwd is not the repo root.
+	const installDir = resolve(import.meta.dir, "..", "..");
 	const localOpencodeDir = join(installDir, ".opencode");
 	const toolsDir = join(localOpencodeDir, "tools");
 	const globalOpencodeLink = join(homedir(), ".opencode");
+
+	if (!existsSync(localOpencodeDir)) {
+		throw new Error(`Repository .opencode directory not found at ${localOpencodeDir}`);
+	}
 	
 	// Create local .opencode directory structure (including all dirs validate.ts checks)
 	const dirsToCreate = [
@@ -420,8 +425,8 @@ ${providerEnvVar}=${state.collected.apiKey || ""}
 	// POSIX shells use "$@"; fish uses $argv and function/end syntax.
 	const escapedInstallDir = installDir.replaceAll('"', '\\"');
 	const aliasBlock = shellName === "fish"
-		? `\n# PAI alias — added by PAI installer\nfunction pai\n\tset -l __pai_oldpwd (pwd)\n\tcd "${escapedInstallDir}"\n\tand bun run .opencode/tools/pai.ts $argv\n\tcd $__pai_oldpwd\nend\n`
-		: `\n# PAI alias — added by PAI installer\npai() { (cd "${escapedInstallDir}" && bun run .opencode/tools/pai.ts "$@"); }\n`;
+		? `\n# PAI alias — added by PAI installer\nfunction pai\n\tset -l __pai_oldpwd (pwd)\n\tcd "${escapedInstallDir}"\n\tand bun run .opencode/PAI/Tools/pai.ts $argv\n\tcd $__pai_oldpwd\nend\n`
+		: `\n# PAI alias — added by PAI installer\npai() { (cd "${escapedInstallDir}" && bun run .opencode/PAI/Tools/pai.ts "$@"); }\n`;
 
 	try {
 		// Ensure parent directory exists (matters for fish: ~/.config/fish/ may be absent)

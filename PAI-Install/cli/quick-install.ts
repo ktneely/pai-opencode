@@ -81,12 +81,11 @@ MODES:
   --update             Update v3.x to latest
 
 FRESH INSTALL OPTIONS:
-  --preset <name>      Provider preset: zen (default), anthropic, anthropic-max, openrouter, openai
-                         anthropic-max: uses your existing Max/Pro subscription (no API key needed)
+  --preset <name>      Provider preset: zen (default), anthropic, openrouter, openai
   --name <name>        Your name (principal)
   --ai-name <name>     AI assistant name
   --timezone <tz>      Timezone (default: auto-detect)
-  --api-key <key>      API key for selected provider (not needed for anthropic-max)
+  --api-key <key>      API key for selected provider
   --elevenlabs-key <k> ElevenLabs API key (optional)
   --skip-build         Skip building OpenCode binary
   --no-voice           Skip voice setup
@@ -101,10 +100,6 @@ EXAMPLES:
 
   # Fresh install with Anthropic API key
   bun cli/quick-install.ts --preset anthropic --api-key "sk-ant-..."
-
-  # Fresh install with Anthropic Max/Pro subscription (no API key needed)
-  # Requires: Claude Code CLI installed and authenticated
-  bun cli/quick-install.ts --preset anthropic-max --name "Steffen" --ai-name "Jeremy"
 
   # Migrate v2→v3
   bun cli/quick-install.ts --migrate
@@ -167,36 +162,40 @@ async function runFreshInstall(): Promise<void> {
 		onProgress(70, "Skipped OpenCode build");
 	}
 	
-	// Step 4: Provider Config
-	onProgress(75, "Configuring provider...");
-	const validProviders = Object.keys(PROVIDER_MODELS) as ProviderName[];
-	const preset = values.preset || "zen";
-	const provider: ProviderName = validProviders.includes(preset as ProviderName)
-		? (preset as ProviderName)
-		: "zen";
+  // Step 4: Provider Config
+  onProgress(75, "Configuring provider...");
+  const validProviders = Object.keys(PROVIDER_MODELS) as ProviderName[];
+  const preset = values.preset || "zen";
+  const provider: ProviderName = validProviders.includes(preset as ProviderName)
+    ? (preset as ProviderName)
+    : "zen";
 
-	// anthropic-max does not require an API key — the token comes from the
-	// macOS Keychain via Claude Code CLI during the install step.
-	if (provider !== "anthropic-max" && !values["api-key"]) {
-		console.error(`❌ --api-key is required for provider "${provider}"`);
-		console.error('   (Only --preset anthropic-max works without an API key)');
-		process.exit(1);
-	}
+  const API_KEY_REQUIRED = new Set<ProviderName>(["openai", "anthropic", "openrouter"]);
+  const providerEnvMap: Record<ProviderName, string[]> = {
+    anthropic: ["ANTHROPIC_API_KEY", "API_KEY"],
+    openai: ["OPENAI_API_KEY", "API_KEY"],
+    openrouter: ["OPENROUTER_API_KEY", "API_KEY"],
+    zen: ["ZEN_API_KEY", "API_KEY"],
+  };
 
-	if (provider === "anthropic-max") {
-		console.log("ℹ️  Anthropic Max/Pro preset — no API key needed.");
-		console.log("   Token will be extracted from macOS Keychain during install.");
-		console.log("   Make sure Claude Code CLI is installed and authenticated.\n");
-	}
+  const providedKey = (values["api-key"] || "").trim();
+  const envCandidates = providerEnvMap[provider] || ["API_KEY"];
+  const envKey = envCandidates.map((name) => process.env[name]).find(Boolean) || "";
+  const chosenKey = providedKey || envKey;
 
-	await stepProviderConfig(
-		state,
-		{
-			provider,
-			apiKey: values["api-key"] || "",
-		},
-		onProgress
-	);
+  if (API_KEY_REQUIRED.has(provider) && !chosenKey) {
+    console.error(`❌ --api-key or one of ${envCandidates.join(" or ")} environment variables must be provided for provider "${provider}"`);
+    process.exit(1);
+  }
+
+  await stepProviderConfig(
+    state,
+    {
+      provider,
+      apiKey: chosenKey,
+    },
+    onProgress
+  );
 	
 	// Step 5: Identity
 	onProgress(80, "Setting identity...");
@@ -243,9 +242,8 @@ async function runFreshInstall(): Promise<void> {
 	}
 
 	console.log("\nNext steps:");
-	console.log(`  1. Add to shell config: alias ${state.collected.aiName?.toLowerCase() || "pai"}="/usr/local/bin/${state.collected.aiName?.toLowerCase() || "pai"}-wrapper"`);
-	console.log(`  2. Restart terminal or run: ${reloadCmd}`);
-	console.log(`  3. Launch with: ${state.collected.aiName?.toLowerCase() || "pai"}`);
+	console.log(`  1. Restart terminal or run: ${reloadCmd}`);
+	console.log("  2. Launch with: pai");
 }
 
 // ═══════════════════════════════════════════════════════════

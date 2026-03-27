@@ -20,7 +20,7 @@ export interface DetectionResult {
   tools: {
     bun: { installed: boolean; version?: string; path?: string };
     git: { installed: boolean; version?: string; path?: string };
-    claude: { installed: boolean; version?: string; path?: string };
+    opencode: { installed: boolean; version?: string; path?: string };
     node: { installed: boolean; version?: string; path?: string };
     brew: { installed: boolean; path?: string }; // macOS only
   };
@@ -34,7 +34,7 @@ export interface DetectionResult {
   };
   timezone: string;
   homeDir: string;
-  paiDir: string; // resolved ~/.opencode
+  paiDir: string; // resolved ~/.opencode runtime symlink target
   configDir: string; // resolved ~/.config/PAI
   userShell?: string; // detected user shell path
 }
