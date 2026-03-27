@@ -432,15 +432,19 @@ ${providerEnvVar}=${state.collected.apiKey || ""}
 		// Ensure parent directory exists (matters for fish: ~/.config/fish/ may be absent)
 		mkdirSync(dirname(shellConfig), { recursive: true });
 
-		// Only append if the alias isn't already there
 		const existing = existsSync(shellConfig)
 			? readFileSync(shellConfig, "utf-8")
 			: "";
-		if (!existing.includes("# PAI alias")) {
-			// Append only aliasBlock — do NOT pass existing as content with flag:"a"
-			// (that would write existing twice and corrupt the shell config)
-			writeFileSync(shellConfig, aliasBlock, { flag: "a" });
-		}
+
+		let content = existing;
+		content = content.replace(/\n?# PAI alias — added by PAI installer[\s\S]*?(?=\n#|\n$|$)/g, "");
+		content = content.replace(/^pai\(\)\s*\{[\s\S]*?^\}\s*\n?/gm, "");
+		content = content.replace(/^function pai\s*$[\s\S]*?^end\s*\n?/gm, "");
+		content = content.replace(/^alias pai=.*\n?/gm, "");
+		content = content.replace(/^alias pai\s+.*\n?/gm, "");
+
+		content = content.trimEnd() + aliasBlock;
+		writeFileSync(shellConfig, content.endsWith("\n") ? content : `${content}\n`);
 	} catch (err) {
 		console.error(`Warning: Could not write shell alias to ${shellConfig}: ${err}`);
 		console.error(`Add manually: ${aliasBlock.trim()}`);
@@ -493,12 +497,30 @@ export async function runFreshInstall(
   }));
   const provider = (await requestChoice("provider", "Choose your AI provider:", providerChoices)) as ProviderName || "zen";
 
+  const providerEnvMap: Record<ProviderName, string[]> = {
+    anthropic: ["ANTHROPIC_API_KEY", "API_KEY"],
+    openai: ["OPENAI_API_KEY", "API_KEY"],
+    openrouter: ["OPENROUTER_API_KEY", "API_KEY"],
+    zen: ["ZEN_API_KEY", "API_KEY"],
+  };
+  const requiredProviders = new Set<ProviderName>(["openai", "anthropic", "openrouter"]);
+
   let apiKey = "";
-  apiKey = await requestInput("api-key", `Enter your ${provider} API key:`, "key", "sk-...");
+  if (requiredProviders.has(provider)) {
+    apiKey = await requestInput("api-key", `Enter your ${provider} API key:`, "key", "sk-...");
+  }
+
+  const envCandidates = providerEnvMap[provider] || ["API_KEY"];
+  const envKey = envCandidates.map((name) => process.env[name]).find(Boolean) || "";
+  const selectedApiKey = apiKey.trim() || envKey;
+
+  if (requiredProviders.has(provider) && !selectedApiKey) {
+    throw new Error(`Provider ${provider} requires an API key. Provide --api-key or set ${envCandidates.join("/")}.`);
+  }
 
   await stepProviderConfig(state, {
     provider,
-    apiKey: apiKey || "",
+    apiKey: selectedApiKey,
   }, (percent, message) => {
     emit({ event: "progress", step: "api-keys", percent, detail: message });
   });
@@ -531,7 +553,7 @@ export async function runFreshInstall(
   } else if (buildResult.success) {
     await emit({ event: "message", content: `OpenCode binary built successfully (${buildResult.binaryPath || "installed"}).` });
   } else {
-    await emit({ event: "message", content: `⚠ OpenCode build failed: ${buildResult.error || "unknown error"}. You can install it manually: bun install -g @opencode-ai/opencode` });
+    await emit({ event: "message", content: `⚠ OpenCode build failed: ${buildResult.error || "unknown error"}. Build manually: git clone https://github.com/Steffen025/opencode.git && cd opencode && git checkout feature/model-tiers && bun install && bun run ./packages/opencode/script/build.ts --single` });
   }
   await emit({ event: "step_complete", step: "repository" });
 

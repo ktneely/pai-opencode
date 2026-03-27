@@ -25,6 +25,8 @@ const execFileAsync = promisify(execFile);
 const OPENCODE_FORK_URL = "https://github.com/Steffen025/opencode.git";
 const MODEL_TIERS_BRANCH = "feature/model-tiers";
 const BUILD_DIR = "/tmp/opencode-build-" + Date.now();
+const LOCAL_BIN_DIR = join(homedir(), ".local", "bin");
+const LOCAL_BIN_PATH = join(LOCAL_BIN_DIR, "opencode");
 const PAI_BIN_DIR = join(homedir(), ".opencode", "tools");
 const PAI_BIN_PATH = join(PAI_BIN_DIR, "opencode");
 const BREW_BIN_PATH = "/usr/local/bin/opencode";
@@ -106,17 +108,17 @@ export async function buildOpenCodeBinary(
 ): Promise<BuildResult> {
 	const { onProgress, skipIfExists = false, forceRebuild = false } = options;
 	
-	// Check if already exists
-	if (existsSync(PAI_BIN_PATH) && skipIfExists && !forceRebuild) {
-		const version = await getBinaryVersion(PAI_BIN_PATH);
-		await onProgress("Custom OpenCode binary already exists", 100);
-		return {
-			success: true,
-			skipped: true,
-			version,
-			binaryPath: PAI_BIN_PATH,
-		};
-	}
+  // Check if already exists
+  if (existsSync(LOCAL_BIN_PATH) && skipIfExists && !forceRebuild) {
+    const version = await getBinaryVersion(LOCAL_BIN_PATH);
+    await onProgress("Custom OpenCode binary already exists", 100);
+    return {
+      success: true,
+      skipped: true,
+      version,
+      binaryPath: LOCAL_BIN_PATH,
+    };
+  }
 	
 	try {
 		// Step 1: Clone fork (10%)
@@ -163,20 +165,20 @@ export async function buildOpenCodeBinary(
 			);
 		}
 		
-		// Step 6: Install to PAI tools directory (90%)
-		await onProgress("Installing to ~/.opencode/tools/...", 90);
-		
-		// Ensure directory exists
-		mkdirSync(PAI_BIN_DIR, { recursive: true });
-		
-		// Remove old binary/symlink if exists
-		if (existsSync(PAI_BIN_PATH)) {
-			unlinkSync(PAI_BIN_PATH);
-		}
-		
-		// Copy binary to permanent location (BUILD_DIR will be deleted)
-		copyFileSync(distBinary, PAI_BIN_PATH);
-		chmodSync(PAI_BIN_PATH, 0o755);
+    // Step 6: Install to ~/.local/bin and compatibility path (90%)
+    await onProgress("Installing to ~/.local/bin/opencode...", 90);
+
+    mkdirSync(LOCAL_BIN_DIR, { recursive: true });
+    copyFileSync(distBinary, LOCAL_BIN_PATH);
+    chmodSync(LOCAL_BIN_PATH, 0o755);
+
+    // Compatibility copy for tools that still reference ~/.opencode/tools/opencode
+    mkdirSync(PAI_BIN_DIR, { recursive: true });
+    if (existsSync(PAI_BIN_PATH)) {
+      unlinkSync(PAI_BIN_PATH);
+    }
+    copyFileSync(LOCAL_BIN_PATH, PAI_BIN_PATH);
+    chmodSync(PAI_BIN_PATH, 0o755);
 		
 		// Get version BEFORE cleanup (needs BUILD_DIR)
 		const version = await getBuildVersion(BUILD_DIR);
@@ -187,7 +189,7 @@ export async function buildOpenCodeBinary(
 		return {
 			success: true,
 			version,
-			binaryPath: PAI_BIN_PATH,
+      binaryPath: LOCAL_BIN_PATH,
 		};
 		
 	} catch (error) {
@@ -216,13 +218,14 @@ export async function getBuildStatus(): Promise<{
 	path: string;
 	brewPath: string;
 }> {
-	const exists = existsSync(PAI_BIN_PATH);
-	const version = exists ? await getBinaryVersion(PAI_BIN_PATH) : undefined;
-	
-	return {
+  const exists = existsSync(LOCAL_BIN_PATH) || existsSync(PAI_BIN_PATH);
+  const resolvedPath = existsSync(LOCAL_BIN_PATH) ? LOCAL_BIN_PATH : PAI_BIN_PATH;
+  const version = exists ? await getBinaryVersion(resolvedPath) : undefined;
+
+  return {
 		exists,
 		version,
-		path: PAI_BIN_PATH,
+		path: resolvedPath,
 		brewPath: BREW_BIN_PATH,
 	};
 }

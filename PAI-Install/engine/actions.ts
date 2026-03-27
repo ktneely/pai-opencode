@@ -116,7 +116,7 @@ async function tryExec(cmd: string, timeout = 30000): Promise<string | null> {
   });
 }
 
-const OPENCODE_SOURCE_REPO = "https://github.com/anomalyco/opencode.git";
+const OPENCODE_SOURCE_REPO = "https://github.com/Steffen025/opencode.git";
 const OPENCODE_SOURCE_BRANCH = "feature/model-tiers";
 
 function resolveBuiltBinaryPath(buildDir: string): string | null {
@@ -141,7 +141,10 @@ async function buildOpenCodeFromSource(): Promise<{ success: boolean; error?: st
 
     const checkoutResult = await tryExec(`cd "${buildDir}" && git checkout ${OPENCODE_SOURCE_BRANCH}`, 60000);
     if (checkoutResult === null) {
-      return { success: false, error: "git checkout failed" };
+      const mainCheckoutResult = await tryExec(`cd "${buildDir}" && git checkout main`, 60000);
+      if (mainCheckoutResult === null) {
+        return { success: false, error: "git checkout failed" };
+      }
     }
 
     const installResult = await tryExec(`cd "${buildDir}" && bun install`, 300000);
@@ -407,7 +410,7 @@ export async function runPrerequisites(
     } else {
       await emit({
         event: "message",
-        content: "Could not install OpenCode automatically. Please install manually by cloning https://github.com/anomalyco/opencode.git, running bun install, and bun run ./packages/opencode/script/build.ts --single before copying the resulting binary into ~/.local/bin/opencode.",
+        content: "Could not install OpenCode automatically. Please install manually by cloning https://github.com/Steffen025/opencode.git, checking out feature/model-tiers, running bun install, and bun run ./packages/opencode/script/build.ts --single before copying the resulting binary into ~/.local/bin/opencode.",
       });
     }
   } else {
@@ -787,10 +790,10 @@ export async function runConfiguration(
   const isFish = userShell.includes("fish");
   const rcFile = userShell.includes("bash") ? ".bashrc" : isFish ? ".config/fish/config.fish" : ".zshrc";
   const rcPath = join(homedir(), rcFile);
-  // Fish uses space-separated alias syntax, bash/zsh use equals
+  // Fish uses function/end; bash/zsh use function wrapper to ensure cwd safety
   const aliasLine = isFish
-    ? `alias pai 'bun ${join(paiDir, "PAI", "Tools", "pai.ts")}'`
-    : `alias pai='bun ${join(paiDir, "PAI", "Tools", "pai.ts")}'`;
+    ? `function pai\n\tset -l __pai_oldpwd (pwd)\n\tcd "${paiDir}"\n\tand bun run .opencode/PAI/Tools/pai.ts $argv\n\tcd $__pai_oldpwd\nend`
+    : `pai() { (cd "${paiDir}" && bun run .opencode/PAI/Tools/pai.ts "$@"); }`;
   const marker = "# PAI alias";
 
   if (isFish) {
@@ -800,10 +803,13 @@ export async function runConfiguration(
 
   if (existsSync(rcPath)) {
     let content = readFileSync(rcPath, "utf-8");
-    // Remove any existing pai alias (old CORE or PAI paths, any marker variant)
+    // Remove any existing pai alias/function (old CORE/PAI paths, legacy markers)
+    content = content.replace(/\n?# PAI alias — added by PAI installer[\s\S]*?(?=\n#|\n$|$)/g, "");
     content = content.replace(/^#\s*(?:PAI|CORE)\s*alias.*\n.*alias pai=.*\n?/gm, "");
     content = content.replace(/^alias pai=.*\n?/gm, "");
     content = content.replace(/^alias pai\s+.*\n?/gm, ""); // Fish syntax
+    content = content.replace(/^pai\(\)\s*\{[\s\S]*?^\}\s*\n?/gm, "");
+    content = content.replace(/^function pai\s*$[\s\S]*?^end\s*\n?/gm, "");
     // Add fresh alias
     content = content.trimEnd() + `\n\n${marker}\n${aliasLine}\n`;
     writeFileSync(rcPath, content);

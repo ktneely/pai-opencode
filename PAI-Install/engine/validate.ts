@@ -80,6 +80,22 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
         : "File not found",
     critical: true,
   });
+
+  // 2b. OpenCode binary is installed in expected locations
+  const opencodeLocations = [
+    join(homedir(), ".local", "bin", "opencode"),
+    "/usr/local/bin/opencode",
+    join(paiDir, "tools", "opencode"),
+  ];
+  const opencodeInstalled = opencodeLocations.some((p) => existsSync(p));
+  checks.push({
+    name: "OpenCode binary",
+    passed: opencodeInstalled,
+    detail: opencodeInstalled
+      ? `Found at ${opencodeLocations.find((p) => existsSync(p))}`
+      : "Not found — install/build OpenCode and ensure binary is available",
+    critical: true,
+  });
   if (settings) {
     checks.push({
       name: "Principal name",
@@ -216,8 +232,10 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
         // Fish syntax: alias pai '...' or function pai ... end
         const hasFishAlias = /alias pai\s+['"]/.test(content);
         const hasFishFunction = /^function pai$/m.test(content);
+        const hasLegacyBrokenPath = content.includes(".opencode/tools/pai.ts");
+        const hasValidPaiPath = content.includes(".opencode/PAI/Tools/pai.ts") || content.includes("PAI/Tools/pai.ts");
         
-        if (hasPosixAlias || hasPosixFunction || hasFishAlias || hasFishFunction) {
+        if (!hasLegacyBrokenPath && hasValidPaiPath && (hasPosixAlias || hasPosixFunction || hasFishAlias || hasFishFunction)) {
           aliasConfigured = true;
           aliasSource = shell.name;
           break;
