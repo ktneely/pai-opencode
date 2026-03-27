@@ -11,7 +11,7 @@ import { buildOpenCodeBinary } from "./build-opencode.ts";
 import type { BuildResult } from "./build-opencode.ts";
 import { PROVIDER_MODELS, PROVIDER_LABELS } from "./provider-models.ts";
 import type { ProviderName } from "./provider-models.ts";
-import { existsSync, mkdirSync, writeFileSync, chmodSync, symlinkSync, unlinkSync, lstatSync, realpathSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync, chmodSync, symlinkSync, unlinkSync, lstatSync, realpathSync, readFileSync, renameSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { homedir } from "node:os";
 
@@ -380,14 +380,19 @@ ${providerEnvVar}=${state.collected.apiKey || ""}
 				}
 				// If it already points to our location, nothing to do
 			} else if (stats.isDirectory()) {
-				// It's a real directory - backup and replace with symlink
+				if (realpathSync(globalOpencodeLink) === localOpencodeDir) {
+					console.warn("PAI install directory already matches ~/.opencode; no symlink changes needed.");
+				} else {
+				// It's a real directory — back it up and replace it so validation reads the new install.
 				const backupPath = `${globalOpencodeLink}.backup-${Date.now()}`;
-				// Note: In production, this would need proper backup logic
-				// For now, we just warn and don't overwrite
-				throw new Error(
-					`~/.opencode is a directory (not a symlink). ` +
-					`Please backup and remove it manually, then re-run the installer.`
-				);
+				renameSync(globalOpencodeLink, backupPath);
+				symlinkSync(localOpencodeDir, globalOpencodeLink, "dir");
+				console.warn(`Warning: Existing ~/.opencode directory moved to ${backupPath}`);
+				}
+			} else {
+				// Regular file (not a symlink or directory) — replace it with the symlink.
+				unlinkSync(globalOpencodeLink);
+				symlinkSync(localOpencodeDir, globalOpencodeLink, "dir");
 			}
 		} else {
 			// No ~/.opencode exists - create symlink
