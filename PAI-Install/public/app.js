@@ -17,6 +17,7 @@ let installationComplete = false;
 // ─── WebSocket Connection ────────────────────────────────────────
 
 function connect() {
+  if (installationComplete) return;
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(`${protocol}//${location.host}/ws`);
 
@@ -38,8 +39,8 @@ function connect() {
     connected = false;
     if (!installationComplete) {
       addMessage('system', 'Connection lost. Reconnecting...', false);
+      setTimeout(connect, 2000); // Auto-reconnect
     }
-    setTimeout(connect, 2000); // Auto-reconnect
   };
 
   ws.onerror = () => {
@@ -62,6 +63,7 @@ function handleServerMessage(msg) {
       break;
 
     case 'mode_selected':
+      installationComplete = false;
       setStepsForMode(msg.mode);
       renderSteps();
       break;

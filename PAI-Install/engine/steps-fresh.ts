@@ -380,11 +380,15 @@ ${providerEnvVar}=${state.collected.apiKey || ""}
 				}
 				// If it already points to our location, nothing to do
 			} else if (stats.isDirectory()) {
+				if (realpathSync(globalOpencodeLink) === localOpencodeDir) {
+					console.warn("PAI install directory already matches ~/.opencode; no symlink changes needed.");
+				} else {
 				// It's a real directory — back it up and replace it so validation reads the new install.
 				const backupPath = `${globalOpencodeLink}.backup-${Date.now()}`;
 				renameSync(globalOpencodeLink, backupPath);
 				symlinkSync(localOpencodeDir, globalOpencodeLink, "dir");
 				console.warn(`Warning: Existing ~/.opencode directory moved to ${backupPath}`);
+				}
 			} else {
 				// Regular file (not a symlink or directory) — replace it with the symlink.
 				unlinkSync(globalOpencodeLink);
