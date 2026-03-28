@@ -229,7 +229,7 @@ curl -fsSL https://bun.sh/install | bash
 source ~/.bashrc
 
 # 5. Run installer
-bash PAI-Install/install.sh --preset zen --name "Your Name" --ai-name "Jeremy"
+bash PAI-Install/install.sh
 ```
 
 ---

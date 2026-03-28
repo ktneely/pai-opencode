@@ -11,7 +11,7 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > [!note]
-> **v3.0 Release** — Plugin event bus, security hardening (prompt injection protection), CLI installer, DB health tooling, hierarchical skills structure, and 52 skills. See [CHANGELOG.md](CHANGELOG.md) and [UPGRADE.md](UPGRADE.md).
+> **v3.0 Release** — Plugin event bus, security hardening (prompt injection protection), terminal installer wizard + headless mode, DB health tooling, hierarchical skills structure, and 52 skills. See [CHANGELOG.md](CHANGELOG.md) and [UPGRADE.md](UPGRADE.md).
 
 > **🎯 Scope Note:** PAI-OpenCode is a **community port** of PAI to OpenCode. For the future vision (Voice-to-Voice, Ambient AI, OMI integration), see **[Open Arc](https://github.com/jeremaiah-ai/openark)**.
 
@@ -96,11 +96,11 @@ PAI-OpenCode is the complete port of **Daniel Miessler's Personal AI Infrastruct
 ### New Users (Installer)
 
 ```bash
-# Run the installer
-bash PAI-Install/install.sh --help
+# Run the interactive terminal installer wizard
+bash PAI-Install/install.sh
 
-# Example: fresh install (Zen)
-bash PAI-Install/install.sh --preset zen --name "Your Name" --ai-name "Jeremy"
+# Headless example (optional)
+bash PAI-Install/install.sh --headless --preset zen --name "Your Name" --ai-name "Jeremy"
 ```
 
 ### Manual Setup
@@ -113,8 +113,8 @@ cd pai-opencode
 # 2. Install dependencies
 bun install
 
-# 3. Run the installer
-bash PAI-Install/install.sh --preset zen --name "Your Name" --ai-name "Jeremy"
+# 3. Run the installer (interactive wizard)
+bash PAI-Install/install.sh
 
 # 4. Start OpenCode
 opencode
@@ -124,7 +124,7 @@ opencode
 
 **Prerequisites:** [Git](https://git-scm.com/) and [Bun 1.3.9+](https://bun.sh/) (no Go needed).
 
-The installer will:
+The installer wizard will:
 - **Build OpenCode** from our fork with model tier support (using Bun's native compiler)
 - **Choose your preset** — zen (recommended), anthropic, openrouter, or openai
 - Set your name and timezone
@@ -439,8 +439,14 @@ MIT License — see [LICENSE](LICENSE) for details.
 git clone https://github.com/Steffen025/pai-opencode.git
 cd pai-opencode
 bun install
-bash PAI-Install/install.sh --preset zen --name "Your Name" --ai-name "Jeremy"
+bash PAI-Install/install.sh
 opencode
+```
+
+For scripted installs, use `--headless`:
+
+```bash
+bash PAI-Install/install.sh --headless --preset zen --name "Your Name" --ai-name "Jeremy"
 ```
 
 **Welcome to Personal AI Infrastructure, your way.**

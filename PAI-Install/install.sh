@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # PAI-OpenCode Installer Bootstrap
 #
-# WHY: Single entry point for deterministic CLI installation.
+# WHY: Single entry point for terminal installer flows.
 #
 # Usage:
-#   bash install.sh [args...]          # CLI installation (default)
-#   bash install.sh --cli [args...]    # CLI installation (--cli flag accepted for backward compatibility)
+#   bash install.sh                     # Interactive wizard (default)
+#   bash install.sh --headless [args]  # Non-interactive CLI installer
+#   bash install.sh --cli [args]       # Backward-compatible alias for --headless
 #
 
 set -euo pipefail
@@ -51,25 +52,59 @@ else
   warn "OpenCode not found — will install during setup"
 fi
 
-# ─── Launch Installer (CLI only) ─────────────────────────
+# ─── Launch Installer (terminal wizard + headless CLI) ─────────────────────
 INSTALLER_DIR="$SCRIPT_DIR"
 
-info "Launching CLI installer..."
+if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+	cat <<'EOF'
+PAI-OpenCode installer bootstrap
+
+Usage:
+  bash PAI-Install/install.sh
+    Launch interactive TypeScript installation wizard.
+
+  bash PAI-Install/install.sh --headless [quick-install flags]
+    Run non-interactive installer (for CI/scripts).
+
+  bash PAI-Install/install.sh --cli [quick-install flags]
+    Backward-compatible alias for --headless.
+
+Examples:
+  bash PAI-Install/install.sh
+  bash PAI-Install/install.sh --headless --preset zen --name "Your Name" --ai-name "Jeremy"
+  bash PAI-Install/install.sh --headless --migrate
+
+Headless flags:
+  bun PAI-Install/cli/quick-install.ts --help
+EOF
+	exit 0
+fi
+
+info "Preparing installer..."
 echo ""
 
-# Scan all args so removed flags cannot slip through
+# Scan args so removed flags cannot slip through
 args=("$@")
-stripLeadingCli=0
+mode="wizard"
 
 for ((i = 0; i < ${#args[@]}; i++)); do
 	arg="${args[$i]}"
 	next="${args[$((i + 1))]:-}"
 
 	if [ "$arg" = "--cli" ]; then
-		if [ $i -eq 0 ]; then
-			stripLeadingCli=1
+		if [ $i -eq 0 ] && [ "$mode" = "wizard" ]; then
+			mode="headless"
 		else
-			error "Flag --cli is no longer required. Remove it and re-run."
+			error "Flag --cli must be the first argument when used as alias for --headless."
+			exit 2
+		fi
+	fi
+
+	if [ "$arg" = "--headless" ]; then
+		if [ $i -eq 0 ] && [ "$mode" = "wizard" ]; then
+			mode="headless"
+		else
+			error "Flag --headless must be the first argument."
 			exit 2
 		fi
 	fi
@@ -83,11 +118,32 @@ for ((i = 0; i < ${#args[@]}; i++)); do
 		error "Flag --mode is not supported. Use --migrate or --update."
 		exit 2
 	fi
+
+	# Route quick-install flags to headless automatically for backward compatibility.
+	if [ "$mode" = "wizard" ]; then
+		case "$arg" in
+			--preset|--name|--ai-name|--timezone|--api-key|--elevenlabs-key|--backup-dir)
+				mode="headless"
+				;;
+			--fresh|--migrate|--update|--skip-build|--no-voice|--dry-run|--version)
+				mode="headless"
+				;;
+			--preset=*|--name=*|--ai-name=*|--timezone=*|--api-key=*|--elevenlabs-key=*|--backup-dir=*)
+				mode="headless"
+				;;
+		esac
+	fi
 done
 
-# Backwards-compatible alias
-if [ $stripLeadingCli -eq 1 ]; then
+# Backward-compatible alias stripping
+if [ "${1:-}" = "--cli" ] || [ "${1:-}" = "--headless" ]; then
 	shift
 fi
 
-exec bun "$INSTALLER_DIR/cli/quick-install.ts" "$@"
+if [ "$mode" = "headless" ]; then
+	info "Launching headless CLI installer..."
+	exec bun "$INSTALLER_DIR/cli/quick-install.ts" "$@"
+fi
+
+info "Launching interactive TypeScript installer wizard..."
+exec bun "$INSTALLER_DIR/cli/install-wizard.ts" "$@"

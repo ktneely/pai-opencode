@@ -30,11 +30,14 @@ Before running the installer, ensure you have:
 git clone https://github.com/Steffen025/pai-opencode.git
 cd pai-opencode
 
-# 2. Run the installer
+# 2. Run the interactive installer wizard
+bash PAI-Install/install.sh
+
+# Optional: show bootstrap help
 bash PAI-Install/install.sh --help
 
-# Example: fresh install (Zen)
-bash PAI-Install/install.sh --preset zen --name "Your Name" --ai-name "Jeremy"
+# Optional: headless install for scripts/CI
+bash PAI-Install/install.sh --headless --preset zen --name "Your Name" --ai-name "Jeremy"
 
 # 3. Start OpenCode
 opencode
@@ -72,7 +75,7 @@ mv ~/.opencode ~/.opencode.backup
 ln -s $(pwd)/.opencode ~/.opencode
 
 # 4. Run the installer (works in place)
-bash PAI-Install/install.sh --preset zen --name "Your Name" --ai-name "Jeremy"
+bash PAI-Install/install.sh
 
 # 5. Start OpenCode
 opencode
@@ -138,7 +141,7 @@ git clone https://github.com/Steffen025/pai-opencode.git
 cd pai-opencode
 
 # Run the installer
-bash PAI-Install/install.sh --preset zen --name "Your Name" --ai-name "Jeremy"
+bash PAI-Install/install.sh
 
 # Start OpenCode
 opencode
@@ -329,7 +332,7 @@ This means you have the **stable OpenCode installed** instead of the PAI-OpenCod
 rm $(which opencode)
 
 # Re-run the installer which builds from our fork using Bun's native compiler
-bash PAI-Install/install.sh --preset anthropic --name "Your Name" --ai-name "Jeremy"
+bash PAI-Install/install.sh --headless --preset anthropic --name "Your Name" --ai-name "Jeremy"
 ```
 
 > **Note:** The installer can build OpenCode from our fork (`Steffen025/opencode`, branch `feature/model-tiers`) using `Bun.build({ compile: true })`. This produces a standalone native binary — no Go, no runtime dependencies.
@@ -369,8 +372,8 @@ PAI-OpenCode uses a **preset system** for simplicity:
 ### Switching Presets
 
 ```bash
-# Re-run the installer to change preset
-bash PAI-Install/install.sh --preset openai --name "Your Name" --ai-name "Jeremy"
+# Re-run the installer in headless mode to force a specific preset
+bash PAI-Install/install.sh --headless --preset openai --name "Your Name" --ai-name "Jeremy"
 ```
 
 ### Advanced Provider Setup

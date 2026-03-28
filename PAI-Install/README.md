@@ -1,25 +1,32 @@
 # PAI OpenCode Installer
 
-CLI-only installer for PAI OpenCode.
+Terminal installer for PAI OpenCode with two modes:
+
+- Interactive TypeScript wizard (default)
+- Headless CLI installer (for CI/scripted installs)
 
 ## Quick Start
 
 ```bash
+bash PAI-Install/install.sh
+
+# Show bootstrap help (wizard + headless options)
 bash PAI-Install/install.sh --help
 
-# Example: fresh install (Zen)
-bash PAI-Install/install.sh --preset zen --name "Your Name" --ai-name "Jeremy"
+# Headless example: fresh install (Zen)
+bash PAI-Install/install.sh --headless --preset zen --name "Your Name" --ai-name "Jeremy"
 ```
 
 > [!note]
-> The `--cli` flag is accepted for backward compatibility but is no longer required.
+> The `--cli` flag is still accepted as an alias for `--headless`.
 
 ## What This Installer Does
 
-1. Checks prerequisites (git, bun)
-2. Optionally builds a custom OpenCode binary (model tiers)
-3. Generates/updates `opencode.json` and `~/.opencode/*`
-4. Installs PAI files into `~/.opencode/`
+1. Detects install mode (fresh install, v2->v3 migration, or v3 update)
+2. Checks prerequisites (git, bun)
+3. Optionally builds a custom OpenCode binary (model tiers)
+4. Generates/updates `opencode.json` and `~/.opencode/*`
+5. Installs PAI files into `~/.opencode/`
 
 ## Directory Structure
 
@@ -27,6 +34,7 @@ bash PAI-Install/install.sh --preset zen --name "Your Name" --ai-name "Jeremy"
 PAI-Install/
 ├── install.sh              # Bootstrap (Bun + CLI entrypoint)
 ├── cli/
+│   ├── install-wizard.ts   # Interactive terminal wizard
 │   └── quick-install.ts    # Headless/CLI installer
 ├── engine/                 # Install engine (fresh/migrate/update)
 │   ├── actions.ts
@@ -48,8 +56,9 @@ PAI-Install/
 
 ## Notes
 
-- GUI installer was removed. `install.sh` always runs the CLI installer.
-- The `--cli` flag is accepted for backward compatibility but is optional (the default behavior is CLI mode).
+- GUI installer was removed. Installer stays terminal-only.
+- `install.sh` runs the interactive wizard by default.
+- Use `--headless` (or legacy `--cli`) to run non-interactive quick install.
 
 ## Post-Installation
 
