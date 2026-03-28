@@ -143,9 +143,11 @@ function ask(question: string, defaultValue?: string): Promise<string> {
 		};
 
 		const onSigint = (): void => {
+			cleanup();
 			rl.close();
 			print("");
-			finalize(defaultValue || "");
+			printError("Installation cancelled by user (Ctrl+C).");
+			process.exit(1);
 		};
 
 		process.once("SIGINT", onSigint);
@@ -223,9 +225,20 @@ async function detectMode(): Promise<Mode | null> {
 }
 
 async function chooseModeInteractive(autoMode: Mode | null): Promise<Mode | null> {
-	if (values.fresh) return "fresh";
-	if (values.migrate) return "migrate";
-	if (values.update) return "update";
+	const explicitModes: Mode[] = [];
+	if (values.fresh) explicitModes.push("fresh");
+	if (values.migrate) explicitModes.push("migrate");
+	if (values.update) explicitModes.push("update");
+
+	if (explicitModes.length > 1) {
+		throw new Error(
+			`Conflicting mode flags: ${explicitModes.map((mode) => `--${mode}`).join(", ")}. Use only one of --fresh, --migrate, or --update.`,
+		);
+	}
+
+	if (explicitModes.length === 1) {
+		return explicitModes[0];
+	}
 
 	if (autoMode) {
 		printInfo(`Auto-detected mode: ${autoMode}`);
@@ -251,6 +264,10 @@ async function chooseModeInteractive(autoMode: Mode | null): Promise<Mode | null
 	}
 
 	return choice as Mode;
+}
+
+async function runSkipBuildFallback(state: ReturnType<typeof createFreshState>): Promise<void> {
+	await stepBuildOpenCode(state, progress, true);
 }
 
 async function runFreshWizard(): Promise<void> {
@@ -288,9 +305,10 @@ async function runFreshWizard(): Promise<void> {
 			if (!continueWithoutBuild) {
 				process.exit(1);
 			}
+			await runSkipBuildFallback(state);
 		}
 	} else {
-		await stepBuildOpenCode(state, progress, true);
+		await runSkipBuildFallback(state);
 	}
 
 	const providerChoices = (Object.keys(PROVIDER_MODELS) as ProviderName[]).map((provider) => ({
@@ -504,7 +522,7 @@ async function main(): Promise<void> {
 		}
 	}
 
-	const selectedMode = await chooseModeInteractive(autoMode || "fresh");
+	const selectedMode = await chooseModeInteractive(autoMode);
 	if (!selectedMode) {
 		printSuccess("Installer exited.");
 		return;
