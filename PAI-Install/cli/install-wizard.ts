@@ -195,6 +195,8 @@ function askHidden(question: string, defaultValue?: string): Promise<string> {
 				_writeToOutput?: (value: string) => void;
 			}
 		)._writeToOutput = (value: string) => {
+			// WARNING: _writeToOutput is an undocumented Node.js readline hook.
+			// Bun/Node upgrades may break this masking workaround. Revisit when updating runtimes.
 			if (value.includes("\n") || value.includes("\r")) {
 				(rl.output as NodeJS.WriteStream).write(value);
 				return;
@@ -326,7 +328,10 @@ async function chooseModeInteractive(autoMode: Mode | null): Promise<Mode | null
 }
 
 async function runSkipBuildFallback(state: ReturnType<typeof createFreshState>): Promise<void> {
-	await stepBuildOpenCode(state, progress, true);
+	const fallback = await stepBuildOpenCode(state, progress, true);
+	if (!fallback.success) {
+		throw new Error(fallback.error || "Failed to skip-build OpenCode binary");
+	}
 }
 
 async function runFreshWizard(): Promise<void> {
