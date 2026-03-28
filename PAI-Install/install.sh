@@ -95,7 +95,7 @@ for ((i = 0; i < ${#args[@]}; i++)); do
 		if [ $i -eq 0 ] && [ "$mode" = "wizard" ]; then
 			mode="headless"
 		else
-			error "Flag --cli must be the first argument when used as alias for --headless."
+			error "Only one mode flag allowed: use either --cli (alias for --headless) or --headless, not both. Mode flag must be first argument."
 			exit 2
 		fi
 	fi
@@ -104,7 +104,7 @@ for ((i = 0; i < ${#args[@]}; i++)); do
 		if [ $i -eq 0 ] && [ "$mode" = "wizard" ]; then
 			mode="headless"
 		else
-			error "Flag --headless must be the first argument."
+			error "Only one mode flag allowed: use either --cli (alias for --headless) or --headless, not both. Mode flag must be first argument."
 			exit 2
 		fi
 	fi

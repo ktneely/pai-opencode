@@ -127,10 +127,33 @@ function ask(question: string, defaultValue?: string): Promise<string> {
 	const suffix = defaultValue ? ` ${COLOR.gray}[${defaultValue}]${COLOR.reset}` : "";
 
 	return new Promise((resolve) => {
+		let settled = false;
+
+		const cleanup = (): void => {
+			process.off("SIGINT", onSigint);
+		};
+
+		const finalize = (value: string): void => {
+			if (settled) {
+				return;
+			}
+			settled = true;
+			cleanup();
+			resolve(value);
+		};
+
+		const onSigint = (): void => {
+			rl.close();
+			print("");
+			finalize(defaultValue || "");
+		};
+
+		process.once("SIGINT", onSigint);
+
 		rl.question(`${question}${suffix}: `, (answer) => {
 			rl.close();
 			const value = answer.trim();
-			resolve(value || defaultValue || "");
+			finalize(value || defaultValue || "");
 		});
 	});
 }
