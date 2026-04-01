@@ -625,7 +625,7 @@ Two PRD creation mechanisms:
 - **Target:** `.opencode/plugins/lib/prd-template.ts`
 - **Changes:**
   - Replace `~/.claude/` → `~/.opencode/` in path construction
-  - Replace `CLAUDE.md` → `OPENCODE.md` references
+  - Replace `CLAUDE.md` → `AGENTS.md` references
   - Update file path constants to use `PAI_DIR`
 
 **Step 2: Create AutoWorkCreation Plugin Handler**

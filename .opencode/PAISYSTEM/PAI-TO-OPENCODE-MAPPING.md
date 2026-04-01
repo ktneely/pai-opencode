@@ -20,7 +20,7 @@ PAI-OpenCode is a vanilla PAI implementation adapted for OpenCode's architecture
 | **Root Directory** | `.claude/` | `.opencode/` |
 | **Lifecycle Events** | `hooks/*.hook.ts` | `plugins/handlers/*.ts` |
 | **Config Schema** | Claude Code settings.json | OpenCode settings.json |
-| **Meta File** | `CLAUDE.md` | `OPENCODE.md` |
+| **Meta File** | `CLAUDE.md` | `AGENTS.md` |
 | **Path Variable** | `$PAI_DIR` → `~/.claude` | `$PAI_DIR` → `.opencode` |
 
 ---

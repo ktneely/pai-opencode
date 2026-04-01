@@ -224,7 +224,7 @@ exec bun "${join(paiDir, "PAI", "Tools", "pai.ts")}" "$@"
 	const aliasLine = isFish
 		? `alias pai 'bun ${escapedPath}'`
 		: `alias pai='bun ${escapedPath}'`;
-	const marker = "# PAI alias (v3)";
+	const marker = "# PAI shell setup";
 	
 	try {
 		let content = "";
