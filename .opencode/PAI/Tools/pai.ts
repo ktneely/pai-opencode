@@ -20,7 +20,17 @@
 
 import { spawn, spawnSync } from "bun";
 import { getDAName, getIdentity } from "../../plugins/lib/identity";
-import { existsSync, readFileSync, writeFileSync, readdirSync, symlinkSync, unlinkSync, lstatSync } from "fs";
+import {
+  accessSync,
+  constants,
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  readdirSync,
+  symlinkSync,
+  unlinkSync,
+  lstatSync,
+} from "fs";
 import { homedir } from "os";
 import { join, basename } from "path";
 
@@ -130,11 +140,20 @@ function displayBanner() {
 }
 
 function resolveOpenCodeExecutable(): string {
-  if (existsSync(LOCAL_OPENCODE_BIN)) {
+  const isExecutable = (path: string): boolean => {
+    try {
+      accessSync(path, constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  if (existsSync(LOCAL_OPENCODE_BIN) && isExecutable(LOCAL_OPENCODE_BIN)) {
     return LOCAL_OPENCODE_BIN;
   }
 
-  if (existsSync(COMPAT_OPENCODE_BIN)) {
+  if (existsSync(COMPAT_OPENCODE_BIN) && isExecutable(COMPAT_OPENCODE_BIN)) {
     return COMPAT_OPENCODE_BIN;
   }
 
@@ -377,8 +396,8 @@ function cmdWallpaper(args: string[]) {
       console.log(`  ${i + 1}. ${getWallpaperName(w)}`);
     });
     console.log();
-    log("Usage: k -w <name>", "💡");
-    log("Example: k -w circuit-board", "💡");
+    log("Usage: pai -w <name>", "💡");
+    log("Example: pai -w circuit-board", "💡");
     return;
   }
 
@@ -518,7 +537,7 @@ async function cmdVersion() {
     if (cmp >= 0) {
       log("Up to date", "✅");
     } else {
-      log("Update available (run 'k update')", "⚠️");
+      log("Update available (run 'pai update')", "⚠️");
     }
   } else {
     log("Could not fetch latest version", "⚠️");
@@ -542,7 +561,7 @@ function cmdProfiles() {
   }
 
   console.log();
-  log("Usage: k mcp set <profile>", "💡");
+  log("Usage: pai mcp set <profile>", "💡");
 }
 
 function cmdMcpList() {
@@ -561,7 +580,7 @@ function cmdMcpList() {
   }
 
   console.log();
-  log("Profiles (use with 'k mcp set'):", "📁");
+  log("Profiles (use with 'pai mcp set'):", "📁");
   const profiles = getMcpProfiles();
   for (const profile of profiles) {
     const desc = PROFILE_DESCRIPTIONS[profile] || "";
@@ -570,9 +589,9 @@ function cmdMcpList() {
 
   console.log();
   log("Examples:", "💡");
-  console.log("  k -m bd          # Bright Data only");
-  console.log("  k -m bd,ap       # Bright Data + Apify");
-  console.log("  k mcp set research  # Full research profile");
+  console.log("  pai -m bd          # Bright Data only");
+  console.log("  pai -m bd,ap       # Bright Data + Apify");
+  console.log("  pai mcp set research  # Full research profile");
 }
 
 async function cmdPrompt(prompt: string) {
@@ -596,21 +615,21 @@ function cmdHelp() {
 pai - Personal AI CLI Tool (v2.0.0)
 
 USAGE:
-  k                        Launch OpenCode (no MCPs, max performance)
-  k -m <mcp>               Launch with specific MCP(s)
-  k -m bd,ap               Launch with multiple MCPs
-  k -r, --resume           Resume last session
-  k -l, --local            Stay in current directory (don't cd to ~/.opencode)
+  pai                        Launch OpenCode (no MCPs, max performance)
+  pai -m <mcp>               Launch with specific MCP(s)
+  pai -m bd,ap               Launch with multiple MCPs
+  pai -r, --resume           Resume last session
+  pai -l, --local            Stay in current directory (don't cd to ~/.opencode)
 
 COMMANDS:
-  k update                 Update runtime dependencies
-  k version, -v            Show version information
-  k profiles               List available MCP profiles
-  k mcp list               List all available MCPs
-  k mcp set <profile>      Set MCP profile permanently
-  k prompt "<text>"        One-shot prompt execution
-  k -w, --wallpaper        List/switch wallpapers (Kitty + macOS)
-  k help, -h               Show this help
+  pai update                 Update runtime dependencies
+  pai version, -v            Show version information
+  pai profiles               List available MCP profiles
+  pai mcp list               List all available MCPs
+  pai mcp set <profile>      Set MCP profile permanently
+  pai prompt "<text>"        One-shot prompt execution
+  pai -w, --wallpaper        List/switch wallpapers (Kitty + macOS)
+  pai help, -h               Show this help
 
 MCP SHORTCUTS:
   bd, brightdata           Bright Data scraping
@@ -625,15 +644,15 @@ MCP SHORTCUTS:
   none                     No MCPs
 
 EXAMPLES:
-  k                        Start with current profile
-  k -m bd                  Start with Bright Data
-  k -m bd,ap,chrome        Start with multiple MCPs
-  k -r                     Resume last session
-  k mcp set research       Switch to research profile
-  k update                 Update OpenCode
-  k prompt "What time is it?"   One-shot prompt
-  k -w                     List available wallpapers
-  k -w circuit-board       Switch wallpaper (Kitty + macOS)
+  pai                        Start with current profile
+  pai -m bd                  Start with Bright Data
+  pai -m bd,ap,chrome        Start with multiple MCPs
+  pai -r                     Resume last session
+  pai mcp set research       Switch to research profile
+  pai update                 Update OpenCode
+  pai prompt "What time is it?"   One-shot prompt
+  pai -w                     List available wallpapers
+  pai -w circuit-board       Switch wallpaper (Kitty + macOS)
 `);
 }
 
@@ -723,7 +742,7 @@ async function main() {
       default:
         if (!arg.startsWith("-")) {
           // Might be an unknown command
-          error(`Unknown command: ${arg}. Use 'k help' for usage.`);
+          error(`Unknown command: ${arg}. Use 'pai help' for usage.`);
         }
     }
   }
@@ -748,12 +767,12 @@ async function main() {
       } else if (subCommand === "set" && subArg) {
         setMcpProfile(subArg);
       } else {
-        error("Usage: k mcp list | k mcp set <profile>");
+        error("Usage: pai mcp list | pai mcp set <profile>");
       }
       break;
     case "prompt":
       if (!promptText) {
-        error("Usage: k prompt \"your prompt here\"");
+        error("Usage: pai prompt \"your prompt here\"");
       }
       await cmdPrompt(promptText);
       break;
