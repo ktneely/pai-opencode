@@ -218,13 +218,15 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
 
   let aliasConfigured = false;
   let aliasSource = "";
+  let shellPathSetup = false;
+  let shellPathSource = "";
 
   for (const shell of shellConfigs) {
     if (existsSync(shell.path)) {
       try {
         const content = readFileSync(shell.path, "utf-8");
         // Check for PAI alias marker
-        if (!content.includes("# PAI alias")) continue;
+        if (!content.includes("# PAI shell setup")) continue;
         
         // POSIX syntax: alias pai=... or pai() { ... }
         const hasPosixAlias = content.includes("alias pai=");
@@ -235,10 +237,16 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
         const hasLegacyBrokenPath = content.includes(".opencode/tools/pai.ts");
         const hasValidPaiPath = content.includes(".opencode/PAI/Tools/pai.ts") || content.includes("PAI/Tools/pai.ts");
         
+        const hasPathSetup = content.includes("$HOME/.bun/bin") && content.includes("$HOME/.local/bin");
+        if (hasPathSetup && !shellPathSetup) {
+          shellPathSetup = true;
+          shellPathSource = shell.name;
+        }
+
         if (!hasLegacyBrokenPath && hasValidPaiPath && (hasPosixAlias || hasPosixFunction || hasFishAlias || hasFishFunction)) {
           aliasConfigured = true;
           aliasSource = shell.name;
-          break;
+          if (shellPathSetup) break;
         }
       } catch {
         // Continue to next shell
@@ -252,6 +260,27 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
     detail: aliasConfigured
       ? `Configured in ${aliasSource}`
       : "Not found — add to your shell config",
+    critical: true,
+  });
+
+  // 9. Shell PATH wiring for bun and local opencode binary
+  checks.push({
+    name: "Shell PATH wiring",
+    passed: shellPathSetup,
+    detail: shellPathSetup
+      ? `Configured in ${shellPathSource}`
+      : "Missing ~/.bun/bin and ~/.local/bin path wiring in shell config",
+    critical: true,
+  });
+
+  // 10. Bun runtime binary present
+  const bunBinaryPath = join(homedir(), ".bun", "bin", "bun");
+  checks.push({
+    name: "Bun runtime",
+    passed: existsSync(bunBinaryPath),
+    detail: existsSync(bunBinaryPath)
+      ? `Found at ${bunBinaryPath}`
+      : "Missing ~/.bun/bin/bun",
     critical: true,
   });
 

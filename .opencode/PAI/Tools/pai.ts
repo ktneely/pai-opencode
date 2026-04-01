@@ -2,16 +2,16 @@
 /**
  * pai - Personal AI CLI Tool
  *
- * Comprehensive CLI for managing Claude Code with dynamic MCP loading,
+ * Comprehensive CLI for managing OpenCode with dynamic MCP loading,
  * updates, version checking, and profile management.
  *
  * Usage:
- *   pai                  Launch Claude (default profile)
+ *   pai                  Launch OpenCode (default profile)
  *   pai -m bd            Launch with Bright Data MCP
  *   pai -m bd,ap         Launch with multiple MCPs
  *   pai -r / --resume    Resume last session
  *   pai --local          Stay in current directory (don't cd to ~/.opencode)
- *   pai update           Update Claude Code
+ *   pai update           Update OpenCode
  *   pai version          Show version info
  *   pai profiles         List available profiles
  *   pai mcp list         List available MCPs
@@ -20,7 +20,17 @@
 
 import { spawn, spawnSync } from "bun";
 import { getDAName, getIdentity } from "../../plugins/lib/identity";
-import { existsSync, readFileSync, writeFileSync, readdirSync, symlinkSync, unlinkSync, lstatSync } from "fs";
+import {
+  accessSync,
+  constants,
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  readdirSync,
+  symlinkSync,
+  unlinkSync,
+  lstatSync,
+} from "fs";
 import { homedir } from "os";
 import { join, basename } from "path";
 
@@ -29,12 +39,14 @@ import { join, basename } from "path";
 // ============================================================================
 
 const OPENCODE_DIR = process.env.OPENCODE_DIR || join(homedir(), ".opencode");
+const LOCAL_OPENCODE_BIN = join(homedir(), ".local", "bin", "opencode");
+const COMPAT_OPENCODE_BIN = join(OPENCODE_DIR, "tools", "opencode");
 const MCP_DIR = join(OPENCODE_DIR, "MCPs");
 const ACTIVE_MCP = join(OPENCODE_DIR, ".mcp.json");
 const BANNER_SCRIPT = join(OPENCODE_DIR, "PAI", "Tools", "Banner.ts");
 const VOICE_SERVER = "http://localhost:8888/notify/personality";
 const WALLPAPER_DIR = join(homedir(), "Projects", "Wallpaper");
-// Note: RAW archiving removed - Claude Code handles its own cleanup (30-day retention in projects/)
+// Note: RAW archiving removed - OpenCode handles its own cleanup (30-day retention in projects/)
 
 // MCP shorthand mappings
 const MCP_SHORTCUTS: Record<string, string> = {
@@ -127,8 +139,34 @@ function displayBanner() {
   }
 }
 
+function resolveOpenCodeExecutable(): string {
+  const isExecutable = (path: string): boolean => {
+    try {
+      accessSync(path, constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  if (existsSync(LOCAL_OPENCODE_BIN) && isExecutable(LOCAL_OPENCODE_BIN)) {
+    return LOCAL_OPENCODE_BIN;
+  }
+
+  if (existsSync(COMPAT_OPENCODE_BIN) && isExecutable(COMPAT_OPENCODE_BIN)) {
+    return COMPAT_OPENCODE_BIN;
+  }
+
+  const opencodeOnPath = spawnSync(["opencode", "--version"]);
+  if (opencodeOnPath.exitCode === 0) {
+    return "opencode";
+  }
+
+  error("OpenCode executable not found. Re-run installer or ensure ~/.local/bin is in PATH.");
+}
+
 function getCurrentVersion(): string | null {
-  const result = spawnSync(["claude", "--version"]);
+  const result = spawnSync([resolveOpenCodeExecutable(), "--version"]);
   const output = result.stdout.toString();
   const match = output.match(/([0-9]+\.[0-9]+\.[0-9]+)/);
   return match ? match[1] : null;
@@ -146,12 +184,10 @@ function compareVersions(a: string, b: string): number {
 
 async function getLatestVersion(): Promise<string | null> {
   try {
-    const response = await fetch(
-      "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/latest"
-    );
-    const version = (await response.text()).trim();
-    if (/^[0-9]+\.[0-9]+\.[0-9]+/.test(version)) {
-      return version;
+    const response = await fetch("https://registry.npmjs.org/opencode-ai/latest");
+    const data = (await response.json()) as { version?: string };
+    if (data?.version && /^[0-9]+\.[0-9]+\.[0-9]+/.test(data.version)) {
+      return data.version;
     }
   } catch {
     return null;
@@ -229,7 +265,7 @@ function setMcpProfile(profile: string) {
   // Create symlink
   symlinkSync(profileFile, ACTIVE_MCP);
   log(`Switched to '${profile}' profile`, "✅");
-  log("Restart Claude Code to apply", "⚠️");
+  log("Restart OpenCode to apply", "⚠️");
 }
 
 function setMcpCustom(mcpNames: string[]) {
@@ -360,8 +396,8 @@ function cmdWallpaper(args: string[]) {
       console.log(`  ${i + 1}. ${getWallpaperName(w)}`);
     });
     console.log();
-    log("Usage: k -w <name>", "💡");
-    log("Example: k -w circuit-board", "💡");
+    log("Usage: pai -w <name>", "💡");
+    log("Example: pai -w circuit-board", "💡");
     return;
   }
 
@@ -399,7 +435,7 @@ async function cmdLaunch(options: { mcp?: string; resume?: boolean; skipPerms?: 
   // (InstantiatePAI.ts is retired — kept for reference only)
 
   displayBanner();
-  const args = ["claude"];
+  const args = [resolveOpenCodeExecutable()];
 
   // Handle MCP configuration
   if (options.mcp) {
@@ -423,13 +459,13 @@ async function cmdLaunch(options: { mcp?: string; resume?: boolean; skipPerms?: 
   // Voice notification (using focused marker for calmer tone)
   notifyVoice(`[🎯 focused] ${getDAName()} here, ready to go.`);
 
-  // Launch Claude
+  // Launch OpenCode
   const proc = spawn(args, {
     stdio: ["inherit", "inherit", "inherit"],
     env: { ...process.env },
   });
 
-  // Wait for Claude to exit
+  // Wait for OpenCode to exit
   await proc.exited;
 }
 
@@ -454,7 +490,7 @@ async function cmdUpdate() {
     return;
   }
 
-  log("Updating Claude Code...", "🔄");
+  log("Updating OpenCode...", "🔄");
 
   // Step 1: Update Bun
   log("Step 1/2: Updating Bun...", "📦");
@@ -465,13 +501,17 @@ async function cmdUpdate() {
     log("Bun updated", "✅");
   }
 
-  // Step 2: Update Claude Code
-  log("Step 2/2: Installing latest Claude Code...", "🤖");
-  const claudeResult = spawnSync(["bash", "-c", "curl -fsSL https://claude.ai/install.sh | bash"]);
-  if (claudeResult.exitCode !== 0) {
-    error("Claude Code installation failed");
+  // Step 2: Update OpenCode
+  log("Step 2/2: Upgrading OpenCode...", "🤖");
+  const opencodeResult = spawnSync([resolveOpenCodeExecutable(), "upgrade"], {
+    stdin: "inherit",
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+  if (opencodeResult.exitCode !== 0) {
+    error("OpenCode upgrade failed");
   }
-  log("Claude Code updated", "✅");
+  log("OpenCode updated", "✅");
 
   // Show final version
   const newVersion = getCurrentVersion();
@@ -497,7 +537,7 @@ async function cmdVersion() {
     if (cmp >= 0) {
       log("Up to date", "✅");
     } else {
-      log("Update available (run 'k update')", "⚠️");
+      log("Update available (run 'pai update')", "⚠️");
     }
   } else {
     log("Could not fetch latest version", "⚠️");
@@ -521,7 +561,7 @@ function cmdProfiles() {
   }
 
   console.log();
-  log("Usage: k mcp set <profile>", "💡");
+  log("Usage: pai mcp set <profile>", "💡");
 }
 
 function cmdMcpList() {
@@ -540,7 +580,7 @@ function cmdMcpList() {
   }
 
   console.log();
-  log("Profiles (use with 'k mcp set'):", "📁");
+  log("Profiles (use with 'pai mcp set'):", "📁");
   const profiles = getMcpProfiles();
   for (const profile of profiles) {
     const desc = PROFILE_DESCRIPTIONS[profile] || "";
@@ -549,15 +589,15 @@ function cmdMcpList() {
 
   console.log();
   log("Examples:", "💡");
-  console.log("  k -m bd          # Bright Data only");
-  console.log("  k -m bd,ap       # Bright Data + Apify");
-  console.log("  k mcp set research  # Full research profile");
+  console.log("  pai -m bd          # Bright Data only");
+  console.log("  pai -m bd,ap       # Bright Data + Apify");
+  console.log("  pai mcp set research  # Full research profile");
 }
 
 async function cmdPrompt(prompt: string) {
   // One-shot prompt execution
   // NOTE: No --dangerously-skip-permissions - rely on settings.json permissions
-  const args = ["claude", "-p", prompt];
+  const args = [resolveOpenCodeExecutable(), "-p", prompt];
 
   process.chdir(OPENCODE_DIR);
 
@@ -575,21 +615,21 @@ function cmdHelp() {
 pai - Personal AI CLI Tool (v2.0.0)
 
 USAGE:
-  k                        Launch Claude (no MCPs, max performance)
-  k -m <mcp>               Launch with specific MCP(s)
-  k -m bd,ap               Launch with multiple MCPs
-  k -r, --resume           Resume last session
-  k -l, --local            Stay in current directory (don't cd to ~/.opencode)
+  pai                        Launch OpenCode (no MCPs, max performance)
+  pai -m <mcp>               Launch with specific MCP(s)
+  pai -m bd,ap               Launch with multiple MCPs
+  pai -r, --resume           Resume last session
+  pai -l, --local            Stay in current directory (don't cd to ~/.opencode)
 
 COMMANDS:
-  k update                 Update Claude Code to latest version
-  k version, -v            Show version information
-  k profiles               List available MCP profiles
-  k mcp list               List all available MCPs
-  k mcp set <profile>      Set MCP profile permanently
-  k prompt "<text>"        One-shot prompt execution
-  k -w, --wallpaper        List/switch wallpapers (Kitty + macOS)
-  k help, -h               Show this help
+  pai update                 Update runtime dependencies
+  pai version, -v            Show version information
+  pai profiles               List available MCP profiles
+  pai mcp list               List all available MCPs
+  pai mcp set <profile>      Set MCP profile permanently
+  pai prompt "<text>"        One-shot prompt execution
+  pai -w, --wallpaper        List/switch wallpapers (Kitty + macOS)
+  pai help, -h               Show this help
 
 MCP SHORTCUTS:
   bd, brightdata           Bright Data scraping
@@ -604,15 +644,15 @@ MCP SHORTCUTS:
   none                     No MCPs
 
 EXAMPLES:
-  k                        Start with current profile
-  k -m bd                  Start with Bright Data
-  k -m bd,ap,chrome        Start with multiple MCPs
-  k -r                     Resume last session
-  k mcp set research       Switch to research profile
-  k update                 Update Claude Code
-  k prompt "What time is it?"   One-shot prompt
-  k -w                     List available wallpapers
-  k -w circuit-board       Switch wallpaper (Kitty + macOS)
+  pai                        Start with current profile
+  pai -m bd                  Start with Bright Data
+  pai -m bd,ap,chrome        Start with multiple MCPs
+  pai -r                     Resume last session
+  pai mcp set research       Switch to research profile
+  pai update                 Update OpenCode
+  pai prompt "What time is it?"   One-shot prompt
+  pai -w                     List available wallpapers
+  pai -w circuit-board       Switch wallpaper (Kitty + macOS)
 `);
 }
 
@@ -702,7 +742,7 @@ async function main() {
       default:
         if (!arg.startsWith("-")) {
           // Might be an unknown command
-          error(`Unknown command: ${arg}. Use 'k help' for usage.`);
+          error(`Unknown command: ${arg}. Use 'pai help' for usage.`);
         }
     }
   }
@@ -727,12 +767,12 @@ async function main() {
       } else if (subCommand === "set" && subArg) {
         setMcpProfile(subArg);
       } else {
-        error("Usage: k mcp list | k mcp set <profile>");
+        error("Usage: pai mcp list | pai mcp set <profile>");
       }
       break;
     case "prompt":
       if (!promptText) {
-        error("Usage: k prompt \"your prompt here\"");
+        error("Usage: pai prompt \"your prompt here\"");
       }
       await cmdPrompt(promptText);
       break;
