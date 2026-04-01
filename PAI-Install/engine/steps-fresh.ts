@@ -427,9 +427,11 @@ ${providerEnvVar}=${state.collected.apiKey || ""}
 	// Build shell-specific alias/function block.
 	// POSIX shells use "$@"; fish uses $argv and function/end syntax.
 	const escapedInstallDir = installDir.replaceAll('"', '\\"');
+	const marker = "# PAI shell setup";
+	const endMarker = "# end PAI shell setup";
 	const aliasBlock = shellName === "fish"
-		? `\n# PAI shell setup — added by PAI installer\nset -gx PATH $HOME/.bun/bin $HOME/.local/bin $PATH\n\nfunction opencode\n\tif test -x "$HOME/.local/bin/opencode"\n\t\t$HOME/.local/bin/opencode $argv\n\telse if test -x "$HOME/.opencode/tools/opencode"\n\t\t$HOME/.opencode/tools/opencode $argv\n\telse\n\t\tcommand opencode $argv\n\tend\nend\n\nfunction pai\n\tset -l __pai_oldpwd (pwd)\n\tset -l __pai_bun "$HOME/.bun/bin/bun"\n\tcd "${escapedInstallDir}"\n\tif test -x $__pai_bun\n\t\t$__pai_bun run .opencode/PAI/Tools/pai.ts $argv\n\telse\n\t\tbun run .opencode/PAI/Tools/pai.ts $argv\n\tend\n\tset -l __pai_status $status\n\tcd $__pai_oldpwd\n\treturn $__pai_status\nend\n`
-		: `\n# PAI shell setup — added by PAI installer\nexport PATH="$HOME/.bun/bin:$HOME/.local/bin:$PATH"\n\nopencode() {\n  if [ -x "$HOME/.local/bin/opencode" ]; then\n    "$HOME/.local/bin/opencode" "$@"\n  elif [ -x "$HOME/.opencode/tools/opencode" ]; then\n    "$HOME/.opencode/tools/opencode" "$@"\n  else\n    command opencode "$@"\n  fi\n}\n\npai() {\n  (cd "${escapedInstallDir}" &&\n    if [ -x "$HOME/.bun/bin/bun" ]; then\n      "$HOME/.bun/bin/bun" run .opencode/PAI/Tools/pai.ts "$@"\n    else\n      bun run .opencode/PAI/Tools/pai.ts "$@"\n    fi\n  )\n}\n`;
+		? `set -gx PATH $HOME/.bun/bin $HOME/.local/bin $PATH\n\nfunction opencode\n\tif test -x "$HOME/.local/bin/opencode"\n\t\t$HOME/.local/bin/opencode $argv\n\telse if test -x "$HOME/.opencode/tools/opencode"\n\t\t$HOME/.opencode/tools/opencode $argv\n\telse\n\t\tcommand opencode $argv\n\tend\nend\n\nfunction pai\n\tset -l __pai_oldpwd (pwd)\n\tset -l __pai_bun "$HOME/.bun/bin/bun"\n\tcd "${escapedInstallDir}"\n\tif test -x $__pai_bun\n\t\t$__pai_bun run .opencode/PAI/Tools/pai.ts $argv\n\telse\n\t\tbun run .opencode/PAI/Tools/pai.ts $argv\n\tend\n\tset -l __pai_status $status\n\tcd $__pai_oldpwd\n\treturn $__pai_status\nend`
+		: `export PATH="$HOME/.bun/bin:$HOME/.local/bin:$PATH"\n\nopencode() {\n  if [ -x "$HOME/.local/bin/opencode" ]; then\n    "$HOME/.local/bin/opencode" "$@"\n  elif [ -x "$HOME/.opencode/tools/opencode" ]; then\n    "$HOME/.opencode/tools/opencode" "$@"\n  else\n    command opencode "$@"\n  fi\n}\n\npai() {\n  (cd "${escapedInstallDir}" &&\n    if [ -x "$HOME/.bun/bin/bun" ]; then\n      "$HOME/.bun/bin/bun" run .opencode/PAI/Tools/pai.ts "$@"\n    else\n      bun run .opencode/PAI/Tools/pai.ts "$@"\n    fi\n  )\n}`;
 
 	try {
 		// Ensure parent directory exists (matters for fish: ~/.config/fish/ may be absent)
@@ -440,34 +442,35 @@ ${providerEnvVar}=${state.collected.apiKey || ""}
 			: "";
 
 		let content = existing;
+		content = content.replace(/\n?# PAI shell setup — added by PAI installer[\s\S]*?# end PAI shell setup\n?/g, "");
 		content = content.replace(
-			/\n?#\s*PAI\s*(?:alias|shell\s*setup|setup|installer|installed|PAI)[^\n]*[\s\S]*?(?=\n(?:#|pai\(\)|opencode\(\)|function\s+pai\b|function\s+opencode\b)|$)/gi,
+			/\n?#\s*PAI\s*(?:alias|shell\s*setup|setup|installer|installed|PAI)[^\n]*[\s\S]*?(?=\n(?:#|alias\b|export\b|set\b|source\b|pai\(\)|opencode\(\)|function\s+pai\b|function\s+opencode\b|function\s+\w+\b)|$)/gi,
 			""
 		);
 		content = content.replace(
-			/^pai\(\)\s*\{[\s\S]*?^\}\s*(?=\n(?:#|pai\(\)|opencode\(\)|function\s+pai\b|function\s+opencode\b)|$)\n?/gm,
+			/^pai\(\)\s*\{[\s\S]*?^\}\s*(?=\n(?:#|alias\b|export\b|set\b|source\b|pai\(\)|opencode\(\)|function\s+pai\b|function\s+opencode\b|function\s+\w+\b)|$)\n?/gm,
 			""
 		);
 		content = content.replace(
-			/^opencode\(\)\s*\{[\s\S]*?^\}\s*(?=\n(?:#|pai\(\)|opencode\(\)|function\s+pai\b|function\s+opencode\b)|$)\n?/gm,
+			/^opencode\(\)\s*\{[\s\S]*?^\}\s*(?=\n(?:#|alias\b|export\b|set\b|source\b|pai\(\)|opencode\(\)|function\s+pai\b|function\s+opencode\b|function\s+\w+\b)|$)\n?/gm,
 			""
 		);
 		content = content.replace(
-			/^function\s+pai\s*$[\s\S]*?^end\s*(?=\n(?:#|pai\(\)|opencode\(\)|function\s+pai\b|function\s+opencode\b)|$)\n?/gm,
+			/^function\s+pai\s*$[\s\S]*?^end\s*(?=\n(?:#|alias\b|export\b|set\b|source\b|pai\(\)|opencode\(\)|function\s+pai\b|function\s+opencode\b|function\s+\w+\b)|$)\n?/gm,
 			""
 		);
 		content = content.replace(
-			/^function\s+opencode\s*$[\s\S]*?^end\s*(?=\n(?:#|pai\(\)|opencode\(\)|function\s+pai\b|function\s+opencode\b)|$)\n?/gm,
+			/^function\s+opencode\s*$[\s\S]*?^end\s*(?=\n(?:#|alias\b|export\b|set\b|source\b|pai\(\)|opencode\(\)|function\s+pai\b|function\s+opencode\b|function\s+\w+\b)|$)\n?/gm,
 			""
 		);
 		content = content.replace(/^alias pai=.*\n?/gm, "");
 		content = content.replace(/^alias pai\s+.*\n?/gm, "");
 
-		content = content.trimEnd() + aliasBlock;
+		content = content.trimEnd() + `\n\n${marker} — added by PAI installer\n${aliasBlock}\n${endMarker}\n`;
 		writeFileSync(shellConfig, content.endsWith("\n") ? content : `${content}\n`);
 	} catch (err) {
 		console.error(`Warning: Could not write shell alias to ${shellConfig}: ${err}`);
-		console.error(`Add manually: ${aliasBlock.trim()}`);
+		console.error(`Add manually: ${marker} — added by PAI installer\n${aliasBlock.trim()}\n${endMarker}`);
 	}
 
 	onProgress(100, "Installation complete!");
