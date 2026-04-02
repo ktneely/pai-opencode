@@ -27,25 +27,25 @@ default_model: ollama/qwen3.5:9b
 # Agent routing with model tiers (CUSTOMIZE THESE!)
 agents:
   Algorithm:
-    model: ollama/qwen3.5:27b 
+    model: ollama/qwen3.5:27b
   Architect:
     model: ollama/qwen3.5:9b
     tiers:
       quick: ollama/qwen3.5:2b
       standard: ollama/qwen3.5:9b
-      advanced: ollama/qwen3.5:27b 
+      advanced: ollama/qwen3.5:27b
   Engineer:
     model: ollama/qwen3.5:9b
     tiers:
       quick: ollama/qwen3.5:2b
       standard: ollama/qwen3.5:9b
-      advanced: ollama/qwen3.5:27b 
+      advanced: ollama/qwen3.5:27b
   general:
     model: ollama/qwen3.5:9b
     tiers:
       quick: ollama/qwen3.5:2b
       standard: ollama/qwen3.5:9b
-      advanced: ollama/qwen3.5:27b 
+      advanced: ollama/qwen3.5:27b
   explore:
     model: ollama/qwen3.5:2b
   Intern:
@@ -65,31 +65,31 @@ agents:
     tiers:
       quick: ollama/qwen3.5:2b
       standard: ollama/qwen3.5:9b
-      advanced: ollama/qwen3.5:27b 
+      advanced: ollama/qwen3.5:27b
   GeminiResearcher:
     model: ollama/qwen3.5:9b
     tiers:
       quick: ollama/qwen3.5:2b
       standard: ollama/qwen3.5:9b
-      advanced: ollama/qwen3.5:27b 
+      advanced: ollama/qwen3.5:27b
   GrokResearcher:
     model: ollama/qwen3.5:9b
     tiers:
       quick: ollama/qwen3.5:2b
       standard: ollama/qwen3.5:9b
-      advanced: ollama/qwen3.5:27b 
+      advanced: ollama/qwen3.5:27b
   PerplexityResearcher:
     model: ollama/qwen3.5:9b
     tiers:
       quick: ollama/qwen3.5:2b
       standard: ollama/qwen3.5:9b
-      advanced: ollama/qwen3.5:27b 
+      advanced: ollama/qwen3.5:27b
   CodexResearcher:
     model: ollama/qwen3.5:9b
     tiers:
       quick: ollama/qwen3.5:2b
       standard: ollama/qwen3.5:9b
-      advanced: ollama/qwen3.5:27b 
+      advanced: ollama/qwen3.5:27b
   QATester:
     model: ollama/qwen3.5:9b
   Pentester:
@@ -97,16 +97,16 @@ agents:
     tiers:
       quick: ollama/qwen3.5:2b
       standard: ollama/qwen3.5:9b
-      advanced: ollama/qwen3.5:27b 
+      advanced: ollama/qwen3.5:27b
   Designer:
     model: ollama/qwen3.5:9b
     tiers:
       quick: ollama/qwen3.5:2b
       standard: ollama/qwen3.5:9b
-      advanced: ollama/qwen3.5:27b 
+      advanced: ollama/qwen3.5:27b
   Artist:
     model: ollama/qwen3.5:9b
     tiers:
       quick: ollama/qwen3.5:2b
       standard: ollama/qwen3.5:9b
-      advanced: ollama/qwen3.5:27b 
+      advanced: ollama/qwen3.5:27b
