@@ -49,6 +49,13 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// ESM-equivalent of __dirname — .opencode/package.json has "type": "module"
+// so CommonJS globals (__dirname / __filename) are not defined. Used below
+// by loadMinimalBootstrap() to resolve the PAI dir relative to this plugin
+// file regardless of the current working directory opencode is launched from.
+const PLUGIN_DIR = path.dirname(fileURLToPath(import.meta.url));
 import type { Hooks, Plugin } from "@opencode-ai/plugin";
 import { captureAgentOutput, isTaskTool } from "./handlers/agent-capture";
 import { validateAgentExecution } from "./handlers/agent-execution-guard";
@@ -252,8 +259,13 @@ async function readFileSafe(filePath: string): Promise<string | null> {
  */
 async function loadMinimalBootstrap(): Promise<string | null> {
 	try {
-		const cwd = process.cwd();
-		const paiDir = path.join(cwd, ".opencode", "PAI");
+		// Resolve PAI directory relative to plugin location, not cwd.
+		// Plugin is at ~/.opencode/plugins/pai-unified.ts
+		// PAI is at   ~/.opencode/PAI/
+		// PLUGIN_DIR is resolved via fileURLToPath(import.meta.url) because
+		// .opencode/package.json declares "type": "module" — __filename is
+		// not defined in ESM contexts.
+		const paiDir = path.join(PLUGIN_DIR, "..", "PAI");
 		const bootstrapPath = path.join(paiDir, "MINIMAL_BOOTSTRAP.md");
 
 		// Check if bootstrap exists (async)
@@ -370,18 +382,30 @@ export const PaiUnified: Plugin = async (_ctx) => {
 			await injectCompactionContext(input, output);
 		},
 
-		/**
-		 * CONTEXT INJECTION (SessionStart equivalent)
-		 *
-		 * WP2: Injects minimal bootstrap (~7KB) instead of full 233KB context.
-		 * Skills load on-demand via OpenCode native skill tool.
-		 */
-		"experimental.chat.system.transform": async (input, output) => {
-			try {
-				fileLog("Injecting minimal bootstrap context (WP2 lazy loading)...");
+	/**
+	 * CONTEXT INJECTION (SessionStart equivalent)
+	 *
+	 * WP2: Injects minimal bootstrap (~7KB) instead of full 233KB context.
+	 * Skills load on-demand via OpenCode native skill tool.
+	 *
+	 * NOTE: Only loads when PAI_ENABLED=1 is set (via `pai` wrapper).
+	 * Plain `opencode` launches without PAI context by design.
+	 */
+	"experimental.chat.system.transform": async (input, output) => {
+		try {
+			// Gate: Only load PAI context when the `pai` wrapper explicitly sets
+			// PAI_ENABLED=1. We check for the exact string "1" (not just truthy)
+			// so accidental env pollution (e.g. PAI_ENABLED=0, PAI_ENABLED=false)
+			// does not inadvertently enable context injection.
+			if (process.env.PAI_ENABLED !== "1") {
+				fileLog("PAI context disabled (PAI_ENABLED !== '1'; use 'pai' command for full context)", "info");
+				return;
+			}
 
-				// Emit session start
-				emitSessionStart({ model: (input as any).model }).catch(() => {});
+			fileLog("Injecting minimal bootstrap context (WP2 lazy loading)...");
+
+			// Emit session start
+			emitSessionStart({ model: (input as any).model }).catch(() => {});
 
 				// WP2: Use minimal bootstrap instead of full context loader
 				const bootstrap = await loadMinimalBootstrap();

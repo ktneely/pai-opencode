@@ -459,10 +459,10 @@ async function cmdLaunch(options: { mcp?: string; resume?: boolean; skipPerms?: 
   // Voice notification (using focused marker for calmer tone)
   notifyVoice(`[🎯 focused] ${getDAName()} here, ready to go.`);
 
-  // Launch OpenCode
+  // Launch OpenCode with PAI_ENABLED flag so plugin loads full context
   const proc = spawn(args, {
     stdio: ["inherit", "inherit", "inherit"],
-    env: { ...process.env },
+    env: { ...process.env, PAI_ENABLED: "1" },
   });
 
   // Wait for OpenCode to exit
@@ -601,9 +601,11 @@ async function cmdPrompt(prompt: string) {
 
   process.chdir(OPENCODE_DIR);
 
+  // Set PAI_ENABLED=1 so the plugin injects bootstrap context in headless
+  // prompt mode, same as in interactive cmdLaunch.
   const proc = spawn(args, {
     stdio: ["inherit", "inherit", "inherit"],
-    env: { ...process.env },
+    env: { ...process.env, PAI_ENABLED: "1" },
   });
 
   const exitCode = await proc.exited;
