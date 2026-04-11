@@ -7,8 +7,6 @@
 
 import type { InstallState } from "./types.ts";
 import { PAI_VERSION } from "./types.ts";
-import { buildOpenCodeBinary } from "./build-opencode.ts";
-import type { BuildResult } from "./build-opencode.ts";
 import { PROVIDER_MODELS, PROVIDER_LABELS } from "./provider-models.ts";
 import type { ProviderName } from "./provider-models.ts";
 import { existsSync, mkdirSync, writeFileSync, chmodSync, symlinkSync, unlinkSync, lstatSync, realpathSync, readFileSync, renameSync } from "node:fs";
@@ -79,34 +77,29 @@ export async function stepPrerequisites(
 }
 
 // ═══════════════════════════════════════════════════════════
-// Step 3: Build OpenCode Binary
+// Step 3: OpenCode Install Check
 // ═══════════════════════════════════════════════════════════
+//
+// Vanilla OpenCode is installed by the official opencode.ai installer
+// script, not by PAI. This step is a no-op kept for step numbering
+// compatibility with earlier installer versions.
+
+export interface OpenCodeInstallResult {
+	success: boolean;
+	skipped: boolean;
+	binaryPath?: string;
+}
 
 export async function stepBuildOpenCode(
-	state: InstallState,
+	_state: InstallState,
 	onProgress: (percent: number, message: string) => void,
-	skipBuild: boolean = false
-): Promise<BuildResult> {
-	if (skipBuild) {
-		onProgress(70, "Skipped OpenCode build — using standard version");
-		return {
-			success: true,
-			skipped: true,
-			binaryPath: "/usr/local/bin/opencode", // Homebrew path
-		};
-	}
-	
-	// Progress range: 10% → 70%
-	const buildResult = await buildOpenCodeBinary({
-		onProgress: (message, percent) => {
-			// Map build progress (10-100) to step progress (10-70)
-			const mappedPercent = 10 + (percent * 0.6);
-			onProgress(Math.round(mappedPercent), message);
-		},
-		skipIfExists: true,
-	});
-	
-	return buildResult;
+	_skipBuild: boolean = false
+): Promise<OpenCodeInstallResult> {
+	onProgress(70, "OpenCode install is handled by the vanilla opencode.ai installer");
+	return {
+		success: true,
+		skipped: true,
+	};
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -288,30 +281,21 @@ ${providerEnvVar}=${state.collected.apiKey || ""}
 	chmodSync(envPath, 0o600);
 	onProgress(95, "Created .env with secure permissions...");
 	
-	// Generate opencode.json — full agent-tier structure matching the repo template
+	// Generate opencode.json — one model per agent.
+	//
+	// Model selection rationale (PROVIDER_MODELS still exposes quick/standard/advanced
+	// tier labels as a lookup table of available models, NOT as runtime routing):
+	//   - Algorithm → advanced  (orchestrator needs highest quality)
+	//   - explore   → quick     (speed matters more than depth)
+	//   - Intern    → quick     (lightweight agent for simple lookups)
+	//   - everyone else → standard (sensible default)
 	const provider = (state.collected.provider || "zen") as ProviderName;
-	const tiers = PROVIDER_MODELS[provider] ?? PROVIDER_MODELS.zen;
-
-	/**
-	 * Build a standard agent entry with quick/standard/advanced tiers.
-	 * The top-level `model` mirrors the standard tier so opencode has a
-	 * sensible default when no tier is specified by a caller.
-	 */
-	function agentEntry(standard: string, quick: string, advanced: string) {
-		return {
-			model: standard,
-			model_tiers: {
-				quick: { model: quick },
-				standard: { model: standard },
-				advanced: { model: advanced },
-			},
-		};
-	}
+	const models = PROVIDER_MODELS[provider] ?? PROVIDER_MODELS.zen;
 
 	const opencode = {
 		$schema: "https://opencode.ai/config.json",
 		theme: "dark",
-		model: tiers.standard,
+		model: models.standard,
 		snapshot: true,
 		username: state.collected.principalName || "User",
 		permission: {
@@ -331,26 +315,22 @@ ${providerEnvVar}=${state.collected.apiKey || ""}
 			},
 		},
 		agent: {
-			// Algorithm agent always uses the highest-quality model for orchestration
-			Algorithm: { model: tiers.advanced },
-			Architect: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
-			Engineer: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
-			general: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
-			// explore is always the quick model — speed matters more than quality
-			explore: { model: tiers.quick },
-			Intern: agentEntry(tiers.quick, tiers.quick, tiers.standard),
-			Writer: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
-			DeepResearcher: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
-			// Specialised researchers keep their primary model but fall back to provider tiers
-			GeminiResearcher: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
-			GrokResearcher: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
-			PerplexityResearcher: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
-			CodexResearcher: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
-			// QATester has no tier override — single model is intentional
-			QATester: { model: tiers.standard },
-			Pentester: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
-			Designer: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
-			Artist: agentEntry(tiers.standard, tiers.quick, tiers.advanced),
+			Algorithm: { model: models.advanced },
+			Architect: { model: models.standard },
+			Engineer: { model: models.standard },
+			general: { model: models.standard },
+			explore: { model: models.quick },
+			Intern: { model: models.quick },
+			Writer: { model: models.standard },
+			DeepResearcher: { model: models.standard },
+			GeminiResearcher: { model: models.standard },
+			GrokResearcher: { model: models.standard },
+			PerplexityResearcher: { model: models.standard },
+			CodexResearcher: { model: models.standard },
+			QATester: { model: models.standard },
+			Pentester: { model: models.standard },
+			Designer: { model: models.standard },
+			Artist: { model: models.standard },
 		},
 	};
 
@@ -588,21 +568,15 @@ export async function runFreshInstall(
   });
   await emit({ event: "step_complete", step: "identity" });
 
-  // Step 5: Build OpenCode
+  // Step 5: OpenCode Install Check
+  //
+  // Vanilla OpenCode is installed via the official opencode.ai installer
+  // (or by Homebrew / package manager). PAI does not build OpenCode from source.
   await emit({ event: "step_start", step: "repository" });
-  const buildResult = await buildOpenCodeBinary({
-    onProgress: async (message, percent) => {
-      emit({ event: "progress", step: "repository", percent, detail: message });
-    },
-    skipIfExists: true, // Skip rebuild if binary already exists — prevents 20-30min hang on re-installs
+  await emit({
+    event: "message",
+    content: "OpenCode install is managed by the vanilla opencode.ai installer. If opencode is not on your PATH, run: curl -fsSL https://opencode.ai/install | bash",
   });
-  if (buildResult.skipped) {
-    await emit({ event: "message", content: `OpenCode binary already exists — skipping build (${buildResult.binaryPath || "found"}).` });
-  } else if (buildResult.success) {
-    await emit({ event: "message", content: `OpenCode binary built successfully (${buildResult.binaryPath || "installed"}).` });
-  } else {
-    await emit({ event: "message", content: `⚠ OpenCode build failed: ${buildResult.error || "unknown error"}. Build manually: git clone https://github.com/Steffen025/opencode.git && cd opencode && git checkout feature/model-tiers && bun install && bun run ./packages/opencode/script/build.ts --single` });
-  }
   await emit({ event: "step_complete", step: "repository" });
 
   // Step 6: Voice Setup

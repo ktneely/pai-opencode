@@ -184,21 +184,19 @@ async function updateCoreFiles(
 async function updateBinaryIfNeeded(
 	onProgress?: (message: string) => void
 ): Promise<boolean> {
-	onProgress?.("Checking OpenCode binary...");
-	
-	// Check if custom binary exists
-	const customBinPath = join(homedir(), ".opencode", "tools", "opencode");
-	
-	if (!existsSync(customBinPath)) {
-		onProgress?.("No custom binary found — skipping binary update");
-		return false;
-	}
-	
-	// In a real implementation, this would check if the binary needs
-	// to be rebuilt (e.g., new commit in feature/model-tiers branch)
-	
-	onProgress?.("Binary up to date");
-	return false; // No update needed
+	// Since v3.0, PAI no longer manages the OpenCode binary. Vanilla
+	// OpenCode is installed/updated by the official opencode.ai installer
+	// or by the user's package manager.
+	//
+	// This function intentionally returns `false` to signal "no binary
+	// update happened *by PAI*" — which is factually correct. Downstream
+	// version-advancement logic in updateV3 correctly interprets this as
+	// "no binary change", and still advances the PAI version marker when
+	// `skillsUpdated` or `coreUpdated` is true. The only case where the
+	// version does not advance is when there is literally nothing to
+	// apply, which is the desired behavior.
+	onProgress?.("OpenCode binary managed by vanilla installer — skipping");
+	return false;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -242,11 +240,11 @@ export async function updateV3(
 		// 3. Update skills (10-40%)
 		await onProgress?.("Updating skills...", 20);
 		const skillsUpdated = await updateSkills(PAI_DIR, (msg) => onProgress?.(msg, 30));
-		
+
 		// 4. Update core files (40-70%)
 		await onProgress?.("Updating core files...", 50);
 		const coreUpdated = await updateCoreFiles(PAI_DIR, (msg) => onProgress?.(msg, 60));
-		
+
 		// 5. Update binary if needed (70-90%)
 		let binaryUpdated = false;
 		if (!skipBinaryUpdate) {
@@ -256,10 +254,24 @@ export async function updateV3(
 			);
 		}
 		result.binaryUpdated = binaryUpdated;
-		
-		// 6. Update version marker only if changes were applied (90%)
+
+		// 6. Update version marker (90%)
+		//
+		// `updateSkills` and `updateCoreFiles` are currently placeholders that
+		// always return `false` (pre-existing tech debt unrelated to the v3.0
+		// vanilla migration). `updateBinaryIfNeeded` also returns `false` now
+		// that the vanilla installer owns the binary. Without an
+		// `updatesAttempted` guard the version marker would NEVER advance on
+		// user-run updates.
+		//
+		// We treat a successful run of the update pipeline (detectChanges
+		// produced entries and all steps completed without throwing) as
+		// "attempted", and advance the marker. When the placeholder
+		// `updateSkills` / `updateCoreFiles` are replaced with real impls, the
+		// explicit return values will still drive the decision.
+		const updatesAttempted = changes.length > 0;
 		await onProgress?.("Finalizing...", 90);
-		if (skillsUpdated || coreUpdated || binaryUpdated) {
+		if (skillsUpdated || coreUpdated || binaryUpdated || updatesAttempted) {
 			setCurrentVersion(TARGET_VERSION);
 			result.newVersion = TARGET_VERSION;
 		} else {

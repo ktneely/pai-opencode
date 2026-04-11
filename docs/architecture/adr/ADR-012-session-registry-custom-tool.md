@@ -11,6 +11,12 @@ related_adrs: [ADR-001, ADR-013, ADR-015]
 
 # ADR-012: Session Registry as Custom Plugin Tool
 
+> [!warning] PARTIAL SUPERSESSION — Vanilla Migration (April 2026)
+> The `model_tiers` aspects of this ADR are **superseded by ADR-019 (Vanilla OpenCode Migration)**.
+> PAI-OpenCode no longer supports runtime `model_tier` selection. Each agent now has exactly one
+> configured model in `opencode.json`. The sections below that describe `model_tiers` are preserved
+> as historical record. See ADR-019 for the current configuration approach.
+
 ## Quick Overview
 
 ```text
@@ -163,7 +169,7 @@ interface SubagentEntry {
   sessionId: string;
   agentType: string;
   description: string;
-  modelTier?: string;
+  modelTier?: string; // *(Note: model_tiers removed in the April 2026 vanilla migration — see ADR-019.)*
   spawnedAt: string;
   status: "running" | "completed" | "failed";
 }
@@ -240,7 +246,7 @@ export function extractTaskInfo(args: any): { agentType: string; description: st
   return {
     agentType: args?.subagent_type || args?.agent || "unknown",
     description: args?.description || args?.prompt?.substring(0, 100) || "unknown task",
-    modelTier: args?.model_tier,
+    modelTier: args?.model_tier, // *(Note: model_tiers removed in the April 2026 vanilla migration — see ADR-019.)*
   };
 }
 
@@ -275,7 +281,7 @@ export async function captureSubagentSession(
       sessionId: childSessionId,
       agentType: taskInfo.agentType,
       description: taskInfo.description,
-      modelTier: taskInfo.modelTier,
+      modelTier: taskInfo.modelTier, // *(Note: model_tiers removed in the April 2026 vanilla migration — see ADR-019.)*
       spawnedAt: new Date().toISOString(),
       status: "completed",
     });
@@ -343,7 +349,7 @@ export const sessionRegistryTool = tool({
 export const sessionResultsTool = tool({
   description:
     "Get registry metadata for a specific subagent session by session_id. " +
-    "Returns: agent type, description, model tier, status, and resume instructions. " +
+    "Returns: agent type, description, status, and resume instructions. " + // *(Historical note: this string previously returned "model tier" which was removed in the April 2026 vanilla migration — see ADR-019.)*
     "Use this to identify what a subagent worked on and how to access its full results. " +
     "The full conversation history is in OpenCode's database — use Task tool with session_id to retrieve it.",
   args: {
@@ -368,7 +374,7 @@ export const sessionResultsTool = tool({
       "",
       `**Agent:** ${entry.agentType}`,
       `**Description:** ${entry.description}`,
-      `**Model Tier:** ${entry.modelTier || "default"}`,
+      `**Model Tier:** ${entry.modelTier || "default"}`, // *(Note: model_tiers removed in the April 2026 vanilla migration — see ADR-019.)*
       `**Spawned:** ${entry.spawnedAt}`,
       `**Status:** ${entry.status}`,
       "",

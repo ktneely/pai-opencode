@@ -1,6 +1,6 @@
 # Advanced PAI-OpenCode Setup
 
-> ⚠️ **PREREQUISITE:** Model tiers require OpenCode dev build. Stable releases do not support `model_tiers` in `opencode.json`. See [INSTALL.md](../INSTALL.md) for build instructions.
+
 
 ## Overview
 The installer configures a preset for your initial provider routing (`zen`, `anthropic`, `openrouter`, `openai`). See [INSTALL.md](../INSTALL.md) for installation details.
@@ -8,28 +8,21 @@ The installer configures a preset for your initial provider routing (`zen`, `ant
 ## Custom Model Configuration
 
 ### Understanding the Agent Config
-The `opencode.json` file contains an `agent` section where you can define which models each specialized agent uses. Each agent can have a default model and optional tier routing.
+The `opencode.json` file contains an `agent` section where you can define which model each specialized agent uses. Each agent has exactly one model configured.
 
-- `model` — The default model used for all tasks assigned to this agent.
-- `model_tiers` — Optional routing based on the complexity of the task (currently requires a development build of OpenCode).
-  - `quick` — A fast and inexpensive model for simple tasks like file lookups or boilerplate generation.
-  - `standard` — A balanced model for normal implementation work.
-  - `advanced` — The most capable model for complex reasoning, architectural decisions, or deep debugging.
+- `model` — The model used for all tasks assigned to this agent.
 
-### Manual Model Configuration
-You can edit `opencode.json` directly to customize models per agent. This allows you to mix and match providers based on the specific strengths of each model.
+### Custom Model Selection
+You can edit `opencode.json` directly to change which model any agent uses. This lets you mix providers and make cost/quality tradeoffs by choosing the right model per agent.
 
 **Example Configuration:**
 ```json
 "Engineer": {
-  "model": "anthropic/claude-sonnet-4-5",
-  "model_tiers": {
-    "quick": { "model": "anthropic/claude-haiku-4-5" },
-    "standard": { "model": "anthropic/claude-sonnet-4-5" },
-    "advanced": { "model": "anthropic/claude-opus-4-6" }
-  }
+  "model": "anthropic/claude-sonnet-4-5"
 }
 ```
+
+For cost optimization, use agent-based routing: assign lightweight agents (like `explore` or `Intern`) to simple tasks and heavier agents (like `Architect` or `Algorithm`) to complex work.
 
 ### Using the Provider Switch Tool
 PAI-OpenCode includes a utility to quickly switch between different provider profiles across all agents.
@@ -107,10 +100,6 @@ agents:
     model: anthropic/claude-opus-4-6
   Engineer:
     model: opencode/kimi-k2.5
-    tiers:
-      quick: opencode/glm-4.7
-      standard: opencode/kimi-k2.5
-      advanced: anthropic/claude-sonnet-4-5
   # ... add other agent overrides here
 ```
 

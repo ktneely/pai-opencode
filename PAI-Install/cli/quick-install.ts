@@ -19,7 +19,7 @@ import { createFreshState } from "../engine/state";
 import { stepPrerequisites, stepBuildOpenCode, stepProviderConfig, stepIdentity, stepVoice, stepInstallPAI } from "../engine/steps-fresh";
 import { PROVIDER_MODELS } from "../engine/provider-models";
 import type { ProviderName } from "../engine/provider-models";
-import { stepDetectMigration, stepCreateBackup, stepMigrate, stepBinaryUpdate, stepMigrationDone } from "../engine/steps-migrate";
+import { stepDetectMigration, stepCreateBackup, stepMigrate, stepMigrationDone } from "../engine/steps-migrate";
 import { stepDetectUpdate, stepApplyUpdate, stepUpdateDone } from "../engine/steps-update";
 
 // ═══════════════════════════════════════════════════════════
@@ -87,7 +87,7 @@ FRESH INSTALL OPTIONS:
   --timezone <tz>      Timezone (default: auto-detect)
   --api-key <key>      API key for selected provider
   --elevenlabs-key <k> ElevenLabs API key (optional)
-  --skip-build         Skip building OpenCode binary
+  --skip-build         Deprecated (PAI no longer builds OpenCode) — ignored
   --no-voice           Skip voice setup
 
 MIGRATION OPTIONS:
@@ -144,23 +144,16 @@ async function runFreshInstall(): Promise<void> {
 		process.exit(1);
 	}
 	
-	// Step 3: Build OpenCode
-	if (!values["skip-build"]) {
-		onProgress(10, "Building OpenCode binary...");
-		const buildResult = await stepBuildOpenCode(
-			state,
-			onProgress,
-			false
-		);
-		
-		if (!buildResult.success) {
-			console.error("❌ Build failed:", buildResult.error);
-			console.error("Use --skip-build to use standard OpenCode");
-			process.exit(1);
-		}
-	} else {
-		onProgress(70, "Skipped OpenCode build");
+	// Step 3: OpenCode install check
+	//
+	// PAI no longer builds OpenCode from source. Vanilla OpenCode is installed
+	// via the official opencode.ai installer. stepBuildOpenCode is a no-op
+	// retained for step numbering compatibility.
+	if (values["skip-build"]) {
+		console.warn("⚠ --skip-build is deprecated (PAI now uses vanilla OpenCode). Ignoring.");
 	}
+	await stepBuildOpenCode(state, onProgress, true);
+	onProgress(70, "OpenCode install managed by vanilla opencode.ai installer");
 	
   // Step 4: Provider Config
   onProgress(75, "Configuring provider...");
@@ -266,28 +259,45 @@ async function runMigration(): Promise<void> {
 	
 	console.log(`Found ${detection.flatSkills?.length || 0} skills to migrate`);
 	
-	if (values["dry-run"]) {
+	const isDryRun = Boolean(values["dry-run"]);
+
+	if (isDryRun) {
 		console.log("\n🧪 DRY RUN MODE — No changes will be made\n");
 	}
-	
-	// Step 2: Backup
-	onProgress(10, "Creating backup...");
-	const backupResult = await stepCreateBackup(
-		state,
-		values["backup-dir"] || "",
-		onProgress
-	);
-	
-	if (!backupResult.success) {
-		console.error("❌ Backup failed:", backupResult.error);
-		process.exit(1);
+
+	// Step 2: Backup — skipped in dry-run mode (no filesystem side-effects).
+	let backupResult: { success: boolean; backupPath: string; error?: string } = {
+		success: true,
+		backupPath: "(dry-run — no backup created)",
+	};
+	if (!isDryRun) {
+		onProgress(10, "Creating backup...");
+		backupResult = await stepCreateBackup(
+			state,
+			values["backup-dir"] || "",
+			onProgress
+		);
+
+		if (!backupResult.success) {
+			console.error("❌ Backup failed:", backupResult.error);
+			process.exit(1);
+		}
+
+		console.log("📦 Backup created:", backupResult.backupPath);
+	} else {
+		onProgress(10, "Dry-run: skipping backup step");
 	}
-	
-	console.log("📦 Backup created:", backupResult.backupPath);
-	
-	// Step 3: Migrate
-	const migrationResult = await stepMigrate(state, onProgress, values["dry-run"]);
-	
+
+	// Mirror the resolved backup path into `state.collected` so downstream
+	// steps (stepMigrate → migrateV2ToV3) read a consistent value whether
+	// or not dry-run is active. In dry-run mode this is a placeholder string
+	// that will never be written to disk, but it keeps state.collected
+	// internally consistent with the local `backupResult` variable.
+	state.collected.backupPath = backupResult.backupPath;
+
+	// Step 3: Migrate — stepMigrate already honors the dry-run flag internally.
+	const migrationResult = await stepMigrate(state, onProgress, isDryRun);
+
 	if (migrationResult.errors.length > 0) {
 		console.error("❌ Migration errors:");
 		for (const error of migrationResult.errors) {
@@ -295,21 +305,27 @@ async function runMigration(): Promise<void> {
 		}
 		process.exit(1);
 	}
-	
+
 	console.log(`✅ Migrated ${migrationResult.migrated.length} skills`);
-	
-	// Step 4: Binary update (optional)
-	if (!values["dry-run"]) {
-		onProgress(70, "Building OpenCode binary...");
-		await stepBinaryUpdate(state, onProgress, false);
+
+	// Step 4: OpenCode install is handled by vanilla opencode.ai installer
+	if (!isDryRun) {
+		onProgress(70, "OpenCode install managed by vanilla opencode.ai installer");
 	}
-	
-	// Step 5: Done
-	await stepMigrationDone(state, migrationResult, onProgress);
-	
-	onProgress(100, "✅ Migration complete!");
-	
-	if (!values["dry-run"]) {
+
+	// Step 5: Done — in dry-run mode we also skip the finalization step,
+	// which writes the version marker, installs the CLI wrapper, updates the
+	// shell rc file, and runs `bun install`. None of that should happen in
+	// a preview.
+	if (!isDryRun) {
+		await stepMigrationDone(state, migrationResult, onProgress);
+	} else {
+		onProgress(95, "Dry-run: skipping finalization (no files written)");
+	}
+
+	onProgress(100, isDryRun ? "✅ Dry-run complete!" : "✅ Migration complete!");
+
+	if (!isDryRun) {
 		console.log("\nBackup location:", backupResult.backupPath);
 		console.log("If anything went wrong, restore with:");
 		console.log(`  rm -rf ~/.opencode && cp -R ${backupResult.backupPath} ~/.opencode`);
@@ -336,7 +352,7 @@ async function runUpdate(): Promise<void> {
 	console.log(`Updating ${detection.currentVersion} → ${detection.targetVersion}`);
 	
 	// Step 2: Apply update
-	const result = await stepApplyUpdate(state, onProgress, false);
+	const result = await stepApplyUpdate(state, onProgress);
 	
 	if (!result.success) {
 		console.error("❌ Update failed:", result.error);

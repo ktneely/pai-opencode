@@ -7,7 +7,6 @@
 
 import type { InstallState } from "./types";
 import { updateV3, isUpdateNeeded } from "./update";
-import { buildOpenCodeBinary } from "./build-opencode";
 import type { UpdateResult } from "./update";
 
 // ═══════════════════════════════════════════════════════════
@@ -53,40 +52,18 @@ export async function stepDetectUpdate(
 
 export async function stepApplyUpdate(
 	state: InstallState,
-	onProgress: (percent: number, message: string) => void,
-	skipBinaryUpdate: boolean = false
-): Promise<UpdateResult & { binaryUpdated: boolean }> {
+	onProgress: (percent: number, message: string) => void
+): Promise<UpdateResult> {
 	onProgress(10, "Starting update...");
-	
-	// Apply core updates
-	const updateResult = await updateV3({
+
+	// Apply core updates — OpenCode binary updates are handled by the vanilla
+	// opencode.ai installer, not by PAI. We only update PAI's own files.
+	return updateV3({
 		onProgress: async (message, percent) => {
-			const mappedPercent = 10 + (percent * 0.7);
+			const mappedPercent = 10 + percent * 0.9;
 			onProgress(Math.round(mappedPercent), message);
 		},
-		skipBinaryUpdate: true, // We'll handle binary separately
 	});
-	
-	// Update binary if needed
-	let binaryUpdated = false;
-	if (!skipBinaryUpdate && updateResult.success) {
-		onProgress(80, "Checking OpenCode binary...");
-		
-		const buildResult = await buildOpenCodeBinary({
-			onProgress: (message, percent) => {
-				const mappedPercent = 80 + (percent * 0.15);
-				onProgress(Math.round(mappedPercent), message);
-			},
-			skipIfExists: true,
-		});
-		
-		binaryUpdated = !buildResult.skipped && buildResult.success;
-	}
-	
-	return {
-		...updateResult,
-		binaryUpdated,
-	};
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -95,23 +72,18 @@ export async function stepApplyUpdate(
 
 export async function stepUpdateDone(
 	state: InstallState,
-	result: UpdateResult & { binaryUpdated: boolean },
+	result: UpdateResult,
 	onProgress: (percent: number, message: string) => void
 ): Promise<void> {
 	onProgress(95, "Finalizing update...");
-	
-	// If binary was updated, verify the wrapper script points to it
-	if (result.binaryUpdated) {
-		onProgress(97, "Verifying wrapper script...");
-		// TODO: Implement wrapper verification - check that ~/.local/bin/opencode
-		// or the shell alias points to the correct binary
-		// For now, we assume the build step handled this
-	}
-	
+
+	// Binary updates are handled by the vanilla opencode.ai installer —
+	// nothing to verify here.
+
 	// Report final status
 	const version = result.newVersion || "unknown";
 	onProgress(99, `Update to ${version} complete`);
-	
+
 	onProgress(100, "Update complete!");
 }
 
@@ -199,13 +171,7 @@ export const UPDATE_UI_TEXT = {
 	
 	complete: {
 		title: "✅ Update Complete",
-		message: (version: string, binaryUpdated: boolean) => {
-			let msg = `Successfully updated to ${version}`;
-			if (binaryUpdated) {
-				msg += " with new OpenCode binary";
-			}
-			return msg;
-		},
+		message: (version: string): string => `Successfully updated to ${version}`,
 		button: "Launch PAI",
 	},
 };

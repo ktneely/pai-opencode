@@ -48,11 +48,6 @@ const c = {
 // Types
 interface AgentConfig {
   model: string;
-  tiers?: {
-    quick?: string;
-    standard?: string;
-    advanced?: string;
-  };
 }
 
 interface Profile {
@@ -144,10 +139,8 @@ export function applyResearcherOverlay(
     if (!(agentName in updatedModels)) continue;
 
     if (hasApiKey(config.api_key_env, envFile)) {
-      // Override the model but keep the tiers if they exist
-      const existingConfig = updatedModels[agentName];
+      // Override the agent's model with the researcher's native provider model.
       updatedModels[agentName] = {
-        ...existingConfig,
         model: config.native_model,
       };
       routed.push({ agent: agentName, model: config.native_model });
@@ -232,30 +225,87 @@ export function applyProfile(profileName: string, multiResearch = false): {
 
   opencodeJson.model = default_model;
 
-  const agentBlock: Record<string, { model: string; model_tiers?: { [tier: string]: { model: string } } }> = {};
-  
+  // Merge new model into any existing per-agent config so non-model fields
+  // (permission overrides, prompts, tool restrictions, etc.) are preserved.
+  const existingAgentBlock: Record<string, Record<string, unknown>> =
+    (opencodeJson.agent && typeof opencodeJson.agent === "object"
+      ? (opencodeJson.agent as Record<string, Record<string, unknown>>)
+      : {});
+
+  const agentBlock: Record<string, Record<string, unknown>> = {};
+
+  // Helper: strip legacy `model_tiers` from a preserved agent block, keep
+  // everything else (permission, prompts, tool restrictions, etc.).
+  const stripLegacy = (entry: Record<string, unknown>): Record<string, unknown> => {
+    const { model_tiers: _drop, ...preserved } = entry as Record<string, unknown> & {
+      model_tiers?: unknown;
+    };
+    return preserved;
+  };
+
+  // Helper: derive a canonical `model` string from a legacy agent entry
+  // that may only have `model_tiers` and no top-level `model`. Mirrors the
+  // fallback order used by `PAI-Install/engine/migrate-legacy-config.ts`
+  // (standard > top-level > quick > advanced). Returns undefined if no
+  // recognizable model can be extracted.
+  const deriveLegacyModel = (entry: Record<string, unknown>): string | undefined => {
+    if (typeof entry.model === "string" && entry.model.length > 0) {
+      return entry.model;
+    }
+    const tiers = entry.model_tiers as
+      | {
+          quick?: { model?: string } | string;
+          standard?: { model?: string } | string;
+          advanced?: { model?: string } | string;
+        }
+      | undefined;
+    if (!tiers) return undefined;
+
+    const readTier = (t: unknown): string | undefined => {
+      if (typeof t === "string") return t;
+      if (t && typeof t === "object" && typeof (t as { model?: unknown }).model === "string") {
+        return (t as { model: string }).model;
+      }
+      return undefined;
+    };
+
+    return readTier(tiers.standard) ?? readTier(tiers.quick) ?? readTier(tiers.advanced);
+  };
+
+  // 1. Write the profile's agents, merging with any pre-existing config.
   for (const [agentName, agentConfig] of Object.entries(finalAgentModels)) {
-    const agentEntry: { model: string; model_tiers?: { [tier: string]: { model: string } } } = {
+    const existing = existingAgentBlock[agentName] ?? {};
+    agentBlock[agentName] = {
+      ...stripLegacy(existing),
       model: agentConfig.model,
     };
-    
-    // Add model_tiers if they exist
-    if (agentConfig.tiers) {
-      agentEntry.model_tiers = {};
-      if (agentConfig.tiers.quick) {
-        agentEntry.model_tiers.quick = { model: agentConfig.tiers.quick };
-      }
-      if (agentConfig.tiers.standard) {
-        agentEntry.model_tiers.standard = { model: agentConfig.tiers.standard };
-      }
-      if (agentConfig.tiers.advanced) {
-        agentEntry.model_tiers.advanced = { model: agentConfig.tiers.advanced };
-      }
-    }
-    
-    agentBlock[agentName] = agentEntry;
   }
-  
+
+  // 2. Preserve any user-defined agents that are NOT in the profile.
+  // Without this step, a user who added a custom agent to opencode.json
+  // would lose it every time they ran `switch-provider`.
+  //
+  // For legacy-only agents (those with `model_tiers` but no top-level
+  // `model`), derive a canonical model via deriveLegacyModel() so the
+  // resulting block is never left in a no-model state after stripping.
+  for (const [agentName, existing] of Object.entries(existingAgentBlock)) {
+    if (agentName in agentBlock) continue; // already written above
+    const stripped = stripLegacy(existing);
+    if (typeof stripped.model === "string" && stripped.model.length > 0) {
+      agentBlock[agentName] = stripped;
+      continue;
+    }
+    const derived = deriveLegacyModel(existing);
+    if (derived) {
+      agentBlock[agentName] = { ...stripped, model: derived };
+    } else {
+      // No model anywhere — preserve the entry verbatim (minus model_tiers)
+      // so the user's other fields (prompts, permissions) survive, and let
+      // opencode report a more targeted error when it tries to run the agent.
+      agentBlock[agentName] = stripped;
+    }
+  }
+
   opencodeJson.agent = agentBlock;
 
   writeFileSync(OPENCODE_JSON_PATH, JSON.stringify(opencodeJson, null, 2) + "\n");

@@ -12,7 +12,6 @@ import { spawnSync } from "bun";
 import type { InstallState } from "./types";
 import { PAI_VERSION } from "./types";
 import { migrateV2ToV3, isMigrationNeeded } from "./migrate";
-import { buildOpenCodeBinary } from "./build-opencode";
 import type { MigrationResult } from "./migrate";
 
 // ═══════════════════════════════════════════════════════════
@@ -138,42 +137,7 @@ export async function stepMigrate(
 }
 
 // ═══════════════════════════════════════════════════════════
-// Step 4: Binary Update (Optional)
-// ═══════════════════════════════════════════════════════════
-
-export async function stepBinaryUpdate(
-	state: InstallState,
-	onProgress: (percent: number, message: string) => void,
-	skipBuild: boolean = false
-): Promise<{ success: boolean; skipped: boolean; error?: string }> {
-	if (skipBuild) {
-		onProgress(90, "Skipped OpenCode binary update");
-		return { success: true, skipped: true };
-	}
-	
-	onProgress(70, "Building OpenCode binary...");
-	
-	const buildResult = await buildOpenCodeBinary({
-		onProgress: (message, percent) => {
-			const mappedPercent = 70 + (percent * 0.2);
-			onProgress(Math.round(mappedPercent), message);
-		},
-		skipIfExists: true,
-	});
-	
-	if (!buildResult.success) {
-		return {
-			success: false,
-			skipped: false,
-			error: buildResult.error || "Build failed",
-		};
-	}
-	
-	return { success: true, skipped: buildResult.skipped || false };
-}
-
-// ═══════════════════════════════════════════════════════════
-// Step 5: Done
+// Step 4: Done
 // ═══════════════════════════════════════════════════════════
 
 export async function stepMigrationDone(
@@ -344,18 +308,9 @@ export async function runMigration(
   }
   await emit({ event: "step_complete", step: "migrate-config" });
 
-  // Step 4: Build Binary
-  await emit({ event: "step_start", step: "build" });
-  const binaryResult = await stepBinaryUpdate(state, (percent, message) => {
-    void emit({ event: "progress", step: "build", percent, detail: message }).catch(() => {});
-  }, false);
-  
-  if (!binaryResult.success) {
-    throw new Error(`Binary build failed: ${binaryResult.error || "Unknown error"}`);
-  }
-  await emit({ event: "step_complete", step: "build" });
-
-  // Step 5: Verify Migration
+  // Step 4: Verify Migration
+  // Note: OpenCode binary installation is handled separately via opencode.ai
+  // installer. PAI migration only handles configuration and skill layout.
   await emit({ event: "step_start", step: "verify" });
   await stepMigrationDone(state, migrationResult, (percent, message) => {
     void emit({ event: "progress", step: "verify", percent, detail: message }).catch(() => {});

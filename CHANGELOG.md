@@ -7,13 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [3.0.0] - 2026-03-12
+## [3.0.0] - Unreleased
 
-### Breaking Changes
+### ⚠️ Breaking Changes
+
+- **`model_tiers` removed (WP-M1 Vanilla OpenCode Migration).** PAI-OpenCode now runs on **vanilla OpenCode** from opencode.ai. The custom `Steffen025/opencode` fork (branch `feature/model-tiers`) is no longer used. Each agent in `opencode.json` has exactly one `model` field — the `model_tiers` block (with `quick`/`standard`/`advanced` sub-models) is no longer supported.
+- **`model_tier` parameter removed from Task tool.** Task tool calls no longer accept a `model_tier: "quick" | "standard" | "advanced"` argument. The agent's configured model is always used. See ADR-019 for the full rationale.
+- **Installer no longer builds OpenCode from source.** Fresh installs now invoke the official vanilla installer (`curl -fsSL https://opencode.ai/install | bash`) instead of cloning and compiling the fork. Install time drops from ~5-10 minutes to seconds.
 - Plugin system migrated from hooks to event-driven architecture (WP-A)
 - Skills structure changed: flat → hierarchical Category/Skill (WP-C)
 - Config dual-file: `opencode.json` + `settings.json` (replaces single file)
 - All paths migrated: `.claude/` → `.opencode/`, `CLAUDE.md` → `AGENTS.md`
+
+### Migration Path (for existing v2.x users with model_tiers)
+
+**Automated:** Run `bun run PAI-Install/engine/migrate-legacy-config.ts ~/.opencode/opencode.json`. This converts old `model_tiers` blocks to the new flat format by preserving each agent's `standard` tier model as the new canonical `model`.
+
+**Manual:** Delete all `model_tiers` blocks from your `opencode.json`. Keep only the top-level `"model"` field per agent. Example:
+
+```jsonc
+// BEFORE (v2.x — no longer supported)
+"Engineer": {
+  "model": "anthropic/claude-sonnet-4-5",
+  "model_tiers": {
+    "quick": { "model": "anthropic/claude-haiku-4-5" },
+    "standard": { "model": "anthropic/claude-sonnet-4-5" },
+    "advanced": { "model": "anthropic/claude-opus-4-6" }
+  }
+}
+
+// AFTER (v3.0+)
+"Engineer": {
+  "model": "anthropic/claude-sonnet-4-5"
+}
+```
+
+**For Task tool callers:**
+
+```typescript
+// BEFORE (v2.x)
+Task({ subagent_type: "Engineer", model_tier: "quick", prompt: "..." })
+
+// AFTER (v3.0+) — use a lightweight agent for cheap work
+Task({ subagent_type: "explore", prompt: "..." })     // or "Intern"
+// For standard work, just use Engineer
+Task({ subagent_type: "Engineer", prompt: "..." })
+// For heavy work, use Architect or Algorithm
+Task({ subagent_type: "Architect", prompt: "..." })
+```
 
 ### Added
 
@@ -32,10 +73,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PRD `parent_session_id`** — Links child PRDs back to originating session
 - Full Algorithm v1.8.0 context continuity across compaction boundaries
 
-#### LSP + Fork Documentation (WP-N4) — PR #53
+#### LSP Documentation (WP-N4) — PR #53
 - **AGENTS.md LSP section** — Documents OpenCode's Language Server Protocol integration
-- **Fork documentation** — `Steffen025/opencode` fork relationship and model-tiers branch explained
 - **Installer `.env` setup** — API key configuration documented
+- *Note: WP-N4 originally also documented the `Steffen025/opencode` fork and `feature/model-tiers` branch. Those docs were removed in WP-M1 (Vanilla OpenCode Migration, see below) and replaced with vanilla OpenCode install instructions.*
 
 #### Plan Update (WP-N5) — PR #54
 - **All planning docs synced** — TODO-v3.0.md, OPTIMIZED-PR-PLAN.md reflect WP-N1..N4 complete
@@ -54,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Obsidian Formatting Guidelines (WP-N8) — PR #57
 - **FormattingGuidelines.md** — Obsidian frontmatter, callouts, Mermaid, code block patterns
-- **AgentCapabilityMatrix.md** — All agent types, model tiers, tool/MCP access, decision rules
+- **AgentCapabilityMatrix.md** — All agent types, agent models, tool/MCP access, decision rules
 
 #### Installer opencode.json Fix (WP-N9) — PR #58
 - **4 provider presets** — anthropic, zen, openrouter, openai (was 3)
@@ -67,6 +108,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **INSTALL.md** — 4 provider presets documented
 - **README.md** — Broken links to non-existent files removed
 - **Planning docs deleted** — GAP-ANALYSIS-v3.0.md, EPIC-v3.0-OpenCode-Native.md, OPENCODE-NATIVE-RESEARCH.md (completed, no longer needed)
+
+#### Vanilla OpenCode Migration (WP-M1)
+- **ADR-019** — `docs/architecture/adr/ADR-019-vanilla-opencode-migration.md` — Architectural decision record documenting the `model_tiers` removal, fork archival rationale, and rejected alternatives
+- **Legacy-config migration script** — `PAI-Install/engine/migrate-legacy-config.ts` — Automated converter for user `opencode.json` files with legacy `model_tiers` blocks, preserves each agent's `standard` tier model as the new canonical `model`, creates `.pre-v3.0.bak` backup before any changes
+- **Vanilla installer path** — `PAI-Install/engine/actions.ts` — New `installVanillaOpenCode()` function calls `curl -fsSL https://opencode.ai/install | bash` instead of cloning a fork
+- **Deprecation notices** — Troubleshooting.md, ToolReference.md, AgentCapabilityMatrix.md, and PLATFORM-DIFFERENCES.md gained explicit deprecation callouts explaining the `model_tier` removal and pointing to the migration script
+- **Partial supersession markers** — ADR-005 and ADR-012 gained `> [!warning] PARTIAL SUPERSESSION` notices at the top plus inline historical notes, preserving decision history while clarifying which parts are superseded by ADR-019
+
+### Removed (WP-M1 Vanilla Migration)
+
+- `PAI-Install/engine/build-opencode.ts` — the entire 245-LOC fork build system
+- `model_tiers` config block from `opencode.json` (16 agents, all tiers stripped)
+- `model_tier` parameter reading from `.opencode/plugins/handlers/agent-execution-guard.ts`
+- `modelTier` field from `.opencode/plugins/handlers/session-registry.ts` session entries
+- `tiers?` field from `AgentConfig` interface in `.opencode/tools/switch-provider.ts`
+- `tiers:` sections from all 5 profile YAML files (`.opencode/profiles/{anthropic,openai,zen,zen-paid,local}.yaml`)
+- Fork-clone / build-from-source logic from `PAI-Install/engine/actions.ts`, `steps-fresh.ts`, `steps-migrate.ts`, `steps-update.ts`
+- `runSkipBuildFallback` dead code from `PAI-Install/cli/install-wizard.ts`
+- `model_tier mapping` requirement from `.coderabbit.yaml` agent frontmatter validation rule
+- `stepBuildOpenCode` and `stepBinaryUpdate` binary-build logic — functions retained as no-ops for API compatibility, delegations to fork-build removed
+- All references to `Steffen025/opencode` URLs and `feature/model-tiers` branch from runtime code
+
+### Changed (WP-M1 Vanilla Migration)
+
+- `PAI-Install/wrapper-template.sh` — Rewritten from custom-build launcher to vanilla-OpenCode wrapper. `--rebuild` replaced with `--install` (invokes `opencode.ai/install`).
+- `PAI-Install/engine/actions.ts` — `buildOpenCodeFromSource()` replaced with `installVanillaOpenCode()` which runs the official vanilla install script.
+- `opencode.json` — Flat one-model-per-agent format. Sensible defaults: Algorithm=Opus, explore/Intern=Haiku, everyone else=Sonnet.
+- `.opencode/profiles/*.yaml` — All 5 profiles (anthropic, openai, zen, zen-paid, local) collapsed to `model:` per agent; tier sub-keys removed.
+- `README.md`, `INSTALL.md`, `UPGRADE.md`, `KNOWN_LIMITATIONS.md`, `docs/**`, `EPIC-v3.0-Synthesis-Architecture.md` — All documentation rewritten to reflect vanilla OpenCode and agent-based cost optimization.
+
+### Deprecated (WP-M1 Vanilla Migration)
+
+- `--skip-build` CLI flag — silently ignored with deprecation warning. Will be removed in a future release.
 
 ### Changed
 - Skills organization: flat → hierarchical (Category/Skill)

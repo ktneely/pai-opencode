@@ -24,7 +24,6 @@ import {
 import { PROVIDER_LABELS, PROVIDER_MODELS } from "../engine/provider-models.ts";
 import type { ProviderName } from "../engine/provider-models.ts";
 import {
-	stepBinaryUpdate,
 	stepCreateBackup,
 	stepDetectMigration,
 	stepMigrate,
@@ -67,7 +66,11 @@ const { values } = parseArgs({
 		fresh: { type: "boolean", default: false },
 		migrate: { type: "boolean", default: false },
 		update: { type: "boolean", default: false },
+		// Deprecated build-related flags. Both are silently accepted as a no-op
+		// so legacy invocations from pre-v3.0 scripts/CI don't crash. PAI no
+		// longer builds OpenCode from source — vanilla opencode.ai is used.
 		"skip-build": { type: "boolean", default: false },
+		rebuild: { type: "boolean", default: false },
 	},
 	strict: true,
 });
@@ -102,7 +105,8 @@ function showHelp(): void {
 	print("  bun PAI-Install/cli/install-wizard.ts --update");
 	print("");
 	print("Options:");
-	print("  --skip-build   Skip OpenCode binary build in fresh install");
+	print("  --skip-build   Deprecated — PAI no longer builds OpenCode (uses vanilla)");
+	print("  --rebuild      Deprecated alias of --skip-build — also ignored");
 	print("  --help         Show this help");
 }
 
@@ -327,13 +331,6 @@ async function chooseModeInteractive(autoMode: Mode | null): Promise<Mode | null
 	return choice as Mode;
 }
 
-async function runSkipBuildFallback(state: ReturnType<typeof createFreshState>): Promise<void> {
-	const fallback = await stepBuildOpenCode(state, progress, true);
-	if (!fallback.success) {
-		throw new Error(fallback.error || "Failed to skip-build OpenCode binary");
-	}
-}
-
 async function runFreshWizard(): Promise<void> {
 	print("");
 	print(`${COLOR.bold}Fresh Install${COLOR.reset}`);
@@ -354,26 +351,16 @@ async function runFreshWizard(): Promise<void> {
 	printSuccess(`Git: ${prereq.gitVersion || "found"}`);
 	printSuccess(`Bun: ${prereq.bunVersion || "found"}`);
 
-	const shouldBuild = values["skip-build"]
-		? false
-		: await askBoolean("Build OpenCode binary from configured source?", true);
-
-	if (shouldBuild) {
-		const build = await stepBuildOpenCode(state, progress, false);
-		if (!build.success) {
-			printError(`OpenCode build failed: ${build.error || "Unknown error"}`);
-			const continueWithoutBuild = await askBoolean(
-				"Continue without custom build (use existing opencode)?",
-				false,
-			);
-			if (!continueWithoutBuild) {
-				process.exit(1);
-			}
-			await runSkipBuildFallback(state);
-		}
-	} else {
-		await runSkipBuildFallback(state);
+	// PAI no longer builds OpenCode from source — vanilla OpenCode is installed
+	// via the official opencode.ai installer. stepBuildOpenCode is kept as a
+	// no-op to preserve step numbering for legacy flows.
+	if (values["skip-build"] || values.rebuild) {
+		const flag = values.rebuild ? "--rebuild" : "--skip-build";
+		printWarning(`${flag} is deprecated (PAI now uses vanilla OpenCode). Ignoring.`);
 	}
+	await stepBuildOpenCode(state, progress, true);
+	printInfo("OpenCode install is managed by the vanilla opencode.ai installer.");
+	printInfo("If opencode is not on your PATH, run: curl -fsSL https://opencode.ai/install | bash");
 
 	const providerChoices = (Object.keys(PROVIDER_MODELS) as ProviderName[]).map((provider) => ({
 		label: PROVIDER_LABELS[provider].label,
@@ -519,17 +506,9 @@ async function runMigrationWizard(): Promise<void> {
 	printSuccess(`Migrated ${result.migrated.length} skill(s).`);
 
 	if (!dryRun) {
-		const buildBinary = await askBoolean("Build/update OpenCode binary after migration?", true);
-		if (buildBinary) {
-			const binary = await stepBinaryUpdate(state, progress, false);
-			if (!binary.success) {
-				printError(`Binary update failed: ${binary.error || "unknown error"}`);
-				process.exit(1);
-			}
-		} else {
-			await stepBinaryUpdate(state, progress, true);
-		}
-
+		// OpenCode binary installation is handled by the vanilla opencode.ai
+		// installer, not by PAI migration. Just run finalization.
+		printInfo("OpenCode install is managed by the vanilla opencode.ai installer.");
 		await stepMigrationDone(state, result, progress);
 	}
 
@@ -559,7 +538,7 @@ async function runUpdateWizard(): Promise<void> {
 		return;
 	}
 
-	const updateResult = await stepApplyUpdate(state, progress, false);
+	const updateResult = await stepApplyUpdate(state, progress);
 	if (!updateResult.success) {
 		printError(`Update failed: ${updateResult.error || "unknown error"}`);
 		process.exit(1);

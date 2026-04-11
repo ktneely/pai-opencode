@@ -6,7 +6,7 @@
 
 import { exec, spawn } from "child_process";
 import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync, symlinkSync, unlinkSync, chmodSync, lstatSync, cpSync, rmSync, copyFileSync, statSync } from "fs";
-import { homedir, tmpdir } from "os";
+import { homedir } from "os";
 import { join, basename, dirname } from "path";
 import type { InstallState, EngineEventHandler, DetectionResult } from "./types";
 import { PAI_VERSION, ALGORITHM_VERSION } from "./types";
@@ -116,64 +116,32 @@ async function tryExec(cmd: string, timeout = 30000): Promise<string | null> {
   });
 }
 
-const OPENCODE_SOURCE_REPO = "https://github.com/Steffen025/opencode.git";
-const OPENCODE_SOURCE_BRANCH = "feature/model-tiers";
-
-function resolveBuiltBinaryPath(buildDir: string): string | null {
-  const platform = process.platform === "darwin" ? "darwin" : "linux";
-  const archSuffix = process.arch === "arm64" ? "arm64" : "x64";
-  const candidate = join(
-    buildDir,
-    "packages/opencode/dist",
-    `opencode-${platform}-${archSuffix}`,
-    "bin/opencode"
-  );
-  return existsSync(candidate) ? candidate : null;
-}
-
-async function buildOpenCodeFromSource(): Promise<{ success: boolean; error?: string; binaryPath?: string }> {
-  const buildDir = join(tmpdir(), `opencode-build-${Date.now()}`);
+/**
+ * Install vanilla OpenCode using the official installer script.
+ * Replaces the legacy fork build-from-source path.
+ */
+async function installVanillaOpenCode(): Promise<{ success: boolean; error?: string; binaryPath?: string }> {
   try {
-    const cloneResult = await tryExec(`git clone ${OPENCODE_SOURCE_REPO} "${buildDir}"`, 180000);
-    if (cloneResult === null) {
-      return { success: false, error: "git clone failed" };
-    }
-
-    const checkoutResult = await tryExec(`cd "${buildDir}" && git checkout ${OPENCODE_SOURCE_BRANCH}`, 60000);
-    if (checkoutResult === null) {
-      const mainCheckoutResult = await tryExec(`cd "${buildDir}" && git checkout main`, 60000);
-      if (mainCheckoutResult === null) {
-        return { success: false, error: "git checkout failed" };
-      }
-    }
-
-    const installResult = await tryExec(`cd "${buildDir}" && bun install`, 300000);
+    const installResult = await tryExec(`curl -fsSL https://opencode.ai/install | bash`, 300000);
     if (installResult === null) {
-      return { success: false, error: "bun install failed" };
+      return { success: false, error: "opencode.ai install script failed" };
     }
 
-    const buildResult = await tryExec(`cd "${buildDir}" && bun run ./packages/opencode/script/build.ts --single`, 300000);
-    if (buildResult === null) {
-      return { success: false, error: "bun run build failed" };
+    // Official installer places the binary at ~/.opencode/bin/opencode or ~/.local/bin/opencode
+    // depending on the user's environment. Resolve to the first one that exists.
+    const candidates = [
+      join(homedir(), ".opencode", "bin", "opencode"),
+      join(homedir(), ".local", "bin", "opencode"),
+    ];
+    const installed = candidates.find((p) => existsSync(p));
+    if (!installed) {
+      return { success: false, error: "opencode binary not found after install" };
     }
 
-    const binaryPath = resolveBuiltBinaryPath(buildDir);
-    if (!binaryPath) {
-      return { success: false, error: "Built binary not found" };
-    }
-
-    const installDir = join(homedir(), ".local", "bin");
-    mkdirSync(installDir, { recursive: true });
-    const targetPath = join(installDir, "opencode");
-    copyFileSync(binaryPath, targetPath);
-    chmodSync(targetPath, 0o755);
-
-    return { success: true, binaryPath: targetPath };
+    return { success: true, binaryPath: installed };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return { success: false, error: message };
-  } finally {
-    await tryExec(`rm -rf "${buildDir}"`);
   }
 }
 
@@ -395,22 +363,22 @@ export async function runPrerequisites(
 
   // Install OpenCode if missing
   if (!det.tools.opencode.installed) {
-    await emit({ event: "progress", step: "prerequisites", percent: 70, detail: "Building OpenCode from source..." });
+    await emit({ event: "progress", step: "prerequisites", percent: 70, detail: "Installing OpenCode from opencode.ai..." });
 
-    const buildResult = await buildOpenCodeFromSource();
-    if (buildResult.success && buildResult.binaryPath) {
+    const installResult = await installVanillaOpenCode();
+    if (installResult.success && installResult.binaryPath) {
       det.tools.opencode.installed = true;
-      const versionOutput = await tryExec(`"${buildResult.binaryPath}" --version`, 5000);
-      det.tools.opencode.version = versionOutput || "custom build";
-      det.tools.opencode.path = buildResult.binaryPath;
+      const versionOutput = await tryExec(`"${installResult.binaryPath}" --version`, 5000);
+      det.tools.opencode.version = versionOutput || "installed";
+      det.tools.opencode.path = installResult.binaryPath;
       await emit({
         event: "message",
-        content: `OpenCode built from source and installed to ${buildResult.binaryPath}`,
+        content: `OpenCode installed to ${installResult.binaryPath}`,
       });
     } else {
       await emit({
         event: "message",
-        content: "Could not install OpenCode automatically. Please install manually by cloning https://github.com/Steffen025/opencode.git, checking out feature/model-tiers, running bun install, and bun run ./packages/opencode/script/build.ts --single before copying the resulting binary into ~/.local/bin/opencode.",
+        content: "Could not install OpenCode automatically. Please install manually: curl -fsSL https://opencode.ai/install | bash",
       });
     }
   } else {

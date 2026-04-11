@@ -43,7 +43,7 @@ Terminal commands switch the active configuration:
 | `oc-zen` | Switch to Zen/multi-provider config |
 | `oc-which` | Show which config variant is currently active |
 
-**Key principle:** The Algorithm and all agents are **unaware** which config variant is active. They only see `opencode.json` and interact with it via the three-tier model system. This means model names change transparently without any code or documentation updates.
+**Key principle:** The Algorithm and all agents are **unaware** which config variant is active. They only see `opencode.json` and interact with it via agent-based routing. This means model names change transparently without any code or documentation updates.
 
 ---
 
@@ -62,29 +62,18 @@ Full schema reference: `https://opencode.ai/config.json`
   "username": "User",
   "permission": { ... },           // Tool permission rules
   "mode": { ... },                 // Mode-specific system prompts
-  "agent": { ... }                 // Agent model routing (three-tier)
+  "agent": { ... }                 // Agent model routing (one model per agent)
 }
 ```
 
-### Three-Tier Model System
+### Agent Model Configuration
 
-Every agent has three model tiers. The Algorithm selects tiers based on task complexity:
-
-| Tier | When | Cost Profile |
-|------|------|-------------|
-| `quick` | Simple tasks, batch operations, data transformation | Cheapest |
-| `standard` | Normal operations (default for most agents) | Balanced |
-| `advanced` | Complex reasoning, architecture decisions | Most expensive |
+Each agent has exactly one model defined in `opencode.json`. There are no runtime tier overrides — cost optimization is achieved by **matching the task to the right agent**:
 
 ```json
 "agent": {
   "Engineer": {
-    "model": "<default>",
-    "model_tiers": {
-      "quick":    { "model": "<fast-cheap-model>" },
-      "standard": { "model": "<balanced-model>" },
-      "advanced": { "model": "<powerful-expensive-model>" }
-    }
+    "model": "<configured-model>"
   }
 }
 ```
@@ -98,8 +87,8 @@ The Algorithm runs on the **most capable and most expensive model** in the syste
 
 1. **Delegate aggressively** — write clear instructions for cheaper agents to execute
 2. **Write instructions, not code** — for anything >100 lines of code or significant documents, spawn an Engineer/Writer agent
-3. **Use `quick` tier agents** for batch operations, simple edits, data transformations
-4. **Reserve `advanced` tier** for genuinely complex reasoning that `standard` cannot handle
+3. **Use lightweight agents** (`explore`, `Intern`) for batch operations, simple edits, data transformations
+4. **Use heavy agents** (`Architect`, `Algorithm`) for genuinely complex reasoning and architecture decisions
 
 The agents doing the actual work use significantly cheaper models. The Algorithm's value is in **orchestration and instruction quality**, not in doing the work itself.
 
@@ -182,7 +171,7 @@ review_guidelines = """
 **The `review_guidelines`** encode PAI-OpenCode architectural rules:
 - No `console.log` in plugin handlers (use `fileLog()`)
 - Handler pattern: new capability = new handler file + import in `pai-unified.ts`
-- No hardcoded model names (use `opencode.json` tier system)
+- No hardcoded model names (use `opencode.json` agent model configuration)
 - Biome formatting (tabs, 100 char width, double quotes)
 
 > [!TIP]

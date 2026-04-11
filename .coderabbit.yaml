@@ -32,7 +32,7 @@ reviews:
       instructions: |
         PAI Agent Definitions — Persona, traits, voice configuration.
         Verify:
-        - Frontmatter has required fields (name, description, model_tier mapping)
+        - Frontmatter has required fields (name, description, model)
         - First-person voice convention followed ("I can help" not "Jeremy can help")
         - Color codes in hex format for UI consistency
     - path: ".opencode/plugins/**"

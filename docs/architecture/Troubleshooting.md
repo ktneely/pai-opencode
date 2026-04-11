@@ -144,12 +144,8 @@ Wrong model being used for an agent:
 
 ```text
 □ Check opencode.json agent section
-    → cat opencode.json | grep -A 10 '"AgentName"'
-    → Verify model field matches expected
-
-□ Verify model_tier is being passed correctly in task tool call
-    → model_tier: "quick" | "standard" | "advanced"
-    → Only works if model_tiers block exists in opencode.json for that agent
+    → cat opencode.json | grep -A 5 '"AgentName"'
+    → Verify "model" field matches expected (one model per agent, no tiers)
 
 □ Is the model provider configured?
     → Anthropic models: require ANTHROPIC_API_KEY in environment
@@ -161,6 +157,23 @@ Wrong model being used for an agent:
     → This is the default for interactive sessions, not for agents
     → Agent routing always comes from "agent" section
 ```
+
+> [!NOTE]
+> **`model_tier` is no longer supported (removed in v3.0).** If you see `model_tier` in a Task tool call or `model_tiers` blocks in any `opencode.json`, those are legacy references and must be removed.
+>
+> **Migrating a legacy config:** run the script against the actual config file you use. For most installs that is the project-root `opencode.json` — the standard PAI install creates a symlink at `~/.opencode` that points into the repo, so `opencode.json` lives at the repo root:
+>
+> ```bash
+> # Recommended: point the script at the repo-root config
+> bun run PAI-Install/engine/migrate-legacy-config.ts ./opencode.json
+>
+> # Or, if your install keeps a separate ~/.opencode/opencode.json, point there:
+> bun run PAI-Install/engine/migrate-legacy-config.ts ~/.opencode/opencode.json
+> ```
+>
+> The script accepts any path. It creates a `.pre-v3.0.bak` backup before writing (and falls back to `.pre-v3.0.bak.1`, `.2`, ... on repeat runs so it never overwrites an earlier backup).
+>
+> Use agent-based routing instead: choose `explore`/`Intern` for lightweight work, `Architect`/`Algorithm` for heavy work.
 
 Full model table: `docs/architecture/Configuration.md`
 

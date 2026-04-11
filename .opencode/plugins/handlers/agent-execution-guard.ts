@@ -26,7 +26,6 @@ export async function validateAgentExecution(args: any): Promise<GuardResult> {
 	try {
 		const subagentType = args?.subagent_type || "unknown";
 		const prompt = args?.prompt || "";
-		const modelTier = args?.model_tier || "standard";
 
 		// Check 1: Explore agents for simple operations
 		// If the prompt suggests a simple grep/glob/read, warn
@@ -65,19 +64,7 @@ export async function validateAgentExecution(args: any): Promise<GuardResult> {
 			};
 		}
 
-		// Check 3: Quick tier for simple tasks
-		if (modelTier === "advanced" && prompt.length < 200) {
-			fileLog(
-				`[AgentGuard] Warning: Advanced tier for short prompt — consider quick/standard tier`,
-				"warn"
-			);
-			return {
-				allowed: true,
-				reason: "Advanced model tier may be overkill for this task size",
-			};
-		}
-
-		fileLog(`[AgentGuard] Agent execution OK: ${subagentType} (${modelTier})`, "debug");
+		fileLog(`[AgentGuard] Agent execution OK: ${subagentType}`, "debug");
 		return { allowed: true };
 	} catch (error) {
 		fileLogError("[AgentGuard] Validation failed", error);

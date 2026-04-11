@@ -82,8 +82,12 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
   });
 
   // 2b. OpenCode binary is installed in expected locations
+  // The vanilla opencode.ai installer writes to ~/.opencode/bin/opencode by
+  // default; we also check ~/.local/bin and the Homebrew paths as fallbacks.
   const opencodeLocations = [
+    join(homedir(), ".opencode", "bin", "opencode"),
     join(homedir(), ".local", "bin", "opencode"),
+    "/opt/homebrew/bin/opencode",
     "/usr/local/bin/opencode",
     join(paiDir, "tools", "opencode"),
   ];
@@ -93,7 +97,7 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
     passed: opencodeInstalled,
     detail: opencodeInstalled
       ? `Found at ${opencodeLocations.find((p) => existsSync(p))}`
-      : "Not found — install/build OpenCode and ensure binary is available",
+      : "Not found — install vanilla OpenCode: curl -fsSL https://opencode.ai/install | bash",
     critical: true,
   });
   if (settings) {

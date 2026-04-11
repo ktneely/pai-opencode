@@ -27,7 +27,7 @@ This guide helps you migrate an existing PAI 2.x installation from Claude Code t
   ```
 
 - **OpenCode** (AI coding assistant)
-   > **Note:** Model tiers and agent-specific routing may require a build from our fork (`Steffen025/opencode`, branch `feature/model-tiers`). The CLI installer handles this.
+   > Install the standard vanilla release from [opencode.ai](https://opencode.ai). No custom build or fork required.
 
 ---
 

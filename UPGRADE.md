@@ -10,7 +10,7 @@ PAI-OpenCode v3.0 introduces significant architectural improvements:
 
 - **Plugin Event Bus** — replaces hooks with event-driven architecture
 - **Hierarchical Skills** — Category/Skill structure (replaces flat)
-- **Model Tiers** — dynamic routing (quick/standard/advanced)
+- **Agent-based routing** — each agent has exactly one model configured in `opencode.json`
 - **Security Layer** — prompt injection protection
 - **Installer** — CLI-only installation flow
 - **DB Archiving** — automated session management
@@ -71,13 +71,14 @@ v3.0 uses **dual-file configuration**:
 
 | File | Purpose |
 |------|---------|
-| `~/.opencode/opencode.json` | OpenCode settings (model tiers, MCP) |
+| `~/.opencode/opencode.json` | OpenCode settings (agent models, MCP) |
 | `~/.opencode/settings.json` | PAI settings (identity, paths) |
 
 The migration script preserves your settings. Verify:
 
 ```bash
-cat ~/.opencode/opencode.json | grep model_tier
+# Confirm no legacy model_tiers / model_tier keys remain (should return nothing)
+grep -E 'model_tiers|model_tier' ~/.opencode/opencode.json
 cat ~/.opencode/settings.json | grep daidentity
 ```
 
@@ -207,7 +208,7 @@ cd ~/.opencode && git checkout v2.x-branch
 | Feature | Benefit |
 |---------|---------|
 | Plugin Event Bus | Cleaner code, better testability |
-| Model Tiers | 60x cost optimization (quick/standard/advanced) |
+| Agent-based routing | Cost optimization via appropriate agent selection |
 | Prompt Injection Guard | Security against adversarial attacks |
 | Installer (CLI-only) | Deterministic install flow (no GUI path) |
 | DB Archiving | Automated session cleanup |

@@ -20,33 +20,37 @@ PAI is model-agnostic. You can run the same skills, agents, and workflows on Cla
 
 ![Provider Grid](images/provider-grid.jpg)
 
-### Dynamic Agent Routing (v1.3.0)
+### Agent-Based Routing
 
-This is the key differentiator: **agents don't just have different models, they dynamically scale up and down based on task complexity**.
+This is the key differentiator: **each agent has its own configured model, and you route work by choosing the appropriate agent for the task**.
 
-| Agent | Default | Scales Down To | Scales Up To |
-|-------|---------|----------------|--------------|
-| **Architect** | Kimi K2.5 | GLM 4.7 (quick review) | Claude Opus 4.6 (complex architecture) |
-| **Engineer** | Kimi K2.5 | GLM 4.7 (batch edits) | Claude Sonnet 4.5 (complex debugging) |
-| **DeepResearcher** | GLM 4.7 | MiniMax (quick lookup) | Kimi K2.5 (deep analysis) |
-| **Writer** | Gemini 3 Flash | MiniMax (quick drafts) | Claude Sonnet 4.5 (premium copy) |
-| **Pentester** | Kimi K2.5 | GLM 4.7 (quick scan) | Claude Sonnet 4.5 (deep audit) |
+> [!NOTE]
+> **Source of truth:** actual model names per agent live in [`opencode.json`](../opencode.json) under the `agent` key, and vary per provider profile (Anthropic / Zen / OpenAI / Local). See [`docs/architecture/ToolReference.md`](architecture/ToolReference.md) for the runtime contract. The table below shows **one illustrative profile** — treat the "Example Model" column as a sample, not a contract.
+
+| Agent | Example Model | Best For |
+|-------|---------|---------|
+| **Architect** | Kimi K2.5 | System design, complex architecture |
+| **Engineer** | Kimi K2.5 | Implementation, debugging |
+| **explore** | GLM 4.7 | Fast file lookups, codebase search |
+| **Intern** | GLM 4.7 | Batch edits, simple mechanical work |
+| **DeepResearcher** | GLM 4.7 | Web research, information gathering |
+| **Writer** | Gemini Flash | Technical writing, documentation |
+| **Pentester** | Kimi K2.5 | Security audits |
 
 **How it works:**
-1. You (or the orchestrator) spawn an agent with a task
-2. The orchestrator assesses complexity: quick, standard, or advanced
-3. The agent routes to the appropriate model tier via `model_tier` parameter
-4. Same agent, different model — you pay exactly what the task requires
+1. Match the task to an appropriate agent
+2. Use lightweight agents (`explore`, `Intern`) for cheap work
+3. Use heavier agents (`Architect`, `Engineer`) for complex work
+4. Each agent's model is configured once in `opencode.json`
 
 **Example:**
 ```typescript
-// Simple batch work → cheapest model
-Task({ subagent_type: "Engineer", model_tier: "quick", prompt: "Replace X with Y in 20 files" })
-// Routes to GLM 4.7
+// Simple batch work → use a lightweight agent
+Task({ subagent_type: "explore", prompt: "Find all files referencing X" })
+Task({ subagent_type: "Intern", prompt: "Replace X with Y in 20 files" })
 
-// Complex debugging → premium model  
-Task({ subagent_type: "Engineer", model_tier: "advanced", prompt: "Debug this race condition" })
-// Routes to Claude Sonnet 4.5
+// Complex debugging → use the standard Engineer agent
+Task({ subagent_type: "Engineer", prompt: "Debug this race condition" })
 ```
 
 This is unique to OpenCode. Claude Code cannot do this — it's locked to Anthropic only.
@@ -254,16 +258,16 @@ OpenCode can run as an Agent Client Protocol server, allowing IDE integration (e
 
 ## Why OpenCode + PAI?
 
-OpenCode's **provider flexibility** + **plugin system** + **native infrastructure** + **dynamic agent routing** make it uniquely suited for PAI:
+OpenCode's **provider flexibility** + **plugin system** + **native infrastructure** + **agent-based routing** make it uniquely suited for PAI:
 
 1. **Freedom**: Run PAI skills on any model (Claude, GPT-4, local)
-2. **Dynamic Routing**: Each agent scales to the right model per task — Claude Code cannot do this
+2. **Agent-Based Routing**: Choose the right agent for each task — lightweight agents for simple work, heavier agents for complex work
 3. **Native Infrastructure**: LSP, Git snapshots, file watching — free, no extra code
 4. **Collaboration**: Share PAI-enhanced sessions with teammates
 5. **Extensibility**: 16+ event types for plugin hooks vs ~5 in Claude Code
 6. **Backward Compatibility**: Reads both `.claude/skills/` and `.opencode/skills/`
 
-OpenCode provides the **platform**. PAI provides the **personalization**. Dynamic tier routing provides the **cost optimization**.
+OpenCode provides the **platform**. PAI provides the **personalization**. Cost optimization via appropriate agent selection.
 
 ## Learn More
 

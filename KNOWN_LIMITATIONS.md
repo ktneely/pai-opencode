@@ -23,11 +23,6 @@ These features exist in Daniel Miessler's PAI but depend on Claude Code-specific
 - **OpenCode:** No TUI status line API. Phase progression is tracked via voice curls and Algorithm output.
 - **Status:** Investigating potential OpenCode TUI extensions
 
-### Model Tiers Require Dev Build
-- **Limitation:** `model_tiers` configuration in `opencode.json` requires OpenCode dev build (PR #11377)
-- **Stable releases:** Only support the default `model` field per agent (no dynamic tier routing)
-- **Workaround:** Use default models per agent, or build from source with the feature branch
-
 ---
 
 ## v2.0.0 Specific
@@ -75,7 +70,7 @@ These features exist in Daniel Miessler's PAI but depend on Claude Code-specific
 - [x] Memory structure with Wisdom Frames
 - [x] Skill routing and execution
 - [x] 3 Provider Presets (zen-paid, openrouter, local-ollama)
-- [x] Dynamic per-task model tier routing (dev build)
+- [x] Agent-based routing (each agent has one model in `opencode.json`)
 
 ### PAI v3.0 / Algorithm v1.8.0
 - [x] Full 7-phase Algorithm (OBSERVE → THINK → PLAN → BUILD → EXECUTE → VERIFY → LEARN)
