@@ -288,6 +288,13 @@ async function runMigration(): Promise<void> {
 		onProgress(10, "Dry-run: skipping backup step");
 	}
 
+	// Mirror the resolved backup path into `state.collected` so downstream
+	// steps (stepMigrate → migrateV2ToV3) read a consistent value whether
+	// or not dry-run is active. In dry-run mode this is a placeholder string
+	// that will never be written to disk, but it keeps state.collected
+	// internally consistent with the local `backupResult` variable.
+	state.collected.backupPath = backupResult.backupPath;
+
 	// Step 3: Migrate — stepMigrate already honors the dry-run flag internally.
 	const migrationResult = await stepMigrate(state, onProgress, isDryRun);
 

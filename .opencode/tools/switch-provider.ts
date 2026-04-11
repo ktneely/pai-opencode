@@ -243,6 +243,35 @@ export function applyProfile(profileName: string, multiResearch = false): {
     return preserved;
   };
 
+  // Helper: derive a canonical `model` string from a legacy agent entry
+  // that may only have `model_tiers` and no top-level `model`. Mirrors the
+  // fallback order used by `PAI-Install/engine/migrate-legacy-config.ts`
+  // (standard > top-level > quick > advanced). Returns undefined if no
+  // recognizable model can be extracted.
+  const deriveLegacyModel = (entry: Record<string, unknown>): string | undefined => {
+    if (typeof entry.model === "string" && entry.model.length > 0) {
+      return entry.model;
+    }
+    const tiers = entry.model_tiers as
+      | {
+          quick?: { model?: string } | string;
+          standard?: { model?: string } | string;
+          advanced?: { model?: string } | string;
+        }
+      | undefined;
+    if (!tiers) return undefined;
+
+    const readTier = (t: unknown): string | undefined => {
+      if (typeof t === "string") return t;
+      if (t && typeof t === "object" && typeof (t as { model?: unknown }).model === "string") {
+        return (t as { model: string }).model;
+      }
+      return undefined;
+    };
+
+    return readTier(tiers.standard) ?? readTier(tiers.quick) ?? readTier(tiers.advanced);
+  };
+
   // 1. Write the profile's agents, merging with any pre-existing config.
   for (const [agentName, agentConfig] of Object.entries(finalAgentModels)) {
     const existing = existingAgentBlock[agentName] ?? {};
@@ -255,9 +284,26 @@ export function applyProfile(profileName: string, multiResearch = false): {
   // 2. Preserve any user-defined agents that are NOT in the profile.
   // Without this step, a user who added a custom agent to opencode.json
   // would lose it every time they ran `switch-provider`.
+  //
+  // For legacy-only agents (those with `model_tiers` but no top-level
+  // `model`), derive a canonical model via deriveLegacyModel() so the
+  // resulting block is never left in a no-model state after stripping.
   for (const [agentName, existing] of Object.entries(existingAgentBlock)) {
     if (agentName in agentBlock) continue; // already written above
-    agentBlock[agentName] = stripLegacy(existing);
+    const stripped = stripLegacy(existing);
+    if (typeof stripped.model === "string" && stripped.model.length > 0) {
+      agentBlock[agentName] = stripped;
+      continue;
+    }
+    const derived = deriveLegacyModel(existing);
+    if (derived) {
+      agentBlock[agentName] = { ...stripped, model: derived };
+    } else {
+      // No model anywhere — preserve the entry verbatim (minus model_tiers)
+      // so the user's other fields (prompts, permissions) survive, and let
+      // opencode report a more targeted error when it tries to run the agent.
+      agentBlock[agentName] = stripped;
+    }
   }
 
   opencodeJson.agent = agentBlock;

@@ -19,8 +19,10 @@ import { fileLog } from "./file-logger";
  *
  * See: https://opencode.ai/docs/zen/ (and /pricing for the authoritative list)
  */
+export type PaiProvider = "zen" | "anthropic" | "openai" | "local";
+
 export interface PaiModelConfig {
-	model_provider: "zen" | "anthropic" | "openai";
+	model_provider: PaiProvider;
 	models: {
 		default: string;
 		validation: string;
@@ -34,13 +36,15 @@ export interface PaiModelConfig {
 	};
 }
 
+const VALID_PROVIDERS: readonly PaiProvider[] = ["zen", "anthropic", "openai", "local"] as const;
+
 /**
  * Provider Presets
  * Default model configurations for each provider
  *
  * ZEN models are FREE and don't require API keys!
  */
-const PROVIDER_PRESETS: Record<"zen" | "anthropic" | "openai", PaiModelConfig["models"]> = {
+const PROVIDER_PRESETS: Record<PaiProvider, PaiModelConfig["models"]> = {
 	zen: {
 		// Qwen 3.6 Plus Free as default — fast and capable for general coding
 		default: "opencode/qwen3.6-plus-free",
@@ -75,14 +79,26 @@ const PROVIDER_PRESETS: Record<"zen" | "anthropic" | "openai", PaiModelConfig["m
 			reviewer: "openai/gpt-5.1",
 		},
 	},
+	// Local Ollama preset. Mirrors the shipping .opencode/profiles/local.yaml
+	// but with sensible defaults — users are expected to override these to
+	// match the models they have actually pulled via `ollama pull`.
+	local: {
+		default: "ollama/qwen3.5:9b",
+		validation: "ollama/qwen3.5:9b",
+		agents: {
+			intern: "ollama/qwen3.5:2b",
+			architect: "ollama/qwen3.5:27b",
+			engineer: "ollama/qwen3.5:9b",
+			explorer: "ollama/qwen3.5:2b",
+			reviewer: "ollama/qwen3.5:27b",
+		},
+	},
 };
 
 /**
  * Get the provider preset configuration
  */
-export function getProviderPreset(
-	provider: "zen" | "anthropic" | "openai"
-): PaiModelConfig["models"] {
+export function getProviderPreset(provider: PaiProvider): PaiModelConfig["models"] {
 	return PROVIDER_PRESETS[provider];
 }
 
@@ -135,13 +151,70 @@ function readOpencodeConfig(): any | null {
 /**
  * Detect provider from model name
  * @example "anthropic/claude-sonnet-4-5" -> "anthropic"
- * @example "openai/gpt-4o" -> "openai"
+ * @example "openai/gpt-5.1" -> "openai"
+ * @example "opencode/kimi-k2.5" -> "zen"
+ * @example "ollama/qwen3.5:9b" -> "local"
  */
-function detectProviderFromModel(model: string): "zen" | "anthropic" | "openai" | null {
+function detectProviderFromModel(model: string): PaiProvider | null {
 	if (model.startsWith("anthropic/")) return "anthropic";
 	if (model.startsWith("openai/")) return "openai";
 	if (model.startsWith("opencode/")) return "zen";
+	// Local Ollama profile uses the `ollama/` prefix. Accept `local/` as an
+	// alias so either prefix can appear in `.opencode/profiles/local.yaml`
+	// or `opencode.json` without being misdetected as zen.
+	if (model.startsWith("ollama/") || model.startsWith("local/")) return "local";
 	return null;
+}
+
+/**
+ * Map from opencode.json `agent` keys (the runtime identifiers written by
+ * `switch-provider.ts`) to PAI's canonical preset keys. Multiple candidates
+ * are tried per key to be tolerant of case variations and historical names.
+ *
+ * When `getModelConfig()` merges opencode.json.agent into the preset, it
+ * walks this map and uses the first matching opencode agent's model.
+ */
+const AGENT_KEY_MAP: Record<keyof PaiModelConfig["models"]["agents"], readonly string[]> = {
+	intern: ["Intern", "intern"],
+	architect: ["Architect", "architect"],
+	engineer: ["Engineer", "engineer"],
+	explorer: ["explore", "Explore", "explorer"],
+	reviewer: ["QATester", "Reviewer", "reviewer"],
+};
+
+/**
+ * Read per-agent model overrides from opencode.json.agent and layer them
+ * on top of a preset's agents map. The opencode.json agent block is the
+ * authoritative source of runtime model routing (written by
+ * switch-provider.ts and hand-edited by users); PROVIDER_PRESETS is the
+ * fallback when a given PAI role is not present in opencode.json.
+ *
+ * Accepts both shapes written by switch-provider:
+ *   { "Engineer": { "model": "..." } }
+ *   { "Engineer": { "model": "...", "permission": {...} } }
+ */
+function mergeOpencodeAgents(
+	preset: PaiModelConfig["models"]["agents"],
+	opencodeAgents: Record<string, unknown> | undefined
+): PaiModelConfig["models"]["agents"] {
+	if (!opencodeAgents || typeof opencodeAgents !== "object") return { ...preset };
+
+	const resolved: PaiModelConfig["models"]["agents"] = { ...preset };
+
+	for (const paiKey of Object.keys(AGENT_KEY_MAP) as (keyof typeof AGENT_KEY_MAP)[]) {
+		for (const candidate of AGENT_KEY_MAP[paiKey]) {
+			const entry = opencodeAgents[candidate];
+			if (entry && typeof entry === "object" && "model" in entry) {
+				const model = (entry as { model?: unknown }).model;
+				if (typeof model === "string" && model.length > 0) {
+					resolved[paiKey] = model;
+					break; // first match wins
+				}
+			}
+		}
+	}
+
+	return resolved;
 }
 
 /**
@@ -151,39 +224,48 @@ function detectProviderFromModel(model: string): "zen" | "anthropic" | "openai" 
  * Supports multiple configuration formats:
  * 1. Explicit PAI config: { "pai": { "model_provider": "anthropic" } }
  * 2. OpenCode standard: { "model": "anthropic/claude-sonnet-4-5" } - auto-detects provider
- * 3. No config: falls back to "zen" free models
+ * 3. Per-agent overrides: { "agent": { "Engineer": { "model": "..." } } }
+ *    are layered on top of the selected preset.
+ * 4. No config: falls back to "zen" free models
  */
 export function getModelConfig(): PaiModelConfig {
 	const config = readOpencodeConfig();
+	const opencodeAgents = (config?.agent ?? undefined) as Record<string, unknown> | undefined;
 
 	// Check for PAI section in config (preferred method)
 	const paiConfig = config?.pai;
 
 	if (paiConfig?.model_provider) {
-		const provider = paiConfig.model_provider as "zen" | "anthropic" | "openai";
+		const raw = paiConfig.model_provider as string;
 
 		// Validate provider
-		if (!["zen", "anthropic", "openai"].includes(provider)) {
-			fileLog("model-config", `Invalid provider "${provider}", falling back to zen`);
+		if (!VALID_PROVIDERS.includes(raw as PaiProvider)) {
+			fileLog("model-config", `Invalid provider "${raw}", falling back to zen`);
 			return {
 				model_provider: "zen",
-				models: PROVIDER_PRESETS.zen,
+				models: {
+					...PROVIDER_PRESETS.zen,
+					agents: mergeOpencodeAgents(PROVIDER_PRESETS.zen.agents, opencodeAgents),
+				},
 			};
 		}
 
-		// If user provided custom models, merge with preset
+		const provider = raw as PaiProvider;
 		const preset = PROVIDER_PRESETS[provider];
 		const customModels = paiConfig.models || {};
 
+		// Precedence: explicit customModels > opencode.json.agent > preset.
+		const agentsFromOpencode = mergeOpencodeAgents(preset.agents, opencodeAgents);
+
 		const models: PaiModelConfig["models"] = {
-			default: customModels.default || preset.default,
+			default: customModels.default || config?.model || preset.default,
 			validation: customModels.validation || preset.validation,
 			agents: {
-				intern: customModels.agents?.intern || preset.agents.intern,
-				architect: customModels.agents?.architect || preset.agents.architect,
-				engineer: customModels.agents?.engineer || preset.agents.engineer,
-				explorer: customModels.agents?.explorer || preset.agents.explorer,
-				reviewer: customModels.agents?.reviewer || preset.agents.reviewer,
+				intern: customModels.agents?.intern || agentsFromOpencode.intern,
+				architect: customModels.agents?.architect || agentsFromOpencode.architect,
+				engineer: customModels.agents?.engineer || agentsFromOpencode.engineer,
+				explorer: customModels.agents?.explorer || agentsFromOpencode.explorer,
+				reviewer: customModels.agents?.reviewer || agentsFromOpencode.reviewer,
 			},
 		};
 
@@ -207,18 +289,26 @@ export function getModelConfig(): PaiModelConfig {
 				"model-config",
 				`Auto-detected provider "${detectedProvider}" from model field: ${config.model}`
 			);
+			const preset = PROVIDER_PRESETS[detectedProvider];
 			return {
 				model_provider: detectedProvider,
-				models: PROVIDER_PRESETS[detectedProvider],
+				models: {
+					default: config.model,
+					validation: preset.validation,
+					agents: mergeOpencodeAgents(preset.agents, opencodeAgents),
+				},
 			};
 		}
 	}
 
-	// Final fallback: zen defaults
+	// Final fallback: zen defaults, still merged with any opencode.json.agent overrides.
 	fileLog("model-config", "No PAI config or model field found, using zen defaults");
 	return {
 		model_provider: "zen",
-		models: PROVIDER_PRESETS.zen,
+		models: {
+			...PROVIDER_PRESETS.zen,
+			agents: mergeOpencodeAgents(PROVIDER_PRESETS.zen.agents, opencodeAgents),
+		},
 	};
 }
 
@@ -274,7 +364,7 @@ export function requiresApiKey(): boolean {
 /**
  * Get the current provider name
  */
-export function getProvider(): "zen" | "anthropic" | "openai" {
+export function getProvider(): PaiProvider {
 	const config = getModelConfig();
 	return config.model_provider;
 }
