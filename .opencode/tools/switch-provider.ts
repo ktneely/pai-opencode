@@ -234,17 +234,30 @@ export function applyProfile(profileName: string, multiResearch = false): {
 
   const agentBlock: Record<string, Record<string, unknown>> = {};
 
-  for (const [agentName, agentConfig] of Object.entries(finalAgentModels)) {
-    const existing = existingAgentBlock[agentName] ?? {};
-    // Drop any legacy `model_tiers` block if it survived a previous run —
-    // the migration script handles this but we're defensive here.
-    const { model_tiers: _drop, ...preserved } = existing as Record<string, unknown> & {
+  // Helper: strip legacy `model_tiers` from a preserved agent block, keep
+  // everything else (permission, prompts, tool restrictions, etc.).
+  const stripLegacy = (entry: Record<string, unknown>): Record<string, unknown> => {
+    const { model_tiers: _drop, ...preserved } = entry as Record<string, unknown> & {
       model_tiers?: unknown;
     };
+    return preserved;
+  };
+
+  // 1. Write the profile's agents, merging with any pre-existing config.
+  for (const [agentName, agentConfig] of Object.entries(finalAgentModels)) {
+    const existing = existingAgentBlock[agentName] ?? {};
     agentBlock[agentName] = {
-      ...preserved,
+      ...stripLegacy(existing),
       model: agentConfig.model,
     };
+  }
+
+  // 2. Preserve any user-defined agents that are NOT in the profile.
+  // Without this step, a user who added a custom agent to opencode.json
+  // would lose it every time they ran `switch-provider`.
+  for (const [agentName, existing] of Object.entries(existingAgentBlock)) {
+    if (agentName in agentBlock) continue; // already written above
+    agentBlock[agentName] = stripLegacy(existing);
   }
 
   opencodeJson.agent = agentBlock;

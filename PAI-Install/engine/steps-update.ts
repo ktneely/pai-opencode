@@ -171,13 +171,7 @@ export const UPDATE_UI_TEXT = {
 	
 	complete: {
 		title: "✅ Update Complete",
-		message: (version: string, binaryUpdated: boolean) => {
-			let msg = `Successfully updated to ${version}`;
-			if (binaryUpdated) {
-				msg += " with new OpenCode binary";
-			}
-			return msg;
-		},
+		message: (version: string): string => `Successfully updated to ${version}`,
 		button: "Launch PAI",
 	},
 };

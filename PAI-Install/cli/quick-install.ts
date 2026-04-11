@@ -345,7 +345,7 @@ async function runUpdate(): Promise<void> {
 	console.log(`Updating ${detection.currentVersion} → ${detection.targetVersion}`);
 	
 	// Step 2: Apply update
-	const result = await stepApplyUpdate(state, onProgress, false);
+	const result = await stepApplyUpdate(state, onProgress);
 	
 	if (!result.success) {
 		console.error("❌ Update failed:", result.error);

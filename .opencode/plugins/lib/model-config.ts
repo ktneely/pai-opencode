@@ -10,14 +10,14 @@ import { fileLog } from "./file-logger";
  * - "anthropic": Claude models (requires ANTHROPIC_API_KEY)
  * - "openai": GPT models (requires OPENAI_API_KEY)
  *
- * ZEN Free Models (as of Jan 2026):
- * - opencode/big-pickle (Free)
- * - opencode/grok-code (Free - Grok Code Fast 1)
- * - opencode/glm-4.7-free (Free - GLM 4.7)
- * - opencode/minimax-m2-1-free (Free - MiniMax M2.1)
+ * ZEN Free Models (as of April 2026):
+ * - opencode/big-pickle (Free — Zen flagship)
+ * - opencode/qwen3.6-plus-free (Free — Qwen 3.6 Plus)
+ * - opencode/nemotron-3-super-free (Free — Nemotron 3 Super)
+ * - opencode/minimax-m2.5-free (Free — MiniMax M2.5)
  * - opencode/gpt-5-nano (Free)
  *
- * See: https://opencode.ai/docs/zen/
+ * See: https://opencode.ai/docs/zen/ (and /pricing for the authoritative list)
  */
 export interface PaiModelConfig {
 	model_provider: "zen" | "anthropic" | "openai";
@@ -42,15 +42,15 @@ export interface PaiModelConfig {
  */
 const PROVIDER_PRESETS: Record<"zen" | "anthropic" | "openai", PaiModelConfig["models"]> = {
 	zen: {
-		// Using grok-code as default (fast, free, good for coding)
-		default: "opencode/grok-code",
-		validation: "opencode/grok-code",
+		// Qwen 3.6 Plus Free as default — fast and capable for general coding
+		default: "opencode/qwen3.6-plus-free",
+		validation: "opencode/qwen3.6-plus-free",
 		agents: {
-			intern: "opencode/gpt-5-nano", // Fast, lightweight
-			architect: "opencode/big-pickle", // Best reasoning
-			engineer: "opencode/grok-code", // Optimized for code
-			explorer: "opencode/grok-code", // Fast exploration
-			reviewer: "opencode/big-pickle", // Thorough review
+			intern: "opencode/gpt-5-nano", // Free, lightweight, fast
+			architect: "opencode/big-pickle", // Zen flagship, best reasoning
+			engineer: "opencode/qwen3.6-plus-free", // Capable code-focused free model
+			explorer: "opencode/gpt-5-nano", // Fast codebase exploration
+			reviewer: "opencode/big-pickle", // Thorough review, heaviest free model
 		},
 	},
 	anthropic: {
@@ -60,19 +60,19 @@ const PROVIDER_PRESETS: Record<"zen" | "anthropic" | "openai", PaiModelConfig["m
 			intern: "anthropic/claude-haiku-4-5",
 			architect: "anthropic/claude-sonnet-4-5",
 			engineer: "anthropic/claude-sonnet-4-5",
-			explorer: "anthropic/claude-sonnet-4-5",
-			reviewer: "anthropic/claude-opus-4-5",
+			explorer: "anthropic/claude-haiku-4-5",
+			reviewer: "anthropic/claude-opus-4-6",
 		},
 	},
 	openai: {
-		default: "openai/gpt-4o",
-		validation: "openai/gpt-4o",
+		default: "openai/gpt-5.1",
+		validation: "openai/gpt-5.1",
 		agents: {
-			intern: "openai/gpt-4o-mini",
-			architect: "openai/gpt-4o",
-			engineer: "openai/gpt-4o",
-			explorer: "openai/gpt-4o",
-			reviewer: "openai/gpt-4o",
+			intern: "openai/gpt-5.1-codex-mini",
+			architect: "openai/gpt-5.1",
+			engineer: "openai/gpt-5.1-codex",
+			explorer: "openai/gpt-5.1-codex-mini",
+			reviewer: "openai/gpt-5.1",
 		},
 	},
 };

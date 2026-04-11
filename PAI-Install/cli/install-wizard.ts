@@ -538,7 +538,7 @@ async function runUpdateWizard(): Promise<void> {
 		return;
 	}
 
-	const updateResult = await stepApplyUpdate(state, progress, false);
+	const updateResult = await stepApplyUpdate(state, progress);
 	if (!updateResult.success) {
 		printError(`Update failed: ${updateResult.error || "unknown error"}`);
 		process.exit(1);
