@@ -93,7 +93,7 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
     passed: opencodeInstalled,
     detail: opencodeInstalled
       ? `Found at ${opencodeLocations.find((p) => existsSync(p))}`
-      : "Not found — install/build OpenCode and ensure binary is available",
+      : "Not found — install vanilla OpenCode: curl -fsSL https://opencode.ai/install | bash",
     critical: true,
   });
   if (settings) {

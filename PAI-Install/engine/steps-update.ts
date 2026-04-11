@@ -7,7 +7,6 @@
 
 import type { InstallState } from "./types";
 import { updateV3, isUpdateNeeded } from "./update";
-import { buildOpenCodeBinary } from "./build-opencode";
 import type { UpdateResult } from "./update";
 
 // ═══════════════════════════════════════════════════════════
@@ -54,38 +53,23 @@ export async function stepDetectUpdate(
 export async function stepApplyUpdate(
 	state: InstallState,
 	onProgress: (percent: number, message: string) => void,
-	skipBinaryUpdate: boolean = false
+	_skipBinaryUpdate: boolean = false
 ): Promise<UpdateResult & { binaryUpdated: boolean }> {
 	onProgress(10, "Starting update...");
-	
-	// Apply core updates
+
+	// Apply core updates — OpenCode binary updates are handled by the vanilla
+	// opencode.ai installer, not by PAI. We only update PAI's own files.
 	const updateResult = await updateV3({
 		onProgress: async (message, percent) => {
-			const mappedPercent = 10 + (percent * 0.7);
+			const mappedPercent = 10 + (percent * 0.9);
 			onProgress(Math.round(mappedPercent), message);
 		},
-		skipBinaryUpdate: true, // We'll handle binary separately
+		skipBinaryUpdate: true,
 	});
-	
-	// Update binary if needed
-	let binaryUpdated = false;
-	if (!skipBinaryUpdate && updateResult.success) {
-		onProgress(80, "Checking OpenCode binary...");
-		
-		const buildResult = await buildOpenCodeBinary({
-			onProgress: (message, percent) => {
-				const mappedPercent = 80 + (percent * 0.15);
-				onProgress(Math.round(mappedPercent), message);
-			},
-			skipIfExists: true,
-		});
-		
-		binaryUpdated = !buildResult.skipped && buildResult.success;
-	}
-	
+
 	return {
 		...updateResult,
-		binaryUpdated,
+		binaryUpdated: false,
 	};
 }
 

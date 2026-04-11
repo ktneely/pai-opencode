@@ -144,12 +144,8 @@ Wrong model being used for an agent:
 
 ```text
 □ Check opencode.json agent section
-    → cat opencode.json | grep -A 10 '"AgentName"'
-    → Verify model field matches expected
-
-□ Verify model_tier is being passed correctly in task tool call
-    → model_tier: "quick" | "standard" | "advanced"
-    → Only works if model_tiers block exists in opencode.json for that agent
+    → cat opencode.json | grep -A 5 '"AgentName"'
+    → Verify "model" field matches expected (one model per agent, no tiers)
 
 □ Is the model provider configured?
     → Anthropic models: require ANTHROPIC_API_KEY in environment
@@ -161,6 +157,9 @@ Wrong model being used for an agent:
     → This is the default for interactive sessions, not for agents
     → Agent routing always comes from "agent" section
 ```
+
+> [!NOTE]
+> **model_tier is no longer supported (removed in v3.0).** If you see `model_tier` in a Task tool call or in `opencode.json` `model_tiers` blocks, those are legacy references and must be removed. Run `bun run PAI-Install/engine/migrate-legacy-config.ts ~/.opencode/opencode.json` to auto-convert legacy configs. Use agent-based routing instead: choose `explore`/`Intern` for lightweight work, `Architect`/`Algorithm` for heavy work.
 
 Full model table: `docs/architecture/Configuration.md`
 

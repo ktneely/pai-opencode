@@ -9,15 +9,14 @@ updated: 2026-03-12
 # PAI-OpenCode Agent Capability Matrix
 
 > [!NOTE]
-> **Source of truth for agent capabilities (WP-N8).** Model names are resolved from `opencode.json` — this document describes tiers and roles only.
+> **Source of truth for agent capabilities (WP-N8).** Model names are resolved from `opencode.json` — this document describes agent roles and cost profiles only.
 
 ---
 
 ## Overview
 
 PAI-OpenCode defines agent types in `opencode.json` under the `agent` key. Each agent type has:
-- A **default model tier** (quick / standard / advanced)
-- Optionally **model tier overrides** per task complexity
+- Exactly **one configured model** in `opencode.json` (no runtime tier overrides)
 - Inherits **session permissions** from `opencode.json` `permission` block
 
 ```text
@@ -60,86 +59,87 @@ graph TD
 
 ### Core Agents
 
-| Agent | Default Tier | Primary Role | Spawned By |
+| Agent | Cost Profile | Primary Role | Spawned By |
 |---|---|---|---|
-| `Algorithm` | advanced | Full PAI Algorithm runs, orchestration | User directly |
-| `Architect` | standard | System design, ADR writing | Algorithm |
-| `Engineer` | standard | Implementation, code writing, file edits | Algorithm |
-| `general` | standard | General purpose fallback | Algorithm |
-| `explore` | quick | Fast codebase exploration, file search | Algorithm |
-| `Intern` | quick | Simple batch tasks, data transformation | Algorithm |
-| `Writer` | standard | Documentation, content, changelogs | Algorithm |
-| `QATester` | standard | Quality assurance, test writing, review | Algorithm |
+| `Algorithm` | Heavy (orchestrator) | Full PAI Algorithm runs, orchestration | User directly |
+| `Architect` | Standard | System design, ADR writing | Algorithm |
+| `Engineer` | Standard | Implementation, code writing, file edits | Algorithm |
+| `general` | Standard | General purpose fallback | Algorithm |
+| `explore` | Lightweight | Fast codebase exploration, file search | Algorithm |
+| `Intern` | Lightweight | Simple batch tasks, data transformation | Algorithm |
+| `Writer` | Standard | Documentation, content, changelogs | Algorithm |
+| `QATester` | Standard | Quality assurance, test writing, review | Algorithm |
 
 ### Specialist Agents
 
-| Agent | Default Tier | Primary Role | Notes |
+| Agent | Cost Profile | Primary Role | Notes |
 |---|---|---|---|
-| `Pentester` | standard | Security testing, vulnerability analysis | Offensive security — use with purpose |
-| `Designer` | standard | UI/UX design, component specs | — |
-| `Artist` | standard | Visual content, image generation prompts | — |
+| `Pentester` | Standard | Security testing, vulnerability analysis | Offensive security — use with purpose |
+| `Designer` | Standard | UI/UX design, component specs | — |
+| `Artist` | Standard | Visual content, image generation prompts | — |
 
 ### Research Agents
 
-| Agent | Default Tier | Primary Role | Data Source |
+| Agent | Cost Profile | Primary Role | Data Source |
 |---|---|---|---|
-| `DeepResearcher` | standard | Research orchestration | Delegates to sub-researchers |
-| `GeminiResearcher` | configured in `opencode.json` | Multi-perspective research | Google Gemini (or equivalent) |
-| `GrokResearcher` | configured in `opencode.json` | Contrarian / fact-based analysis | xAI Grok (or equivalent) |
-| `PerplexityResearcher` | configured in `opencode.json` | Real-time web search | Perplexity (or equivalent) |
-| `CodexResearcher` | standard | Technical archaeology | Multiple models |
+| `DeepResearcher` | Standard | Research orchestration | Delegates to sub-researchers |
+| `GeminiResearcher` | Configured in `opencode.json` | Multi-perspective research | Google Gemini (or equivalent) |
+| `GrokResearcher` | Configured in `opencode.json` | Contrarian / fact-based analysis | xAI Grok (or equivalent) |
+| `PerplexityResearcher` | Configured in `opencode.json` | Real-time web search | Perplexity (or equivalent) |
+| `CodexResearcher` | Standard | Technical archaeology | Multiple models |
 
 > [!NOTE]
 > Research agents that use external providers (Gemini, Grok, Perplexity) require the corresponding API keys and provider configuration in `opencode.json`. The specific model IDs are set by the user — see `Configuration.md` for the agent model routing schema.
 
 ---
 
-## Model Tier Matrix
+## Agent-Based Routing
 
-All agents that support model tiers follow the same tier → model mapping defined in `opencode.json`.
+PAI-OpenCode uses **vanilla OpenCode**. Each agent has exactly one model configured in `opencode.json`. There is no runtime `model_tier` parameter. Cost optimization is achieved by selecting the appropriate agent for the task.
 
-| Tier | Cost | When to Use |
+| Cost Profile | Agents | When to Use |
 |---|---|---|
-| `quick` | Low | Simple lookups, search, batch ops, data transformation |
-| `standard` | Medium | Default — implementation, research, documentation |
-| `advanced` | High | Complex reasoning, critical architecture, orchestration |
+| Lightweight | `explore`, `Intern` | Simple lookups, search, batch ops, data transformation |
+| Standard | `Engineer`, `Architect`, `Writer`, `QATester`, researchers | Default — implementation, research, documentation |
+| Heavy | `Algorithm` | Full orchestration runs, critical reasoning |
 
-### Tier Override Usage
+### Agent Selection Usage
 
 ```typescript
-// Default tier (omit model_tier)
+// Use the default Engineer agent (configured model in opencode.json)
 Task({ subagent_type: "Engineer", prompt: "..." })
 
-// Quick tier — fast/cheap for simple work
-Task({ subagent_type: "Engineer", model_tier: "quick", prompt: "..." })
+// For cheap/simple work, use a lightweight agent
+Task({ subagent_type: "explore", prompt: "Find all files matching *.test.ts" })
+Task({ subagent_type: "Intern", prompt: "Replace all occurrences of X with Y across these files" })
 
-// Advanced tier — best quality when it matters
-Task({ subagent_type: "Architect", model_tier: "advanced", prompt: "..." })
+// For heavy reasoning, use a heavyweight agent
+Task({ subagent_type: "Architect", prompt: "Design the multi-region failover strategy" })
 ```
 
-### Per-Agent Tier Support
+### Per-Agent Model Configuration
 
-| Agent | quick | standard | advanced | Fixed (no override) |
-|---|---|---|---|---|
-| `Algorithm` | — | — | — | ✅ (always advanced) |
-| `Architect` | ✅ | ✅ | ✅ | — |
-| `Engineer` | ✅ | ✅ | ✅ | — |
-| `general` | ✅ | ✅ | ✅ | — |
-| `explore` | — | — | — | ✅ (always quick) |
-| `Intern` | ✅ | ✅ | ✅ (→ standard) | — |
-| `Writer` | ✅ | ✅ | ✅ | — |
-| `DeepResearcher` | ✅ | ✅ | ✅ | — |
-| `GeminiResearcher` | ✅ | ✅ | ✅ | — |
-| `GrokResearcher` | ✅ | ✅ | ✅ | — |
-| `PerplexityResearcher` | ✅ | ✅ | ✅ | — |
-| `CodexResearcher` | ✅ | ✅ | ✅ | — |
-| `QATester` | — | — | — | ✅ (always standard) |
-| `Pentester` | ✅ | ✅ | ✅ | — |
-| `Designer` | ✅ | ✅ | ✅ | — |
-| `Artist` | ✅ | ✅ | ✅ | — |
+| Agent | Cost Profile | Model Source |
+|---|---|---|
+| `Algorithm` | Heavy | `opencode.json` agent section |
+| `Architect` | Standard | `opencode.json` agent section |
+| `Engineer` | Standard | `opencode.json` agent section |
+| `general` | Standard | `opencode.json` agent section |
+| `explore` | Lightweight | `opencode.json` agent section |
+| `Intern` | Lightweight | `opencode.json` agent section |
+| `Writer` | Standard | `opencode.json` agent section |
+| `DeepResearcher` | Standard | `opencode.json` agent section |
+| `GeminiResearcher` | Configured | `opencode.json` agent section |
+| `GrokResearcher` | Configured | `opencode.json` agent section |
+| `PerplexityResearcher` | Configured | `opencode.json` agent section |
+| `CodexResearcher` | Standard | `opencode.json` agent section |
+| `QATester` | Standard | `opencode.json` agent section |
+| `Pentester` | Standard | `opencode.json` agent section |
+| `Designer` | Standard | `opencode.json` agent section |
+| `Artist` | Standard | `opencode.json` agent section |
 
 > [!IMPORTANT]
-> `Algorithm` and `explore` are **fixed** — no tier override applies. `QATester` has a single model with no tier override in the current config.
+> All agent models are set in `opencode.json`. Run `cat opencode.json | jq '.agent'` to see current model assignments. The `model_tier` runtime parameter is **no longer supported** — it was removed in v3.0.
 
 ---
 
@@ -226,19 +226,19 @@ jq '.mcp | keys' opencode.json
 
 ## Agent Selection Guide
 
-| Task | Recommended Agent | Tier | Rationale |
+| Task | Recommended Agent | Cost Profile | Rationale |
 |---|---|---|---|
-| Complex implementation, multi-file | `Engineer` | standard | Default implementation role |
-| Simple rename, search-replace | `Engineer` | quick | Doesn't need standard for mechanical ops |
-| Architecture decisions, ADR writing | `Architect` | standard | Design role |
-| Major redesign, critical ADR | `Architect` | advanced | Best quality for high-stakes decisions |
-| Find files, search codebase | `explore` | — (fixed quick) | 2-second rule — fastest option |
-| Documentation, README, changelogs | `Writer` | standard | Dedicated writing role |
-| Live web search, real-time facts | `PerplexityResearcher` | — (fixed Sonar) | Real-time web index |
-| Deep multi-angle research | `DeepResearcher` | standard | Orchestrates multiple sub-researchers |
-| Contrarian / fact-check | `GrokResearcher` | — (fixed Grok) | xAI contrarian analysis |
-| Security testing | `Pentester` | standard | Purpose-built security role |
-| Batch/trivial data tasks | `Intern` | quick | Lowest cost for mechanical work |
+| Complex implementation, multi-file | `Engineer` | Standard | Default implementation role |
+| Simple rename, search-replace | `explore` or `Intern` | Lightweight | Lightweight agents for mechanical ops |
+| Architecture decisions, ADR writing | `Architect` | Standard | Design role |
+| Major redesign, critical ADR | `Architect` | Standard (heavy model) | Best quality for high-stakes decisions |
+| Find files, search codebase | `explore` | Lightweight | 2-second rule — fastest option |
+| Documentation, README, changelogs | `Writer` | Standard | Dedicated writing role |
+| Live web search, real-time facts | `PerplexityResearcher` | Configured | Real-time web index |
+| Deep multi-angle research | `DeepResearcher` | Standard | Orchestrates multiple sub-researchers |
+| Contrarian / fact-check | `GrokResearcher` | Configured | xAI contrarian analysis |
+| Security testing | `Pentester` | Standard | Purpose-built security role |
+| Batch/trivial data tasks | `Intern` | Lightweight | Lowest cost for mechanical work |
 
 ---
 
@@ -269,11 +269,14 @@ jq '.mcp | keys' opencode.json
 
 ## Installer Preset Coverage (WP-N9)
 
-The installer generates `opencode.json` for 4 provider presets. Each preset configures the orchestrator and all agent model routes:
+The installer generates `opencode.json` for 4 provider presets. Each preset assigns a single model per agent based on provider capabilities and cost:
 
-| Preset | Orchestrator | Quick Tier | Standard Tier | Advanced Tier |
-|--------|-------------|------------|---------------|---------------|
-| **anthropic** | Claude Opus 4.6 | Claude Haiku 3.5 | Claude Sonnet 4.5 | Claude Opus 4.6 |
-| **zen** | Claude Opus 4.6 (via Zen) | GLM 4.7 | Kimi K2.5 | Claude Sonnet 4.5 |
-| **openrouter** | Kimi K2.5 (via OpenRouter) | GLM 4.7 | Kimi K2.5 | Claude Sonnet 4.5 |
-| **openai** | GPT-4o | GPT-4o-mini | GPT-4o | GPT-4.1 |
+| Preset | Orchestrator (Algorithm) | Lightweight Agents (explore, Intern) | Standard Agents (Engineer, Architect, etc.) |
+|--------|-------------------------|--------------------------------------|---------------------------------------------|
+| **anthropic** | Claude Opus 4.6 | Claude Haiku 3.5 | Claude Sonnet 4.5 |
+| **zen** | Claude Opus 4.6 (via Zen) | GLM 4.7 | Kimi K2.5 |
+| **openrouter** | Kimi K2.5 (via OpenRouter) | GLM 4.7 | Kimi K2.5 |
+| **openai** | GPT-4o | GPT-4o-mini | GPT-4o |
+
+> [!NOTE]
+> Exact per-agent model assignments are in the generated `opencode.json`. The table above shows representative groupings. Run `cat opencode.json | jq '.agent'` to see the full configuration for your active preset.

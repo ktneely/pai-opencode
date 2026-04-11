@@ -1,5 +1,11 @@
 # ADR-005: Configuration - Dual File Approach
 
+> [!warning] PARTIAL SUPERSESSION — Vanilla Migration (April 2026)
+> The `model_tiers` aspects of this ADR are **superseded by ADR-019 (Vanilla OpenCode Migration)**.
+> PAI-OpenCode no longer supports runtime `model_tier` selection. Each agent now has exactly one
+> configured model in `opencode.json`. The sections below that describe `model_tiers` are preserved
+> as historical record. See ADR-019 for the current configuration approach.
+
 **Status:** Accepted  
 **Date:** 2026-01-25  
 **Deciders:** Steffen (pai-opencode maintainer)  
@@ -103,11 +109,15 @@
 }
 ```
 
+*(Note: model_tiers removed in the April 2026 vanilla migration — see ADR-019.)*
+
 **Key Changes:**
 - `default_model` → `model` at provider level
 - New `agent` section with per-agent model routing
 - `model_tiers`: quick/standard/advanced for cost/quality optimization
 - 16 agents with individual routing configuration
+
+*(Note: model_tiers removed in the April 2026 vanilla migration — see ADR-019.)*
 
 ---
 

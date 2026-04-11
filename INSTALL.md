@@ -45,7 +45,7 @@ opencode
 
 The installer will:
 1. ✅ Check prerequisites (git, bun 1.3.9+)
-2. ✅ **Build OpenCode from dev source** using Bun's native compiler (required for model tiers feature)
+2. ✅ **Install vanilla OpenCode** from opencode.ai
 3. ✅ Ask you to choose a preset:
    - **Anthropic Max** (recommended) — Best quality, full PAI experience
    - **ZEN PAID** — Budget-friendly, paid tier models
@@ -182,35 +182,12 @@ After installation, see [ADVANCED-SETUP.md](docs/ADVANCED-SETUP.md) for:
 
 If you prefer to run the headless installer directly:
 
-**Step 1:** Build OpenCode from dev source (required for model tiers)
+**Step 1:** Install vanilla OpenCode from opencode.ai
 ```bash
-# Clone our OpenCode fork with model tier support
-cd /tmp
-git clone https://github.com/Steffen025/opencode.git opencode-build
-cd opencode-build
-
-# Checkout the model tiers branch
-git checkout feature/model-tiers
-
-# Install monorepo dependencies
-bun install
-
-# Build standalone binary for your platform
-bun run ./packages/opencode/script/build.ts --single
-
-# The binary is at: packages/opencode/dist/opencode-{os}-{arch}/bin/opencode
-# For example on macOS ARM: packages/opencode/dist/opencode-darwin-arm64/bin/opencode
-# For example on Linux x64: packages/opencode/dist/opencode-linux-x64/bin/opencode
-
-# Copy to your PATH
-cp packages/opencode/dist/opencode-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m | sed 's/x86_64/x64/' | sed 's/aarch64/arm64/')/bin/opencode ~/.local/bin/opencode
-chmod +x ~/.local/bin/opencode
-
-# Clean up
-cd ~ && rm -rf /tmp/opencode-build
+curl -fsSL https://opencode.ai/install | bash
 ```
 
-> **Note:** Bun 1.3.9+ is required for the native compiler. Run `bun --version` to check, `bun upgrade` to update.
+> **Note:** Bun 1.3.9+ is still required for PAI-OpenCode's own tooling. Run `bun --version` to check, `bun upgrade` to update.
 
 **Step 2:** Clone the PAI-OpenCode repository
 ```bash
@@ -319,23 +296,6 @@ Check debug log for errors:
 ```bash
 cat /tmp/pai-opencode-debug.log
 ```
-
-### Model Tiers Not Working
-
-**Error: `model_tiers is not a valid property`**
-
-This means you have the **stable OpenCode installed** instead of the PAI-OpenCode fork build. The dev build from our fork is required for model tier support.
-
-**Fix:**
-```bash
-# Remove the stable version
-rm $(which opencode)
-
-# Re-run the installer which builds from our fork using Bun's native compiler
-bash PAI-Install/install.sh --headless --preset anthropic --name "Your Name" --ai-name "Jeremy"
-```
-
-> **Note:** The installer can build OpenCode from our fork (`Steffen025/opencode`, branch `feature/model-tiers`) using `Bun.build({ compile: true })`. This produces a standalone native binary — no Go, no runtime dependencies.
 
 ---
 

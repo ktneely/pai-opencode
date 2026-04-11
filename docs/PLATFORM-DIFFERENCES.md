@@ -142,42 +142,41 @@ Task({ subagent_type: "Researcher", prompt: "..." })
 
 ---
 
-## 5. Model Tiers
+## 5. Model Configuration
 
 ### The Difference
 
 | Platform | Native Support | Implementation |
 |----------|----------------|----------------|
 | **Claude Code** | ❌ No | Would require custom routing |
-| **OpenCode** | ⚠️ Partial | Custom fork with `model_tier` parameter |
+| **OpenCode** | ✅ Full | Vanilla install from opencode.ai |
 
 ### The Solution
 
-**Use custom OpenCode binary with Model Tier support.**
+**PAI-OpenCode uses vanilla OpenCode.** Each agent has exactly one model configured in `opencode.json`. No custom fork or build is required.
 
 ```json
 // opencode.json
 {
   "agent": {
     "Engineer": {
-      "model": "opencode/kimi-k2.5",
-      "model_tiers": {
-        "quick": { "model": "opencode/glm-4.7" },
-        "standard": { "model": "opencode/kimi-k2.5" },
-        "advanced": { "model": "opencode/claude-sonnet-4.5" }
-      }
+      "model": "opencode/kimi-k2.5"
     }
   }
 }
 ```
 
+For cost optimization, use agent-based routing: assign lightweight agents (`explore`, `Intern`) to simple work; use heavier agents (`Architect`, `Engineer`) for complex work.
+
 ### Impact on PAI
 
-- **Custom binary required** for PAI-OpenCode v3.0
-- **60x cost savings** with tier routing
-- **Production-ready** (battle-tested for months)
+- **Standard vanilla install** — no custom binary required
+- **Cost optimization via appropriate agent selection**
+- **Single model per agent** configured in `opencode.json`
 
-**See:** [EPIC-v3.0-Synthesis-Architecture.md](epic/EPIC-v3.0-Synthesis-Architecture.md) Section "Model Tiers"
+> *(SUPERSEDED by ADR-019: PAI-OpenCode previously maintained a custom fork for runtime `model_tier` selection. Removed in v3.0 — see ADR-019 for rationale.)*
+
+**See:** [EPIC-v3.0-Synthesis-Architecture.md](epic/EPIC-v3.0-Synthesis-Architecture.md)
 
 ---
 
@@ -409,7 +408,7 @@ OpenCode watches the project directory using platform-native file system events 
 | **Hooks** | Subprocess | In-process plugins | Migrated to plugins (ADR-001) |
 | **Directory** | `.claude/` | `.opencode/` | Use `.opencode/` (ADR-002) |
 | **Agent Swarms** | ✅ Yes | ❌ No | Sequential Task tool |
-| **Model Tiers** | ❌ No | ⚠️ Custom fork | Custom binary |
+| **Model Config** | ❌ No | ✅ Vanilla install | One model per agent in `opencode.json` |
 | **Lazy Loading** | Static | Native skill tool | Use native discovery |
 | **Events** | ~5 events | 16+ events | Use native events (ADR-009) |
 | **Env Variables** | Shell-persistent | Fresh per call | Two-layer system (ADR-010) |
@@ -431,7 +430,7 @@ When porting PAI features to OpenCode:
 - [x] Migrate hooks to plugin event handlers
 - [x] Update paths from `.claude/` to `.opencode/`
 - [x] Use Task tool instead of Agent Teams
-- [x] Configure Model Tiers in `opencode.json`
+- [x] Configure agent models in `opencode.json` (one model per agent)
 - [x] Use native skill tool for lazy loading
 - [x] Map hooks to all 16 OpenCode events
 - [x] Add `shell.env` hook for bash context injection

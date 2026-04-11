@@ -23,89 +23,37 @@ description: Local Ollama models - offline/private, customize to your installed 
 # Default model for the main opencode.json "model" field
 default_model: ollama/qwen2.5-coder:7b
 
-# Agent routing with model tiers (CUSTOMIZE THESE!)
+# Agent routing — one model per agent (CUSTOMIZE THESE!)
 agents:
   Algorithm:
     model: ollama/qwen2.5-coder:32b
   Architect:
     model: ollama/qwen2.5-coder:7b
-    tiers:
-      quick: ollama/qwen2.5-coder:1.5b
-      standard: ollama/qwen2.5-coder:7b
-      advanced: ollama/qwen2.5-coder:32b
   Engineer:
     model: ollama/qwen2.5-coder:7b
-    tiers:
-      quick: ollama/qwen2.5-coder:1.5b
-      standard: ollama/qwen2.5-coder:7b
-      advanced: ollama/qwen2.5-coder:32b
   general:
     model: ollama/qwen2.5-coder:7b
-    tiers:
-      quick: ollama/qwen2.5-coder:1.5b
-      standard: ollama/qwen2.5-coder:7b
-      advanced: ollama/qwen2.5-coder:32b
   explore:
     model: ollama/qwen2.5-coder:1.5b
   Intern:
     model: ollama/qwen2.5-coder:1.5b
-    tiers:
-      quick: ollama/qwen2.5-coder:1.5b
-      standard: ollama/qwen2.5-coder:1.5b
-      advanced: ollama/qwen2.5-coder:7b
   Writer:
     model: ollama/qwen2.5-coder:7b
-    tiers:
-      quick: ollama/qwen2.5-coder:1.5b
-      standard: ollama/qwen2.5-coder:7b
-      advanced: ollama/qwen2.5-coder:32b
   DeepResearcher:
     model: ollama/qwen2.5-coder:7b
-    tiers:
-      quick: ollama/qwen2.5-coder:1.5b
-      standard: ollama/qwen2.5-coder:7b
-      advanced: ollama/qwen2.5-coder:32b
   GeminiResearcher:
     model: ollama/qwen2.5-coder:7b
-    tiers:
-      quick: ollama/qwen2.5-coder:1.5b
-      standard: ollama/qwen2.5-coder:7b
-      advanced: ollama/qwen2.5-coder:32b
   GrokResearcher:
     model: ollama/qwen2.5-coder:7b
-    tiers:
-      quick: ollama/qwen2.5-coder:1.5b
-      standard: ollama/qwen2.5-coder:7b
-      advanced: ollama/qwen2.5-coder:32b
   PerplexityResearcher:
     model: ollama/qwen2.5-coder:7b
-    tiers:
-      quick: ollama/qwen2.5-coder:1.5b
-      standard: ollama/qwen2.5-coder:7b
-      advanced: ollama/qwen2.5-coder:32b
   CodexResearcher:
     model: ollama/qwen2.5-coder:7b
-    tiers:
-      quick: ollama/qwen2.5-coder:1.5b
-      standard: ollama/qwen2.5-coder:7b
-      advanced: ollama/qwen2.5-coder:32b
   QATester:
     model: ollama/qwen2.5-coder:7b
   Pentester:
     model: ollama/qwen2.5-coder:7b
-    tiers:
-      quick: ollama/qwen2.5-coder:1.5b
-      standard: ollama/qwen2.5-coder:7b
-      advanced: ollama/qwen2.5-coder:32b
   Designer:
     model: ollama/qwen2.5-coder:7b
-    tiers:
-      quick: ollama/qwen2.5-coder:1.5b
-      standard: ollama/qwen2.5-coder:7b
-      advanced: ollama/qwen2.5-coder:32b
   Artist:
     model: ollama/qwen2.5-coder:7b
-    tiers:
-      quick: ollama/qwen2.5-coder:1.5b
-      standard: ollama/qwen2.5-coder:7b
-      advanced: ollama/qwen2.5-coder:32b

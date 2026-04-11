@@ -93,12 +93,6 @@ export interface InstallState {
     // v3.0 properties
     provider?: string;
     apiKey?: string;
-    modelTier?: "quick" | "standard" | "advanced";
-    models?: {
-      quick: string;
-      standard: string;
-      advanced: string;
-    };
     voiceEnabled?: boolean;
     voiceProvider?: "elevenlabs" | "google" | "macos" | "none";
     voiceId?: string;

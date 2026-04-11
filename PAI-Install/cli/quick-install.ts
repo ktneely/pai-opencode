@@ -19,7 +19,7 @@ import { createFreshState } from "../engine/state";
 import { stepPrerequisites, stepBuildOpenCode, stepProviderConfig, stepIdentity, stepVoice, stepInstallPAI } from "../engine/steps-fresh";
 import { PROVIDER_MODELS } from "../engine/provider-models";
 import type { ProviderName } from "../engine/provider-models";
-import { stepDetectMigration, stepCreateBackup, stepMigrate, stepBinaryUpdate, stepMigrationDone } from "../engine/steps-migrate";
+import { stepDetectMigration, stepCreateBackup, stepMigrate, stepMigrationDone } from "../engine/steps-migrate";
 import { stepDetectUpdate, stepApplyUpdate, stepUpdateDone } from "../engine/steps-update";
 
 // ═══════════════════════════════════════════════════════════
@@ -87,7 +87,7 @@ FRESH INSTALL OPTIONS:
   --timezone <tz>      Timezone (default: auto-detect)
   --api-key <key>      API key for selected provider
   --elevenlabs-key <k> ElevenLabs API key (optional)
-  --skip-build         Skip building OpenCode binary
+  --skip-build         Deprecated (PAI no longer builds OpenCode) — ignored
   --no-voice           Skip voice setup
 
 MIGRATION OPTIONS:
@@ -144,23 +144,16 @@ async function runFreshInstall(): Promise<void> {
 		process.exit(1);
 	}
 	
-	// Step 3: Build OpenCode
-	if (!values["skip-build"]) {
-		onProgress(10, "Building OpenCode binary...");
-		const buildResult = await stepBuildOpenCode(
-			state,
-			onProgress,
-			false
-		);
-		
-		if (!buildResult.success) {
-			console.error("❌ Build failed:", buildResult.error);
-			console.error("Use --skip-build to use standard OpenCode");
-			process.exit(1);
-		}
-	} else {
-		onProgress(70, "Skipped OpenCode build");
+	// Step 3: OpenCode install check
+	//
+	// PAI no longer builds OpenCode from source. Vanilla OpenCode is installed
+	// via the official opencode.ai installer. stepBuildOpenCode is a no-op
+	// retained for step numbering compatibility.
+	if (values["skip-build"]) {
+		console.warn("⚠ --skip-build is deprecated (PAI now uses vanilla OpenCode). Ignoring.");
 	}
+	await stepBuildOpenCode(state, onProgress, true);
+	onProgress(70, "OpenCode install managed by vanilla opencode.ai installer");
 	
   // Step 4: Provider Config
   onProgress(75, "Configuring provider...");
@@ -297,13 +290,12 @@ async function runMigration(): Promise<void> {
 	}
 	
 	console.log(`✅ Migrated ${migrationResult.migrated.length} skills`);
-	
-	// Step 4: Binary update (optional)
+
+	// Step 4: OpenCode install is handled by vanilla opencode.ai installer
 	if (!values["dry-run"]) {
-		onProgress(70, "Building OpenCode binary...");
-		await stepBinaryUpdate(state, onProgress, false);
+		onProgress(70, "OpenCode install managed by vanilla opencode.ai installer");
 	}
-	
+
 	// Step 5: Done
 	await stepMigrationDone(state, migrationResult, onProgress);
 	

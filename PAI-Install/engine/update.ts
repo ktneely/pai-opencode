@@ -184,21 +184,10 @@ async function updateCoreFiles(
 async function updateBinaryIfNeeded(
 	onProgress?: (message: string) => void
 ): Promise<boolean> {
-	onProgress?.("Checking OpenCode binary...");
-	
-	// Check if custom binary exists
-	const customBinPath = join(homedir(), ".opencode", "tools", "opencode");
-	
-	if (!existsSync(customBinPath)) {
-		onProgress?.("No custom binary found — skipping binary update");
-		return false;
-	}
-	
-	// In a real implementation, this would check if the binary needs
-	// to be rebuilt (e.g., new commit in feature/model-tiers branch)
-	
-	onProgress?.("Binary up to date");
-	return false; // No update needed
+	// Vanilla OpenCode binary updates are handled by the official
+	// opencode.ai installer or the user's package manager — not by PAI.
+	onProgress?.("OpenCode binary managed by vanilla installer — skipping");
+	return false;
 }
 
 // ═══════════════════════════════════════════════════════════

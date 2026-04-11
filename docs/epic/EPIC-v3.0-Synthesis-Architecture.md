@@ -14,7 +14,7 @@
 
 **PAI-OpenCode v3.0** is a **community contribution**, not a commercial product:
 - ✅ Preserves PAI's core (Algorithm, Skills, Euphoric Surprise)
-- ✅ Leverages OpenCode-native features (Model Tiers, Lazy Loading, MCP, Events)
+- ✅ Leverages OpenCode-native features (Lazy Loading, MCP, Events)
 - ✅ Stays focused: "as little as necessary"
 - ❌ Does NOT include: Voice-to-Voice, OMI Ambient AI, Product UX (see **Open Arc**)
 
@@ -41,67 +41,61 @@
 
 ---
 
-### 🔥 CRITICAL: Model Tiers ALREADY IN PRODUCTION
+### Agent Model Configuration (Vanilla OpenCode)
 
-**Status:** ✅ Battle-tested in daily use  
+**Status:** ✅ Running on vanilla OpenCode  
 **Location:** `/Users/steffen/.opencode/opencode.json`  
-**Fork:** `anomalyco/opencode` (feature/model-tiers branch)  
-**Commits:** 4 commits, including `8ae919675`  
-**Binary:** Custom build running in production
+**OpenCode:** vanilla opencode.ai, installed via the official installer  
+
+> PAI-OpenCode previously maintained a custom OpenCode fork to support runtime model tier selection (`model_tier: "quick" | "standard" | "advanced"`). This feature has been removed in v3.0 for two reasons:
+> 1. **Maintenance cost:** The fork drifted 980 commits behind upstream, blocking security and feature updates
+> 2. **Unclear value:** The token-saving benefit was smaller than the maintenance burden, and the underlying upstream PR was never merged
+>
+> PAI-OpenCode now uses **vanilla OpenCode**. Each agent has exactly one configured model in `opencode.json`. For cost optimization, match the task to an appropriate agent (use `explore` or `Intern` for lightweight work; use `Architect` or `Algorithm` for heavy work).
 
 **What we have TODAY:**
-- ✅ 15+ agents with model_tiers configured
-- ✅ quick/standard/advanced tiers per agent
-- ✅ Algorithm-controlled tier selection
-- ✅ Production use for months
+- ✅ 16 agents, each with a single configured model in opencode.json
+- ✅ Agent-based routing (match task complexity to the right agent)
+- ✅ Standard vanilla install — no custom build required
 
-**Agent Model Tier Matrix (Production):**
+**Agent Model Matrix (Production):**
 ```
-┌─────────────────┬──────────────────┬──────────────────┬──────────────────┐
-│ Agent           │ Quick            │ Standard         │ Advanced         │
-├─────────────────┼──────────────────┼──────────────────┼──────────────────┤
-│ Engineer        │ Qwen3 Coder      │ Kimi K2.5        │ GPT-5.3 Codex    │
-│ Architect       │ Kimi K2.5        │ Kimi K2.5        │ Claude Sonnet 4.6│
-│ Pentester       │ Qwen3 Coder      │ Kimi K2.5        │ Claude Sonnet 4.6│
-│ Intern          │ MiniMax M2.1     │ Kimi K2          │ Kimi K2.5        │
-│ QATester        │ Qwen3 Coder      │ Kimi K2.5        │ Kimi K2.5        │
-│ Designer        │ Gemini 3 Flash   │ Gemini 3 Flash   │ Gemini 3 Pro     │
-│ Artist          │ Gemini 3 Flash   │ Gemini 3 Flash   │ Gemini 3 Pro     │
-│ Writer          │ Gemini 3 Flash   │ Gemini 3 Flash   │ Gemini 3 Pro     │
-│ Perplexity      │ Sonar            │ Sonar Pro        │ Sonar Deep       │
-│ Grok            │ Grok-4-1-Fast    │ Grok-4-1-Fast    │ Grok-4-1         │
-│ ...             │ ...              │ ...              │ ...              │
-└─────────────────┴──────────────────┴──────────────────┴──────────────────┘
+┌─────────────────┬──────────────────────────────────────┐
+│ Agent           │ Configured Model                     │
+├─────────────────┼──────────────────────────────────────┤
+│ Engineer        │ Kimi K2.5                            │
+│ Architect       │ Claude Sonnet 4.6                    │
+│ Pentester       │ Kimi K2.5                            │
+│ Intern          │ MiniMax M2.1                         │
+│ QATester        │ Kimi K2.5                            │
+│ Designer        │ Gemini 3 Flash                       │
+│ Artist          │ Gemini 3 Flash                       │
+│ Writer          │ Gemini 3 Flash                       │
+│ Perplexity      │ Sonar Pro                            │
+│ Grok            │ Grok-4-1-Fast                        │
+│ ...             │ ...                                  │
+└─────────────────┴──────────────────────────────────────┘
 ```
 
 **Usage in PAI Algorithm:**
 ```typescript
-// Algorithm analyzes complexity
-const complexity = analyzeTask(task);
-const tier = complexity > 0.7 ? "advanced" : 
-             complexity > 0.4 ? "standard" : "quick";
-
-// Task with automatic model selection
+// For complex tasks, use a heavy agent
 Task({
-  subagent_type: "Engineer",
-  model_tier: tier,  // ← Proprietary feature
-  prompt: "Implement authentication system"
+  subagent_type: "Architect",
+  prompt: "Design authentication system"
+});
+
+// For simple tasks, use a lightweight agent
+Task({
+  subagent_type: "Intern",
+  prompt: "Rename variable across files"
 });
 ```
 
-**Strategic Note:**
-> "local dev only, not for upstream"
-
-This is our **competitive advantage**. While others wait for OpenCode to implement model tiers natively, we have:
-- ✅ Working solution TODAY
-- ✅ Cost optimization (60x savings)
-- ✅ Quality optimization (right model for right task)
-- ✅ Full control over routing logic
-
 **Implication for v3.0:**
-- PAI-OpenCode 3.0 = Custom OpenCode binary + PAI Core
-- Users get Model Tiers out of the box
-- This is a **premium feature** not available in standard OpenCode
+- PAI-OpenCode 3.0 = vanilla OpenCode + PAI Core
+- Users install via standard opencode.ai installer
+- Cost optimization via appropriate agent selection
 
 ---
 
@@ -111,7 +105,7 @@ Based on [opencode.ai/docs](https://opencode.ai/docs/) and GitHub research:
 
 | Feature | Current Usage | Potential | Implementation |
 |---------|--------------|-----------|----------------|
-| **Dynamic Model Tiers** | ✅ **IMPLEMENTED** in OpenCode Fork | 🚀 **READY** | `Task({ model_tier: "quick" })` per agent task |
+| **Agent-Based Routing** | ✅ **IMPLEMENTED** via vanilla opencode.json | 🚀 **READY** | Each agent has one model; match agent to task complexity | ~~REMOVED: Dynamic Model Tiers (April 2026 vanilla migration)~~ |
 | **Lazy Loading** | ⚠️ Native in OpenCode, not used in PAI | 🚀 HIGH | Native skill discovery + on-demand loading |
 | **Native Skill System** | ⚠️ Partial | ✅ Native since v1.0.190 | `skill` tool with pattern-based permissions |
 | **MCP Server Ecosystem** | ✅ Used | 🚀 HIGH | Dynamic skill discovery via MCP |
@@ -135,7 +129,7 @@ Based on [opencode.ai/docs](https://opencode.ai/docs/) and GitHub research:
 | Topic | Finding | Impact on PAI-OpenCode 3.0 |
 |-------|---------|---------------------------|
 | **Lazy Loading** | ✅ Native via `skill` tool. Skills discovered in `.opencode/skills/`, loaded on-demand | Remove static 233KB context, use native lazy loading |
-| **Model Tiers** | ⚠️ DeepWiki says "not implemented" — BUT WE HAVE IT IN FORK | Use custom binary with Model Tier support |
+| **Agent Routing** | ✅ Each agent has one model in `opencode.json` | Use agent-based routing — match agent to task complexity |
 | **Agent System** | ✅ Primary (Build/Plan) + Subagents (General/Explore). Tab switching, @ mentioning | Align our agent definitions with OpenCode's system |
 | **Plugin Events** | ✅ 20+ events (session, tool, file, etc.). Event-driven architecture | Migrate PAI Hooks to native OpenCode events |
 | **MCP Integration** | ✅ Centralized in `packages/opencode/src/mcp/`. Config in `opencode.json` | Skills as MCP servers is viable |
@@ -278,7 +272,7 @@ Based on [opencode.ai/docs](https://opencode.ai/docs/) and GitHub research:
 ### Core Principles
 
 1. **Algorithm-First** — The 7-phase ISC system is PAI's DNA. Preserve at all costs.
-2. **OpenCode-Native** — Use what's there: Model tiers, lazy loading, events, MCP.
+2. **OpenCode-Native** — Use what's there: lazy loading, events, MCP, agent-based routing.
 3. **MCP-Extensible** — Skills as MCP servers, dynamic discovery.
 4. **Minimal Context** — Only load what's needed (Algorithm + TELOS = ~20KB, not 233KB).
 5. **Community Focus** — "As little as necessary" — resist scope creep into product territory.
@@ -296,7 +290,7 @@ Based on [opencode.ai/docs](https://opencode.ai/docs/) and GitHub research:
 │   ├── Core/                     # Minimal context (~20KB)
 │   │   ├── Algorithm.md          # 7 phases, ISC system
 │   │   ├── Identity.md          # TELOS + Identity
-│   │   └── Routing.md           # Model tier routing logic
+│   │   └── Routing.md           # Agent routing guidance
 │   └── SYSTEM/                  # System documentation (lazy loaded)
 │       ├── Architecture/
 │       ├── Memory/
@@ -330,31 +324,21 @@ Based on [opencode.ai/docs](https://opencode.ai/docs/) and GitHub research:
 
 ## 🔥 Key Innovations for v3.0
 
-### 1. Dynamic Model Tier Routing ✅ ALREADY WORKING
+### 1. Agent-Based Routing ✅ VANILLA OPENCODE
 
-**Status:** Implemented and battle-tested in production  
+**Status:** Running on vanilla OpenCode — no custom binary required  
 **Location:** `~/.opencode/opencode.json` (agent configuration)  
-**Fork:** Custom OpenCode binary with Model Tier support
+**OpenCode:** Standard vanilla install via opencode.ai
 
 **How it works:**
 ```json
 {
   "agent": {
     "Engineer": {
-      "model": "opencode/qwen3-coder",
-      "model_tiers": {
-        "quick": { "model": "opencode/qwen3-coder" },
-        "standard": { "model": "opencode/kimi-k2.5" },
-        "advanced": { "model": "opencode/gpt-5.3-codex" }
-      }
+      "model": "opencode/kimi-k2.5"
     },
     "Architect": {
-      "model": "opencode/kimi-k2.5",
-      "model_tiers": {
-        "quick": { "model": "opencode/kimi-k2.5" },
-        "standard": { "model": "opencode/kimi-k2.5" },
-        "advanced": { "model": "opencode/claude-sonnet-4-6" }
-      }
+      "model": "opencode/claude-sonnet-4-6"
     }
   }
 }
@@ -362,28 +346,36 @@ Based on [opencode.ai/docs](https://opencode.ai/docs/) and GitHub research:
 
 **Algorithm Integration:**
 ```typescript
-// PAI Algorithm decides tier based on task complexity
-const tier = analyzeComplexity(task) > 0.7 ? "advanced" : 
-             analyzeComplexity(task) > 0.4 ? "standard" : "quick";
+// For complex tasks, use a heavy agent
+Task({ 
+  subagent_type: "Architect",
+  prompt: "Design the authentication system" 
+});
 
+// For lightweight work, use a cheap agent
+Task({ 
+  subagent_type: "Intern",
+  prompt: "Rename variable across files" 
+});
+
+// Default Engineer agent uses its configured model
 Task({ 
   subagent_type: "Engineer", 
-  model_tier: tier,  // ← CUSTOM FORK FEATURE
   prompt: "..." 
 });
 ```
 
-**Production Agents with Tiers:**
-| Agent | Quick | Standard | Advanced |
-|-------|-------|----------|----------|
-| **Engineer** | Qwen3 Coder | Kimi K2.5 | GPT-5.3 Codex |
-| **Architect** | Kimi K2.5 | Kimi K2.5 | Claude Sonnet 4.6 |
-| **Pentester** | Qwen3 Coder | Kimi K2.5 | Claude Sonnet 4.6 |
-| **Researcher** | Kimi K2 | Kimi K2.5 | Claude Sonnet 4.6 |
-| **Designer** | Gemini 3 Flash | Gemini 3 Flash | Gemini 3 Pro |
+**Production Agent Models:**
+| Agent | Configured Model | Use Case |
+|-------|-----------------|----------|
+| **Engineer** | Kimi K2.5 | Standard implementation work |
+| **Architect** | Claude Sonnet 4.6 | Complex design decisions |
+| **Pentester** | Kimi K2.5 | Security testing |
+| **Intern** | MiniMax M2.1 | Lightweight / cheap tasks |
+| **Designer** | Gemini 3 Flash | UI/UX work |
 
-**Benefit:** 60x cost savings ($1.25/M vs $75/M) with same quality.  
-**Requirement:** PAI-OpenCode v3.0 requires custom OpenCode binary.
+**Benefit:** Cost optimization via appropriate agent selection.  
+**Requirement:** PAI-OpenCode v3.0 uses standard vanilla OpenCode install.
 
 ---
 
@@ -503,33 +495,33 @@ interface VoiceConfig {
 
 ---
 
-### WP1: Algorithm v3.7.0 Core + Model Tier Integration
+### WP1: Algorithm v3.7.0 Core + Agent Routing
 **Status:** ✅ KOMPLETT  
 **Effort:** 8-12 hours  
 **Dependencies:** None  
 **Branch:** `v3.0-wp1-algorithm`
 
-**Goal:** Port Algorithm v3.7.0 and integrate with EXISTING Model Tier system
+**Goal:** Port Algorithm v3.7.0 and align with vanilla OpenCode agent-based routing
 
 **Tasks:**
 1. Port `Algorithm/v3.7.0.md` from PAI v4.0.3 → `.opencode/PAI/Algorithm/v3.7.0.md`
 2. Create minimal bootstrap context (Algorithm + TELOS only = ~20KB)
-3. **Integrate Model Tier routing into Algorithm logic**
-   - Algorithm decides tier: `complexity > 0.7 ? "advanced" : complexity > 0.4 ? "standard" : "quick"`
-   - Pass tier to Task tool: `Task({ model_tier: tier })`
-   - Leverage EXISTING `~/.opencode/opencode.json` config
+3. **Align Algorithm agent selection guidance**
+   - Document agent-based routing: use appropriate agent for task complexity
+   - Heavy agents (Architect, Algorithm) for complex work; lightweight agents (Intern, explore) for simple work
+   - Reference `~/.opencode/opencode.json` for model configuration
 4. Port core PAI system files (modular structure)
 
-**Key Insight:** Don't build Model Tiers - they're already production-ready in custom binary!
+**Key Insight:** Vanilla OpenCode with per-agent model config is the clean, maintainable approach!
 
 **Output:** 
 - `.opencode/PAI/Algorithm/v3.7.0.md`
 - `.opencode/PAI/Core/` (minimal bootstrap)
-- Algorithm with integrated Model Tier routing
+- Algorithm with agent-based routing guidance
 
 **Verification:**
 - Algorithm runs 7 phases
-- Model Tier routing works (15+ agents configured)
+- Agent-based routing documented (16 agents configured)
 - Bootstrap context <25KB
 
 ---
@@ -893,10 +885,10 @@ EBENE 4 — GUI (visuell):
    - Move skills to new structure
    - Update path references
    - Preserve USER/ customizations
-2. **Create installer** for custom OpenCode binary:
-   - Download custom binary (with Model Tiers)
+2. **Create installer** for vanilla OpenCode:
+   - Guide user to install via opencode.ai official installer
    - Install PAI-OpenCode core
-   - Configure `opencode.json` with Model Tiers
+   - Configure `opencode.json` with per-agent model settings
 3. **Documentation:**
    - `UPGRADE.md` (for existing users)
    - `INSTALL.md` (for new users)
@@ -904,7 +896,7 @@ EBENE 4 — GUI (visuell):
 
 **Output:**
 - `migration-v2-to-v3.ts` script
-- Installer for custom binary
+- Installer for vanilla OpenCode
 - Complete documentation
 
 **Verification:**
@@ -925,14 +917,14 @@ EBENE 4 — GUI (visuell):
 **Tasks:**
 1. **Full test suite:**
    - Algorithm tests (all 7 phases)
-   - Model Tier routing tests
+   - Agent-based routing tests
    - Lazy loading tests
    - Plugin event tests
    - Skill hierarchy tests
 2. **Integration testing:**
    - End-to-end workflows
    - Migration testing
-   - Custom binary compatibility
+   - Vanilla OpenCode compatibility
 3. **Beta release:**
    - Tag `v3.0.0-beta.1`
    - Limited user testing
@@ -991,7 +983,7 @@ WP-F ──► in PR #D integriert (Tools/db-archive.ts + Electron GUI)
 
 | WP | Status | Effort | Deliverable |
 |----|--------|--------|-------------|
-| WP1 | ✅ Fertig | 8-12h | Algorithm v3.7.0 + Model Tiers |
+| WP1 | ✅ Fertig | 8-12h | Algorithm v3.7.0 + Agent Routing |
 | WP2 | ✅ Fertig | 6-8h | Lazy Context (~20KB) |
 | WP3 | ⚠️ 40% | 5-7h investiert | Nur Kategorie-Struktur |
 | WP4 | ⚠️ 70% | 8-10h investiert | Integration (funktional, unvollständig) |
@@ -1012,7 +1004,7 @@ WP-F ──► in PR #D integriert (Tools/db-archive.ts + Electron GUI)
 
 | Feature | Source | Value |
 |---------|--------|-------|
-| **Dynamic Model Tiers** | OpenCode-native | 60x cost optimization |
+| **Agent-Based Routing** | OpenCode-native | Cost optimization via appropriate agent selection |
 | **Lazy Context Loading** | OpenCode-native | Fast session start |
 | **MCP Skill Discovery** | OpenCode-native | Dynamic extensibility |
 | **Event-Driven Architecture** | OpenCode-native | Cleaner code |
@@ -1028,7 +1020,7 @@ WP-F ──► in PR #D integriert (Tools/db-archive.ts + Electron GUI)
 
 1. ✅ Algorithm v3.7.0 fully functional with ISC
 2. ✅ Initial context <25KB (vs. 233KB current)
-3. ✅ Dynamic Model Tier routing working
+3. ✅ Agent-based routing documented and functional
 4. ✅ 3+ skills as MCP servers
 5. ✅ Unified event-driven plugin
 6. ✅ All 39 skills in hierarchical structure

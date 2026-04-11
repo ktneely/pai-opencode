@@ -29,7 +29,6 @@ interface SubagentEntry {
 	sessionId: string;
 	agentType: string;
 	description: string;
-	modelTier?: string;
 	spawnedAt: string;
 	status: "running" | "completed" | "failed";
 }
@@ -206,12 +205,10 @@ export function extractSessionId(output: { output?: string; metadata?: any }): s
 export function extractTaskInfo(args: any): {
 	agentType: string;
 	description: string;
-	modelTier?: string;
 } {
 	return {
 		agentType: args?.subagent_type || args?.agent || "unknown",
 		description: args?.description || args?.prompt?.substring(0, 100) || "unknown task",
-		modelTier: args?.model_tier,
 	};
 }
 
@@ -251,7 +248,6 @@ export async function captureSubagentSession(
 				sessionId: childSessionId,
 				agentType: taskInfo.agentType,
 				description: taskInfo.description,
-				modelTier: taskInfo.modelTier,
 				spawnedAt: new Date().toISOString(),
 				status: "completed",
 			});
@@ -346,7 +342,7 @@ export const sessionRegistryTool = tool({
 export const sessionResultsTool = tool({
 	description:
 		"Get registry metadata for a specific subagent session by session_id. " +
-		"Returns: agent type, description, model tier, status, and resume instructions. " +
+		"Returns: agent type, description, status, and resume instructions. " +
 		"Use this to identify what a subagent worked on and how to access its full results. " +
 		"The full conversation history is in OpenCode's database — use Task tool with session_id to retrieve it.",
 	args: {
@@ -379,7 +375,6 @@ export const sessionResultsTool = tool({
 			"",
 			`**Agent:** ${entry.agentType}`,
 			`**Description:** ${entry.description}`,
-			`**Model Tier:** ${entry.modelTier || "default"}`,
 			`**Spawned:** ${entry.spawnedAt}`,
 			`**Status:** ${entry.status}`,
 			"",

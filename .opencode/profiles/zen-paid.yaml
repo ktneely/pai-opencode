@@ -14,83 +14,31 @@ agents:
     model: opencode/kimi-k2.5
   Architect:
     model: opencode/kimi-k2.5
-    tiers:
-      quick: opencode/glm-4.7
-      standard: opencode/kimi-k2.5
-      advanced: opencode/kimi-k2.5
   Engineer:
     model: opencode/kimi-k2.5
-    tiers:
-      quick: opencode/glm-4.7
-      standard: opencode/kimi-k2.5
-      advanced: opencode/kimi-k2.5
   general:
     model: opencode/glm-4.7
-    tiers:
-      quick: opencode/glm-4.7
-      standard: opencode/kimi-k2.5
-      advanced: opencode/kimi-k2.5
   explore:
     model: opencode/minimax-m2.1
   Intern:
     model: opencode/minimax-m2.1
-    tiers:
-      quick: opencode/minimax-m2.1
-      standard: opencode/minimax-m2.1
-      advanced: opencode/glm-4.7
   Writer:
     model: opencode/gemini-3-flash
-    tiers:
-      quick: opencode/minimax-m2.1
-      standard: opencode/gemini-3-flash
-      advanced: opencode/kimi-k2.5
   DeepResearcher:
     model: opencode/glm-4.7
-    tiers:
-      quick: opencode/minimax-m2.1
-      standard: opencode/glm-4.7
-      advanced: opencode/kimi-k2.5
   GeminiResearcher:
     model: opencode/gemini-3-flash
-    tiers:
-      quick: opencode/gemini-3-flash
-      standard: opencode/gemini-3-flash
-      advanced: opencode/gemini-3-pro
   GrokResearcher:
     model: opencode/kimi-k2.5
-    tiers:
-      quick: opencode/glm-4.7
-      standard: opencode/kimi-k2.5
-      advanced: opencode/kimi-k2.5
   PerplexityResearcher:
     model: opencode/kimi-k2.5
-    tiers:
-      quick: opencode/glm-4.7
-      standard: opencode/kimi-k2.5
-      advanced: opencode/kimi-k2.5
   CodexResearcher:
     model: opencode/glm-4.7
-    tiers:
-      quick: opencode/minimax-m2.1
-      standard: opencode/glm-4.7
-      advanced: opencode/kimi-k2.5
   QATester:
     model: opencode/glm-4.7
   Pentester:
     model: opencode/kimi-k2.5
-    tiers:
-      quick: opencode/glm-4.7
-      standard: opencode/kimi-k2.5
-      advanced: opencode/kimi-k2.5
   Designer:
     model: opencode/glm-4.7
-    tiers:
-      quick: opencode/minimax-m2.1
-      standard: opencode/glm-4.7
-      advanced: opencode/kimi-k2.5
   Artist:
     model: opencode/glm-4.7
-    tiers:
-      quick: opencode/minimax-m2.1
-      standard: opencode/glm-4.7
-      advanced: opencode/kimi-k2.5

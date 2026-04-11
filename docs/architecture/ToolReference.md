@@ -115,27 +115,27 @@ Use code_review tool with mode="dirty" to review uncommitted changes.
 
 When using the `task` tool to spawn agents, use these `subagent_type` values:
 
-| subagent_type | Model Tier | Best For |
-|---------------|-----------|----------|
-| `Algorithm` | advanced | Full PAI Algorithm runs, complex reasoning |
-| `Architect` | standard | System design, ADR writing, architecture decisions |
-| `Engineer` | standard | Implementation, file edits, code writing |
-| `explore` | quick | Fast codebase exploration |
-| `Intern` | quick | Simple tasks, data transformation |
-| `Writer` | standard | Documentation, content |
-| `DeepResearcher` | standard | Multi-model research orchestration |
-| `GeminiResearcher` | standard | Google Gemini research |
-| `GrokResearcher` | standard | xAI Grok contrarian analysis |
-| `PerplexityResearcher` | standard | Real-time web search |
-| `CodexResearcher` | standard | Technical archaeology |
-| `QATester` | standard | Quality assurance, test writing |
-| `Pentester` | standard | Security testing |
-| `Designer` | standard | UI/UX design |
-| `Artist` | standard | Visual content generation |
-| `general` | standard | General purpose fallback |
+| subagent_type | Cost Profile | Best For |
+|---------------|-------------|----------|
+| `Algorithm` | Heavy (orchestrator) | Full PAI Algorithm runs, complex reasoning |
+| `Architect` | Standard | System design, ADR writing, architecture decisions |
+| `Engineer` | Standard | Implementation, file edits, code writing |
+| `explore` | Lightweight | Fast codebase exploration |
+| `Intern` | Lightweight | Simple tasks, data transformation |
+| `Writer` | Standard | Documentation, content |
+| `DeepResearcher` | Standard | Multi-model research orchestration |
+| `GeminiResearcher` | Standard | Google Gemini research |
+| `GrokResearcher` | Standard | xAI Grok contrarian analysis |
+| `PerplexityResearcher` | Standard | Real-time web search |
+| `CodexResearcher` | Standard | Technical archaeology |
+| `QATester` | Standard | Quality assurance, test writing |
+| `Pentester` | Standard | Security testing |
+| `Designer` | Standard | UI/UX design |
+| `Artist` | Standard | Visual content generation |
+| `general` | Standard | General purpose fallback |
 
 > [!IMPORTANT]
-> **Model tier override:** Pass `model_tier: "quick" | "standard" | "advanced"` to override the default model for any agent type. Actual model names are resolved from `opencode.json` — never hardcode model names in prompts or docs.
+> **Agent-based routing:** Each agent has exactly one model configured in `opencode.json` — there is no runtime `model_tier` override. To use a cheaper model, choose a lightweight agent (`explore`, `Intern`). For heavy reasoning, choose a heavier agent (`Architect`, `Algorithm`). Actual model names are resolved from `opencode.json` — never hardcode model names in prompts or docs.
 
 ---
 

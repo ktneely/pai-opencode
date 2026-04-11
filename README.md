@@ -27,7 +27,7 @@ PAI-OpenCode is the complete port of **Daniel Miessler's Personal AI Infrastruct
 
 - **The Algorithm (v1.8.0)** — 8 effort levels with Verify Completion Gate, Wisdom Frames, phase separation enforcement, and quality gates
 - **Skills** — Modular capabilities (52 skills including AudioEditor, Cloudflare, ExtractWisdom, Security)
-- **Agents** — Dynamic multi-agent orchestration with model tier routing (60x cost optimization)
+- **Agents** — Dynamic multi-agent orchestration with cost optimization via appropriate agent selection
 - **Memory** — Session history, project context, learning loops, PRD system
 - **Plugins** — Event-driven lifecycle automation (security validation, observability, algorithm tracking, DB health)
 - **Installer** — CLI-only installer for easy setup
@@ -46,20 +46,20 @@ PAI-OpenCode is the complete port of **Daniel Miessler's Personal AI Infrastruct
 |-----------|----------|
 | **PAI was built for Claude Code** (Anthropic only) | PAI-OpenCode works with **any AI provider** |
 | **Vendor lock-in** limits your options | Switch providers freely while keeping your infrastructure |
-| **One model fits all** wastes money or quality | Each agent scales to the right model per task — cheap for simple work, powerful for complex reasoning |
+| **One model fits all** wastes money or quality | Each agent is configured with the right model for its role — use lightweight agents for simple work, heavy agents for complex reasoning |
 | **Generic AI assistants** don't know your workflow | PAI's skills, memory, and plugins personalize to *your* needs |
 | **One-shot interactions** lose context | PAI's memory system builds knowledge over time |
 
 **The scaffolding is more important than the model.** PAI-OpenCode gives you:
 
-✅ **Dynamic per-task model routing** — the orchestrator selects the right model and provider for each task, automatically
+✅ **Agent-based model routing** — match the right agent to the task; each agent has exactly one model configured in `opencode.json`
 ✅ Provider freedom (Claude, GPT-4, Gemini, Kimi, Ollama, etc.)
 ✅ Full PAI infrastructure (skills, agents, memory, plugins)
 ✅ Real-time session sharing (OpenCode feature)
 ✅ Terminal + Desktop + Web clients
 ✅ Community-driven, open-source foundation
 
-> **Note:** Dynamic per-task model routing is built by the PAI-OpenCode agent system on top of OpenCode's multi-provider support. Other AI coding tools either lock you to one provider (Claude Code, Copilot) or let you switch manually (Cursor, Aider) — but none route different models to the same agent automatically based on task complexity.
+> **Note:** Agent-based routing is provided by PAI-OpenCode's multi-agent system on top of OpenCode's multi-provider support. Other AI coding tools either lock you to one provider (Claude Code, Copilot) or let you switch manually (Cursor, Aider) — PAI-OpenCode routes different agents with different models based on task type.
 
 ---
 
@@ -72,7 +72,7 @@ PAI-OpenCode is the complete port of **Daniel Miessler's Personal AI Infrastruct
 | Feature | Description |
 |---------|-------------|
 | **Core PAI Port** | Algorithm v3.7.0, Skills, TELOS on OpenCode |
-| **OpenCode-Native** | Lazy Loading, Model Tiers, Events, MCP integration |
+| **OpenCode-Native** | Lazy Loading, Agent-based routing, Events, MCP integration |
 | **Developer Tool** | Infrastructure for power users and developers |
 | **Community-Driven** | Open source, documented, maintainable |
 | **Minimal Context** | ~20KB core, not 233KB static loading |
@@ -122,15 +122,15 @@ opencode
 
 > **Already using OpenCode?** If you have an existing `~/.opencode` directory, see [Existing OpenCode Users](#existing-opencode-users) in the Installation Guide for symlink setup.
 
-**Prerequisites:** [Git](https://git-scm.com/) and [Bun 1.3.9+](https://bun.sh/) (no Go needed).
+**Prerequisites:** [Git](https://git-scm.com/) and [Bun 1.3.9+](https://bun.sh/).
 
 The installer wizard will:
-- **Build OpenCode** from our fork with model tier support (using Bun's native compiler)
+- **Install vanilla OpenCode** from opencode.ai
 - **Choose your preset** — zen (recommended), anthropic, openrouter, or openai
 - Set your name and timezone
 - Name your AI assistant
 
-**Takes ~3-5 minutes** (including the build) and creates all necessary configuration files.
+**Takes ~2-3 minutes** and creates all necessary configuration files.
 
 ---
 
@@ -197,28 +197,28 @@ Modular, reusable capabilities invoked by name:
 - **Plus 44 more** — See `.opencode/skills/` for full list
 
 ### 🤖 Agent Orchestration (16 Agents)
-Dynamic multi-agent composition with **intelligent tier routing** — every agent scales up or down based on task complexity:
+Dynamic multi-agent composition — each agent is configured with exactly one model in `opencode.json`. Match the right agent to the task for cost optimization:
 
-| Agent | Default | Scales Down To | Scales Up To |
-|-------|---------|----------------|--------------|
-| **Algorithm** | Claude Opus 4.6 | — | — |
-| **Architect** | Kimi K2.5 | GLM 4.7 (quick review) | Claude Opus 4.6 (complex architecture) |
-| **Engineer** | Kimi K2.5 | GLM 4.7 (batch edits) | Claude Sonnet 4.5 (complex debugging) |
-| **DeepResearcher** | GLM 4.7 | MiniMax (quick lookup) | Kimi K2.5 (deep analysis) |
-| **GeminiResearcher** | Gemini 3 Flash | — | Gemini 3 Pro (deep research) |
-| **PerplexityResearcher** | Sonar | — | Sonar Deep Research |
-| **GrokResearcher** | Grok 4.1 Fast | — | Grok 4.1 (full analysis) |
-| **CodexResearcher** | GPT-5.1 Codex Mini | — | GPT-5.2 Codex |
-| **Writer** | Gemini 3 Flash | MiniMax (quick drafts) | Claude Sonnet 4.5 (premium copy) |
-| **Pentester** | Kimi K2.5 | GLM 4.7 (quick scan) | Claude Sonnet 4.5 (deep audit) |
-| **Intern** | MiniMax M2.1 | — | — |
-| **Explore** | MiniMax M2.1 | — | — |
-| **QATester** | GLM 4.7 | — | — |
-| **Designer** | Kimi K2.5 | GLM 4.7 | Claude Sonnet 4.5 |
-| **Artist** | Kimi K2.5 | GLM 4.7 | Claude Sonnet 4.5 |
-| **General** | GLM 4.7 | MiniMax | Kimi K2.5 |
+| Agent | Model | Best For |
+|-------|-------|----------|
+| **Algorithm** | Claude Opus 4.6 | Algorithm orchestration |
+| **Architect** | Kimi K2.5 | Architecture design |
+| **Engineer** | Kimi K2.5 | Feature implementation, bug fixes |
+| **DeepResearcher** | GLM 4.7 | Academic depth, scholarly synthesis |
+| **GeminiResearcher** | Gemini 3 Flash | Multi-perspective analysis |
+| **PerplexityResearcher** | Sonar | Real-time news, breaking events |
+| **GrokResearcher** | Grok 4.1 Fast | Contrarian, social media, X access |
+| **CodexResearcher** | GPT-5.1 Codex Mini | Technical, TypeScript-focused |
+| **Writer** | Gemini 3 Flash | Content creation, documentation |
+| **Pentester** | Kimi K2.5 | Security audits |
+| **Intern** | MiniMax M2.1 | Lightweight tasks, simple edits |
+| **Explore** | MiniMax M2.1 | Fast file/codebase exploration |
+| **QATester** | GLM 4.7 | Quality assurance |
+| **Designer** | Kimi K2.5 | UX/UI design |
+| **Artist** | Kimi K2.5 | Visual content |
+| **General** | GLM 4.7 | General-purpose tasks |
 
-The orchestrator decides per task which model tier to use. You always pay exactly what the task requires.
+For cost optimization, match the task to the right agent — use `Intern` or `Explore` for lightweight work; use `Architect` or `Algorithm` for heavy reasoning. All model assignments are in `opencode.json`.
 
 ### 🧠 Memory & Learning
 Persistent context across sessions:
@@ -286,32 +286,20 @@ bun run .opencode/tools/switch-provider.ts openai
 
 ---
 
-## Model Tiers
+## Agent-Based Cost Optimization
 
-Each agent uses a **3-tier model strategy** — the orchestrator selects the right tier based on task complexity:
+Each agent has exactly one model configured in `opencode.json`. The key to cost optimization is matching the right agent to the task:
 
-| Tier | Purpose | Use Case |
-|------|---------|----------|
-| **Quick** | Fast, cheap tasks | Batch edits, simple replacements, file search |
-| **Standard** | Most work | Feature implementation, research, bug fixes |
-| **Advanced** | Complex reasoning | Edge cases, architecture decisions, debugging |
+| Task Type | Recommended Agent | Why |
+|-----------|------------------|-----|
+| Batch rename files | `Intern` or `Explore` | Lightweight agent for simple work |
+| Implement auth middleware | `Engineer` | Balanced model for real coding tasks |
+| Debug complex race condition | `Architect` | Heavy reasoning agent for complex problems |
+| Quick web lookup | `DeepResearcher` | Configured for research tasks |
+| Architecture decision | `Architect` | Designed for system design work |
+| Algorithm orchestration | `Algorithm` | Highest capability for orchestration |
 
-### Dynamic Tier Routing in Practice
-
-The **same agent** uses different models depending on the task:
-
-| Task | Agent | Tier | Model | Why |
-|------|-------|------|-------|-----|
-| Batch rename files | Engineer | `quick` | GLM 4.7 | Simple mechanical work |
-| Implement auth middleware | Engineer | `standard` | Kimi K2.5 | Real coding task |
-| Debug race condition | Engineer | `advanced` | Claude Sonnet 4.5 | Complex reasoning needed |
-| Quick web lookup | DeepResearcher | `quick` | MiniMax | Simple fact check |
-| Strategic market analysis | DeepResearcher | `standard` | GLM 4.7 | Multi-step research |
-| Deep technical investigation | DeepResearcher | `advanced` | Kimi K2.5 | Large context, complex synthesis |
-
-The orchestrator automatically selects the tier via the `model_tier` parameter in Task tool calls. You pay for exactly what the task requires — no more, no less.
-
-> **Note:** Model tier routing is configured in `opencode.json`. The orchestrator makes the decision per task based on complexity assessment.
+Use `explore` or `Intern` for cheap, fast tasks. Use `Architect` or `Algorithm` for complex reasoning. Model assignments are defined in `opencode.json`.
 
 ---
 

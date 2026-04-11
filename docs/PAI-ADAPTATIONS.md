@@ -18,7 +18,7 @@ This document explains **what we changed** and **why**.
 |--------------|--------------|-----------|---------------|
 | v1.0.0 | PAI 2.4 | v0.2.24 | Core port, 8 handlers |
 | v1.1.0 | PAI 2.5 | v0.2.25 | 13 handlers, voice/sentiment |
-| v1.3.0 | PAI 2.5 | v0.2.25 | 16 agents, model tiers, 3 presets |
+| v1.3.0 | PAI 2.5 | v0.2.25 | 16 agents, agent-based routing, 3 presets |
 | **v2.0.0** | **PAI 3.0** | **v1.8.0** | **8 effort levels, Verify Completion Gate, Wisdom Frames, 20 handlers, 39 skills** |
 
 ---
@@ -184,12 +184,7 @@ export function fileLog(message: string, level = "info") {
       "model": "anthropic/claude-opus-4-6"
     },
     "Engineer": {
-      "model": "opencode/kimi-k2.5",
-      "model_tiers": {
-        "quick": { "model": "opencode/glm-4.7" },
-        "standard": { "model": "opencode/kimi-k2.5" },
-        "advanced": { "model": "anthropic/claude-sonnet-4-5" }
-      }
+      "model": "opencode/kimi-k2.5"
     }
   }
 }
@@ -361,12 +356,12 @@ Updated for 8-tier effort level system:
 
 **What's New:**
 - **16 Agents** (expanded from ~11) - Full specialized agent roster
-- **Model Tier Routing** - `quick`/`standard`/`advanced` per agent
+- **Agent-Based Routing** - Match task complexity to the appropriate agent (use `explore`/`Intern` for lightweight work; use `Architect`/`Algorithm` for heavy work)
 - **3 Presets** - Simplified from 8 providers to 3 presets + custom
 - **Researcher Renames:**
   - `ClaudeResearcher` → `DeepResearcher` (renamed for clarity)
   - `PerplexityProResearcher` → Removed (merged into `PerplexityResearcher`)
-- **Model Routing:** Moved from `.md` frontmatter to `opencode.json` exclusively
+- **Model Routing:** Moved from `.md` frontmatter to `opencode.json` exclusively (one model per agent)
 
 **Why:**
 - Centralized model configuration in `opencode.json`
@@ -378,12 +373,7 @@ Updated for 8-tier effort level system:
 {
   "agent": {
     "Engineer": {
-      "model": "opencode/kimi-k2.5",
-      "model_tiers": {
-        "quick": { "model": "opencode/glm-4.7" },
-        "standard": { "model": "opencode/kimi-k2.5" },
-        "advanced": { "model": "anthropic/claude-sonnet-4-5" }
-      }
+      "model": "opencode/kimi-k2.5"
     }
   }
 }
@@ -494,7 +484,7 @@ See **MIGRATION.md** for full guide.
 | **Agents** | Lowercase → PascalCase | OpenCode requirement | Filename only |
 | **Logging** | stdout → file logging | TUI integrity | Debug workflow change |
 | **Deferred** | Voice/Observability | Focus on core first | Available in v1.x |
-| **Model Routing** | `.md` frontmatter → `opencode.json` exclusively | Centralized configuration | Easier provider switching |
+| **Model Routing** | `.md` frontmatter → `opencode.json` exclusively (one model per agent) | Centralized configuration | Easier provider switching |
 
 ---
 

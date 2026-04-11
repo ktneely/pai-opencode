@@ -48,11 +48,6 @@ const c = {
 // Types
 interface AgentConfig {
   model: string;
-  tiers?: {
-    quick?: string;
-    standard?: string;
-    advanced?: string;
-  };
 }
 
 interface Profile {
@@ -144,10 +139,8 @@ export function applyResearcherOverlay(
     if (!(agentName in updatedModels)) continue;
 
     if (hasApiKey(config.api_key_env, envFile)) {
-      // Override the model but keep the tiers if they exist
-      const existingConfig = updatedModels[agentName];
+      // Override the agent's model with the researcher's native provider model.
       updatedModels[agentName] = {
-        ...existingConfig,
         model: config.native_model,
       };
       routed.push({ agent: agentName, model: config.native_model });
@@ -232,30 +225,12 @@ export function applyProfile(profileName: string, multiResearch = false): {
 
   opencodeJson.model = default_model;
 
-  const agentBlock: Record<string, { model: string; model_tiers?: { [tier: string]: { model: string } } }> = {};
-  
+  const agentBlock: Record<string, { model: string }> = {};
+
   for (const [agentName, agentConfig] of Object.entries(finalAgentModels)) {
-    const agentEntry: { model: string; model_tiers?: { [tier: string]: { model: string } } } = {
-      model: agentConfig.model,
-    };
-    
-    // Add model_tiers if they exist
-    if (agentConfig.tiers) {
-      agentEntry.model_tiers = {};
-      if (agentConfig.tiers.quick) {
-        agentEntry.model_tiers.quick = { model: agentConfig.tiers.quick };
-      }
-      if (agentConfig.tiers.standard) {
-        agentEntry.model_tiers.standard = { model: agentConfig.tiers.standard };
-      }
-      if (agentConfig.tiers.advanced) {
-        agentEntry.model_tiers.advanced = { model: agentConfig.tiers.advanced };
-      }
-    }
-    
-    agentBlock[agentName] = agentEntry;
+    agentBlock[agentName] = { model: agentConfig.model };
   }
-  
+
   opencodeJson.agent = agentBlock;
 
   writeFileSync(OPENCODE_JSON_PATH, JSON.stringify(opencodeJson, null, 2) + "\n");
