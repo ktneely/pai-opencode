@@ -20,6 +20,7 @@ This document explains **what we changed** and **why**.
 | v1.1.0 | PAI 2.5 | v0.2.25 | 13 handlers, voice/sentiment |
 | v1.3.0 | PAI 2.5 | v0.2.25 | 16 agents, agent-based routing, 3 presets |
 | **v2.0.0** | **PAI 3.0** | **v1.8.0** | **8 effort levels, Verify Completion Gate, Wisdom Frames, 20 handlers, 39 skills** |
+| **v3.0.0** | **PAI 3.0** | **v1.8.0** | **Vanilla OpenCode, zero bootstrap, Zen free default, PAI Core tier:always** |
 
 ---
 
@@ -135,11 +136,13 @@ export function fileLog(message: string, level = "info") {
 
 ### Skills System
 
-**100% unchanged:**
-- All 29 skills work identically
+**Skill content unchanged** — SKILL.md format, workflow files, and trigger logic are identical to v2.x. What changed is the *discovery path*: PAI now uses the native OpenCode scanner via the symlink `skills/PAI → ../PAI`, so OpenCode discovers `PAI/SKILL.md` automatically without any plugin intervention.
+
+- All skills work identically (invoke, trigger, and output behaviour unchanged)
 - SKILL.md format unchanged
 - Workflow files unchanged
 - Skill trigger logic unchanged
+- Discovery path changed: bootstrap → native scanner via symlink
 
 ### Memory Structure
 
@@ -189,6 +192,162 @@ export function fileLog(message: string, level = "info") {
   }
 }
 ```
+
+---
+
+## v3.0 Native OpenCode Architecture
+
+> [!note] **Architecture Decision:** ADR-020 — Native OpenCode Context Loading (Bootstrap Removal)
+
+The v3.0 release represents a fundamental shift in how PAI Core loads into context. The custom bootstrap mechanism built for earlier versions became redundant once OpenCode's native skill system matured — so we removed it entirely.
+
+### What Changed
+
+**Context Loading: Bootstrap → Skill System (tier:always)**
+
+| Before (v2.x) | After (v3.0) |
+|---------------|--------------|
+| `MINIMAL_BOOTSTRAP.md` loaded explicitly by plugin | PAI Core Skill loads via native OpenCode `tier: always` |
+| `pai-unified.ts` handled bootstrap + user context | `pai-unified.ts` handles user context only |
+| `AGENTS.md` contained ~450 lines of PAI behavior | `AGENTS.md` contains 14 lines (repo build commands only) |
+| Manual Skill Discovery Index in bootstrap | OpenCode natively provides `<available_skills>` XML listing |
+
+**Why:**
+- OpenCode's native skill system (`tier: always` in `GenerateSkillIndex.ts`) reliably loads skills into every session context
+- The `ALWAYS_LOADED_SKILLS` list now includes `'PAI'`, ensuring the full 479-line PAI Core Skill is always in context
+- OpenCode natively provides `<available_skills>` XML with name + description + location for every skill — the bootstrap's Skill Discovery Index was a manual duplicate of this native capability
+- Removing bootstrap reduces the attack surface, eliminates a maintenance burden, and makes the architecture easier to reason about
+
+### Plugin Simplification
+
+**`pai-unified.ts` — What it does now:**
+
+```text
+Before: Bootstrap loading (Algorithm + ISC + Capabilities) + behavioral governance + user identity
+After:  Behavioral governance + user identity context only (no Algorithm content)
+```
+
+The plugin now loads only the pieces OpenCode's native system cannot provide — files that are user-specific or cannot live in a committed skill file:
+- `PAI/AISTEERINGRULES.md` — behavioral governance (system-level, applies to all sessions)
+- `PAI/USER/ABOUTME.md` — personal background
+- `PAI/USER/TELOS/TELOS.md` — goals and mission
+- `PAI/USER/DAIDENTITY.md` — DA name and personality
+- `PAI/USER/AISTEERINGRULES.md` — personal behavioral steering rules
+
+PAI Core (Algorithm, ISC, Capabilities) loads automatically via the skill system.
+
+### v3.0 Architecture — Context Flow
+
+```text
+OpenCode session start
+  │
+  ├─► GenerateSkillIndex.ts (ALWAYS_LOADED_SKILLS)
+  │       └─► skills/PAI symlink → PAI/SKILL.md   [tier:always]
+  │               Algorithm, ISC, Capabilities — always in context
+  │
+  └─► pai-unified.ts plugin (loadUserSystemContext)
+          └─► PAI/AISTEERINGRULES.md              [behavioral governance]
+          └─► PAI/USER/ABOUTME.md                 [personal background]
+          └─► PAI/USER/TELOS/TELOS.md             [goals & mission]
+          └─► PAI/USER/DAIDENTITY.md              [DA name & personality]
+          └─► PAI/USER/AISTEERINGRULES.md         [personal steering rules]
+```
+
+<details>
+<summary>Detailed Mermaid Diagram</summary>
+
+```mermaid
+flowchart TD
+    A[OpenCode session start] --> B[GenerateSkillIndex.ts]
+    A --> C[pai-unified.ts]
+
+    B --> D["ALWAYS_LOADED_SKILLS\n['PAI','CORE','Development',...]"]
+    D --> E["skills/PAI symlink\n→ PAI/SKILL.md"]
+    E --> F["PAI Core Skill\ntier: always\nAlgorithm · ISC · Capabilities"]
+
+    C --> G["loadUserSystemContext()"]
+    G --> H["PAI/AISTEERINGRULES.md\nBehavioral governance"]
+    G --> I["PAI/USER/ABOUTME.md\nPersonal background"]
+    G --> J["PAI/USER/TELOS/TELOS.md\nGoals & mission"]
+    G --> K["PAI/USER/DAIDENTITY.md\nDA name & personality"]
+    G --> L["PAI/USER/AISTEERINGRULES.md\nPersonal steering rules"]
+
+    F --> M[Session context]
+    H & I & J & K & L --> M
+
+    N["opencode.json\nagent model assignments"] --> O[Agent routing per task]
+```
+
+</details>
+
+### AGENTS.md Simplification
+
+**From 450 LOC → 14 LOC**
+
+The old `AGENTS.md` contained the full PAI behavior specification — effectively duplicating what `PAI/SKILL.md` already held. This created a maintenance hazard: two sources of truth that could drift apart.
+
+The new `AGENTS.md` contains only what belongs there — repository-specific build commands:
+
+```markdown
+# AGENTS.md
+## Build, Test & Lint Commands
+| Command | Purpose |
+|---------|---------|
+| `bun test` | Run all tests |
+...
+```
+
+All PAI behavior lives in `PAI/SKILL.md` — the single source of truth.
+
+### PAI/SKILL.md Now tier:always
+
+**`GenerateSkillIndex.ts` — ALWAYS_LOADED_SKILLS:**
+
+```typescript
+// Before
+const ALWAYS_LOADED_SKILLS = [];
+
+// After
+const ALWAYS_LOADED_SKILLS = [
+  'PAI',         // ← PAI Core Skill (Algorithm, ISC, Capabilities)
+  'CORE',
+  'Development',
+  'Research',
+  'Blogging',
+  'Art',
+];
+```
+
+This ensures the full 479-line PAI Core Skill (Algorithm, ISC, Capabilities) is always available in session context without any plugin intervention.
+
+### skills/PAI Symlink
+
+A new symlink `skills/PAI → ../PAI` enables the native OpenCode skill scanner to discover `PAI/SKILL.md`:
+
+```text
+.opencode/
+├── skills/
+│   ├── PAI -> ../PAI    ← symlink
+│   ├── Blog/
+│   ├── Research/
+│   └── ...
+└── PAI/
+    └── SKILL.md         ← the actual file
+```
+
+The skill scanner follows symlinks (supported since `upstream #620`), so PAI is discovered and loaded exactly like any other skill — no special handling required.
+
+### Default Model: Zen Free
+
+**`opencode.json` default model:**
+
+```json
+{
+  "model": "opencode/big-pickle"
+}
+```
+
+Previously the default required configuring an API key. With `opencode/big-pickle` as default, new users get a working PAI installation out of the box — zero API key required.
 
 ---
 
@@ -432,19 +591,22 @@ See **ROADMAP.md** for detailed timeline.
 
 ## Version Compatibility
 
-| Component | PAI v3.0 | PAI-OpenCode v2.0 |
-|-----------|----------|-------------------|
-| Skills | ✅ 39 skills | ✅ 39 skills (identical) |
-| Agents | ✅ Content identical | ⚠️ Filename casing changed (PascalCase) |
-| MEMORY | ✅ Identical | ✅ Identical (+ WISDOM/ directory) |
-| Security Patterns | ✅ Identical | ✅ Identical |
-| Hooks/Plugins | ❌ Different architecture | ✅ Plugin system (20 handlers) |
-| Algorithm v1.8.0 | ✅ Full | ✅ Full |
-| Wisdom Frames | ✅ Available | ✅ Available (5 seed domains) |
-| Voice Server | ✅ Available | ✅ Available (3 backends) |
-| Sentiment Detection | ✅ Available | ✅ Available |
-| Verify Completion Gate | ✅ Available | ✅ Available |
-| Observability Dashboard | ✅ Available | ✅ Available |
+| Component | PAI v3.0 | PAI-OpenCode v2.0 | PAI-OpenCode v3.0 |
+|-----------|----------|-------------------|-------------------|
+| Skills | ✅ 39 skills | ✅ 39 skills (identical) | ✅ 39 skills (identical) |
+| Agents | ✅ Content identical | ⚠️ Filename casing changed (PascalCase) | ⚠️ Filename casing changed (PascalCase) |
+| MEMORY | ✅ Identical | ✅ Identical (+ WISDOM/ directory) | ✅ Identical (+ WISDOM/ directory) |
+| Security Patterns | ✅ Identical | ✅ Identical | ✅ Identical |
+| Hooks/Plugins | ❌ Different architecture | ✅ Plugin system (20 handlers) | ✅ Plugin system, simplified (user context only) |
+| Algorithm v1.8.0 | ✅ Full | ✅ Full | ✅ Full |
+| Wisdom Frames | ✅ Available | ✅ Available (5 seed domains) | ✅ Available (5 seed domains) |
+| Voice Server | ✅ Available | ✅ Available (3 backends) | ✅ Available (3 backends) |
+| Sentiment Detection | ✅ Available | ✅ Available | ✅ Available |
+| Verify Completion Gate | ✅ Available | ✅ Available | ✅ Available |
+| Observability Dashboard | ✅ Available | ✅ Available | ✅ Available |
+| Bootstrap | N/A | ✅ MINIMAL_BOOTSTRAP.md | ❌ Removed — native skill system |
+| PAI Core Loading | SKILL.md | Plugin-injected | Native tier:always |
+| Default Model | N/A | Requires API key | `opencode/big-pickle` (free) |
 
 ---
 
@@ -485,6 +647,7 @@ See **MIGRATION.md** for full guide.
 | **Logging** | stdout → file logging | TUI integrity | Debug workflow change |
 | **Deferred** | Voice/Observability | Focus on core first | Available in v1.x |
 | **Model Routing** | `.md` frontmatter → `opencode.json` exclusively (one model per agent) | Centralized configuration | Easier provider switching |
+| **Context Loading** | Bootstrap → Native skill system (`tier:always`) | OpenCode native `<available_skills>` XML made bootstrap redundant | Zero bootstrap overhead, single source of truth |
 
 ---
 
@@ -499,6 +662,6 @@ See **MIGRATION.md** for full guide.
 
 ---
 
-*Last updated: 2026-03-06 (PR #42 — WP-A complete, shell.env hook, 6 new Bus events, 5 new handlers)*
+*Last updated: 2026-04-13 (v3.0 native OpenCode architecture — bootstrap removed, PAI Core tier:always, AGENTS.md 450→14 LOC, Zen free default)*
 
-**PAI-OpenCode v3.0-dev** — Full PAI v3.0, Algorithm v1.8.0, 39 Skills, 25 Handlers, Wisdom Frames, shell.env Hook
+**PAI-OpenCode v3.0** — Full PAI v3.0, Algorithm v1.8.0, 39 Skills, Native OpenCode Skill Loading, Zero Bootstrap, Zen Free Default

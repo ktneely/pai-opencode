@@ -49,14 +49,9 @@ opencode
 The installer will:
 1. ✅ Check prerequisites (git, bun 1.3.9+)
 2. ✅ **Install vanilla OpenCode** from opencode.ai
-3. ✅ Ask you to choose a preset:
-   - **Anthropic Max** (recommended) — Best quality, full PAI experience
-   - **ZEN PAID** — Budget-friendly, paid tier models
-   - **OpenRouter** — Provider diversity, 100+ models
-   - **OpenAI** — GPT-4 models via OpenAI directly
-4. ✅ Configure research agents (optional)
-5. ✅ Set up your identity (name, AI assistant name, timezone)
-6. ✅ Generate all configuration files
+3. ✅ Uses OpenCode Zen free models by default — no API key required. To connect premium providers after install, run `/connect` inside OpenCode.
+4. ✅ Set up your identity (name, AI assistant name, timezone)
+5. ✅ Generate all configuration files
 
 **Takes ~2-3 minutes.**
 
@@ -232,7 +227,7 @@ If you already have a PAI installation on Claude Code, see our [Migration Guide]
 After installation, verify everything works:
 
 1. **Check Skills Loading**
-   - On first message, CORE skill should auto-load
+   - On first message, PAI skill auto-loads (tier: always)
    - Ask: "What skills do I have?"
 
 2. **Test an Agent**
@@ -322,27 +317,80 @@ Edit `.opencode/settings.json`:
 
 ## Provider Configuration
 
-### The Four Presets
+### Default: Zen Free (No Setup Required)
 
-PAI-OpenCode uses a **preset system** for simplicity:
+PAI-OpenCode ships with **OpenCode Zen free** as the default provider. Big Pickle — Zen's free flagship model — works out of the box with no API key or account required. Just install and start.
 
-| Preset | Best For | Models | Cost |
-|--------|----------|--------|------|
-| **Anthropic Max** | Best quality | Claude Opus 4.6, Sonnet 4.5 | ~$75/1M tokens |
-| **ZEN PAID** | Budget-friendly | GLM 4.7, Kimi K2.5, Gemini Flash | ~$1-15/1M tokens |
-| **OpenRouter** | Provider diversity | 100+ models via OpenRouter | Varies by model |
-| **OpenAI** | GPT-4 models | GPT-4o, GPT-4.1 | ~$10-30/1M tokens |
+### Connecting Premium Providers
 
-### Switching Presets
+Provider setup is a **post-install step** — PAI-OpenCode ships with Zen free so you can start immediately, then connect additional providers whenever you're ready.
+
+Connecting a provider is a two-step process:
+
+#### Step 1 — Establish credentials via `/connect`
+
+Run `/connect` inside a running OpenCode session and follow the prompts:
+
+```text
+/connect
+```
+
+OpenCode stores credentials securely in `~/.opencode/`. Supported providers:
+
+| Provider | Best For | Cost |
+|----------|----------|------|
+| **Zen paid** | Budget-friendly paid models (GLM 4.7, Kimi K2.5, Gemini Flash) | ~$1-15/1M tokens |
+| **Anthropic (API key)** | Best quality, Claude Opus 4.6 / Sonnet 4.5 | Pay-per-token |
+| **OpenRouter** | Provider diversity, 100+ models | Varies by model |
+| **OpenAI** | GPT-4o, GPT-4.1 | ~$10-30/1M tokens |
+| **Ollama** | Local, private, offline | Free (your hardware) |
+
+#### Step 2 — Update agent model assignments in `opencode.json`
+
+`/connect` stores your credentials, but the agent model strings in `opencode.json` still point to the Zen free defaults. Switch them to your newly connected provider:
 
 ```bash
-# Re-run the installer in headless mode to force a specific preset
+# Switch all agents to Anthropic models
+bun run .opencode/tools/switch-provider.ts anthropic
+
+# Switch to paid Zen models
+bun run .opencode/tools/switch-provider.ts zen-paid
+
+# Switch to OpenAI models
+bun run .opencode/tools/switch-provider.ts openai
+
+# List all available profiles
+bun run .opencode/tools/switch-provider.ts --list
+```
+
+See [ADVANCED-SETUP.md](docs/ADVANCED-SETUP.md) for manual `opencode.json` editing and custom profiles.
+
+---
+
+### ⚠️ Anthropic Claude Max — Important Note
+
+Anthropic's Claude Max subscription (the one used at claude.ai) is designed for direct human use. Routing it through a third-party tool like OpenCode via OAuth is a **grey area in Anthropic's Terms of Service** and carries a risk of account suspension.
+
+**How the connection works technically:**
+OpenCode connects to Claude Max via a community plugin — [`cemalturkcan/opencode-anthropic-login-via-cli`](https://github.com/cemalturkcan/opencode-anthropic-login-via-cli) — that authenticates your Claude Max account and proxies requests through it.
+
+**Why PAI-OpenCode does not ship this plugin:**
+We intentionally exclude it from the distribution. Installing and using it is your own decision and responsibility — we do not want to expose users to ToS risk without their explicit informed consent.
+
+**Alternatives that are clearly within Anthropic's ToS:**
+- **Anthropic API key** — Pay-per-token access via [console.anthropic.com](https://console.anthropic.com/). Add `ANTHROPIC_API_KEY=sk-ant-...` to `~/.opencode/.env` and run `/connect` → Anthropic.
+- **OpenCode Zen paid** — High-quality models at competitive rates, no ToS concerns. Includes access to models equivalent in capability to Sonnet/Opus tiers.
+
+### Changing Providers After Install
+
+```bash
+# Re-run the installer in headless mode to reconfigure a specific preset
 bash PAI-Install/install.sh --headless --preset openai --name "Your Name" --ai-name "Jeremy"
 ```
 
 ### Advanced Provider Setup
 
-For custom provider configuration beyond the 4 presets, see [ADVANCED-SETUP.md](docs/ADVANCED-SETUP.md).
+For custom provider configuration, see [ADVANCED-SETUP.md](docs/ADVANCED-SETUP.md).
 
 ### Multi-Provider Research (Optional)
 
@@ -365,20 +413,11 @@ Check which keys you have:
 bun run .opencode/tools/switch-provider.ts --researchers
 ```
 
-### Authentication Options
-
-| Method | How | Best For |
-|--------|-----|----------|
-| **Subscription login** | Run `/login` in OpenCode | Claude Pro/Max, ChatGPT Plus users |
-| **API key** | Add to `~/.opencode/.env` | Pay-per-use, multiple providers |
-
 ### API Keys for Multi-Provider Research (Optional)
-
-The 4-preset system covers most use cases. For multi-provider research or custom providers, see [ADVANCED-SETUP.md](docs/ADVANCED-SETUP.md).
 
 | Provider | Where to Get Key | For |
 |----------|-----------------|-----|
-| Anthropic | https://console.anthropic.com/ | Claude models (via Anthropic Max) |
+| Anthropic | https://console.anthropic.com/ | Claude models |
 | Google | https://aistudio.google.com/apikey | GeminiResearcher |
 | xAI | https://console.x.ai/ | GrokResearcher |
 | Perplexity | https://perplexity.ai/settings/api | PerplexityResearcher |

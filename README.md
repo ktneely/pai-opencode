@@ -11,7 +11,7 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > [!note]
-> **v3.0 Release** — Plugin event bus, security hardening (prompt injection protection), terminal installer wizard + headless mode, DB health tooling, hierarchical skills structure, and 52 skills. See [CHANGELOG.md](CHANGELOG.md) and [UPGRADE.md](UPGRADE.md).
+> **v3.0 Release** — Zero-bootstrap context loading, Zen free out-of-box (no API key required), PAI Core Skill always-loaded via OpenCode's native skill system, plugin event bus, security hardening (prompt injection protection), terminal installer wizard + headless mode, DB health tooling, hierarchical skills structure, and 52 skills. See [CHANGELOG.md](CHANGELOG.md) and [UPGRADE.md](UPGRADE.md).
 
 > **🎯 Scope Note:** PAI-OpenCode is a **community port** of PAI to OpenCode. For the future vision (Voice-to-Voice, Ambient AI, OMI integration), see **[Open Arc](https://github.com/jeremaiah-ai/openark)**.
 
@@ -100,7 +100,7 @@ PAI-OpenCode is the complete port of **Daniel Miessler's Personal AI Infrastruct
 bash PAI-Install/install.sh
 
 # Headless example (optional)
-bash PAI-Install/install.sh --headless --preset zen --name "Your Name" --ai-name "Jeremy"
+bash PAI-Install/install.sh --headless --name "Your Name" --ai-name "Jeremy"
 ```
 
 ### Manual Setup
@@ -126,9 +126,11 @@ opencode
 
 The installer wizard will:
 - **Install vanilla OpenCode** from opencode.ai
-- **Choose your preset** — zen (recommended), anthropic, openrouter, or openai
+- **Uses Zen free models by default** — no API key required to start
 - Set your name and timezone
 - Name your AI assistant
+
+To add premium providers (Anthropic, OpenAI, OpenRouter), run `/connect` inside a running OpenCode session after install.
 
 **Takes ~2-3 minutes** and creates all necessary configuration files.
 
@@ -136,7 +138,7 @@ The installer wizard will:
 
 ## Switch Providers Anytime
 
-The installer configures one preset, but you can switch to **any provider** after installation:
+After installation, you can switch to **any provider** at any time:
 
 ```bash
 # See all available provider profiles
@@ -186,7 +188,7 @@ This **10-15 minute** interactive session will configure your complete TELOS fra
 
 ### 🎯 Skills System (52 Skills)
 Modular, reusable capabilities invoked by name:
-- **CORE** — Identity, preferences, auto-loaded at session start (Algorithm v1.8.0)
+- **PAI** — Core Algorithm, ISC, Capabilities — always-loaded via skill system (`tier:always`)
 - **Art** — Excalidraw-style visual diagrams
 - **Browser** — Code-first browser automation
 - **Security** — Pentesting, secret scanning
@@ -231,7 +233,7 @@ Persistent context across sessions:
 
 ### 🔧 Plugin System (20 Handlers)
 TypeScript lifecycle plugins with comprehensive coverage:
-- **Context injection** at session start
+- **User identity context** loaded at session start (ABOUTME, TELOS, DAIDENTITY, Steering Rules)
 - **Security validation** before commands
 - **Voice notifications** (ElevenLabs + Google TTS + macOS say)
 - **Implicit sentiment** detection from user messages
@@ -245,6 +247,9 @@ TypeScript lifecycle plugins with comprehensive coverage:
 - **Version check** — Algorithm version compatibility
 - **Integrity check** — Session-end validation
 
+> [!NOTE]
+> PAI Core (Algorithm, ISC, Capabilities) is loaded automatically by OpenCode's native skill system via `tier:always`. The plugin handles user identity context only.
+
 ### 🌐 75+ AI Providers
 Use any AI provider:
 - Anthropic (Claude)
@@ -255,15 +260,37 @@ Use any AI provider:
 
 ---
 
-## Provider Preset System
+## Provider Configuration
 
-PAI-OpenCode offers **three presets** — each gives you access to 75+ providers with different routing strategies:
+PAI-OpenCode ships with **Zen free as the default** — OpenCode Zen is pre-connected with free models, so you can start immediately with no API key.
 
-| Preset | Best For | Providers | Cost |
-|--------|----------|-----------|------|
-| **`zen-paid`** (Recommended) | Production use, privacy-conscious | 75+ providers via Zen AI Gateway | ~$1-75/1M tokens depending on tier |
-| **`openrouter`** | Provider diversity, experimental models | OpenRouter routing to 100+ models | Varies by model |
-| **`local-ollama`** | Full privacy, offline operation | Local Ollama instance | **FREE** (your hardware) |
+| Provider | How to Enable | Cost |
+|----------|---------------|------|
+| **Zen free** (Default) | Works out of the box — no setup required | **FREE** |
+| **Zen paid** | Run `/connect` in OpenCode → select Zen AI Gateway | ~$1-75/1M tokens depending on tier |
+| **Anthropic API** | Add `ANTHROPIC_API_KEY` to `~/.opencode/.env`, then `/connect` | Pay-per-token |
+| **OpenRouter** | Run `/connect` in OpenCode → select OpenRouter | Varies by model |
+| **Ollama (local)** | Run `/connect` in OpenCode → select Ollama | **FREE** (your hardware) |
+
+> **Anthropic Claude Max:** Using a Claude Max subscription (claude.ai) with OpenCode requires a community plugin not shipped with PAI-OpenCode due to Anthropic ToS concerns. See [INSTALL.md](INSTALL.md#️-anthropic-claude-max--important-note) for details.
+
+### Connecting Providers After Install
+
+Provider setup is a **two-step process** — no reinstall needed:
+
+1. **Run `/connect`** inside OpenCode to store credentials:
+
+```text
+/connect
+```
+
+2. **Update agent model assignments** in `opencode.json` to point at your new provider:
+
+```bash
+bun run .opencode/tools/switch-provider.ts anthropic   # or zen-paid, openai, etc.
+```
+
+See [INSTALL.md](INSTALL.md#connecting-premium-providers) for the full walkthrough.
 
 ### Why This Design?
 
@@ -278,9 +305,9 @@ This is what PAI on OpenCode can do that PAI on Claude Code cannot — Claude Co
 
 **Easy to customize** later via [ADVANCED-SETUP.md](docs/ADVANCED-SETUP.md)
 
-### Switching Presets
+### Switching Provider Profiles
 
-Use the provider switcher tool after install:
+Use the provider switcher tool anytime after install:
 
 ```bash
 bun run .opencode/tools/switch-provider.ts --list
@@ -367,6 +394,7 @@ PAI-OpenCode's design is documented through **Architecture Decision Records (ADR
 | [ADR-006](docs/architecture/adr/ADR-006-security-validation-preservation.md) | Security Patterns Preserved | Critical security validation unchanged |
 | [ADR-007](docs/architecture/adr/ADR-007-memory-system-structure-preserved.md) | Memory Structure Preserved | File-based MEMORY/ system unchanged |
 | [ADR-008](docs/architecture/adr/ADR-008-opencode-bash-workdir-parameter.md) | Bash workdir Parameter | Critical platform difference for multi-repo workflows |
+| [ADR-020](docs/architecture/adr/ADR-020-native-opencode-context-loading.md) | Zero Bootstrap / tier:always | PAI Core loads via native skill system, no custom bootstrap |
 
 **Key Principles:**
 - **Preserve PAI's design** where possible
@@ -389,11 +417,6 @@ PAI-OpenCode's design is documented through **Architecture Decision Records (ADR
 | [docs/PAI-ADAPTATIONS.md](docs/PAI-ADAPTATIONS.md) | Changes from PAI v3.0 |
 | [docs/MIGRATION.md](docs/MIGRATION.md) | Migration from Claude Code PAI |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |
-
-**For Contributors:**
-| Document | Description |
-|----------|-------------|
-| [PAI-to-OpenCode Mapping](.opencode/PAISYSTEM/PAI-TO-OPENCODE-MAPPING.md) | How to correctly import PAI components |
 
 **Upstream Resources:**
 - [Daniel Miessler's PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure) — Original PAI documentation
@@ -437,7 +460,7 @@ opencode
 For scripted installs, use `--headless`:
 
 ```bash
-bash PAI-Install/install.sh --headless --preset zen --name "Your Name" --ai-name "Jeremy"
+bash PAI-Install/install.sh --headless --name "Your Name" --ai-name "Jeremy"
 ```
 
 **Welcome to Personal AI Infrastructure, your way.**

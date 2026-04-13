@@ -26,10 +26,21 @@ export const PROVIDER_MODELS: Record<ProviderName, ModelTierMap> = {
 		advanced: "anthropic/claude-opus-4-6",
 	},
 	zen: {
-		// OpenCode Zen — cost-optimised tiers (IDs verified against opencode.ai/docs/zen/)
-		quick: "zen/minimax-m2.5-free",       // FREE
-		standard: "zen/gpt-5.1-codex-mini",   // $0.25/M in+out
-		advanced: "zen/claude-3-5-haiku",     // $0.80/M — catalog ID for Claude Haiku 3.5
+		// OpenCode Zen — big-pickle for ALL tiers at install time.
+		//
+		// Why big-pickle everywhere? Free model availability on Zen changes
+		// periodically (e.g. qwen3.6-plus-free and gpt-5-nano were removed in
+		// a past rotation). big-pickle is the permanent Zen flagship — always
+		// available, always free. Shipping a single model removes the risk of
+		// users hitting "model not found" errors out of the box.
+		//
+		// After install, users can optimise per-agent routing via:
+		//   bun run .opencode/tools/switch-provider.ts zen-free
+		// which applies the zen-free profile with current model assignments.
+		// Check https://opencode.ai/docs/zen/ for the up-to-date free model list.
+		quick: "opencode/big-pickle",
+		standard: "opencode/big-pickle",
+		advanced: "opencode/big-pickle",
 	},
 	openrouter: {
 		quick: "openrouter/google/gemini-flash-1.5",

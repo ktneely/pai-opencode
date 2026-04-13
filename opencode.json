@@ -1,7 +1,7 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "theme": "dark",
-  "model": "anthropic/claude-sonnet-4-5",
+  "model": "opencode/big-pickle",
   "snapshot": true,
   "username": "User",
   "permission": {
@@ -22,52 +22,52 @@
   },
   "agent": {
     "Algorithm": {
-      "model": "anthropic/claude-opus-4-6"
+      "model": "opencode/big-pickle"
     },
     "Architect": {
-      "model": "anthropic/claude-sonnet-4-5"
+      "model": "opencode/big-pickle"
     },
     "Engineer": {
-      "model": "anthropic/claude-sonnet-4-5"
+      "model": "opencode/big-pickle"
     },
     "general": {
-      "model": "anthropic/claude-sonnet-4-5"
+      "model": "opencode/big-pickle"
     },
     "explore": {
-      "model": "anthropic/claude-haiku-4-5"
+      "model": "opencode/big-pickle"
     },
     "Intern": {
-      "model": "anthropic/claude-haiku-4-5"
+      "model": "opencode/big-pickle"
     },
     "Writer": {
-      "model": "anthropic/claude-sonnet-4-5"
+      "model": "opencode/big-pickle"
     },
     "DeepResearcher": {
-      "model": "anthropic/claude-sonnet-4-5"
+      "model": "opencode/big-pickle"
     },
     "GeminiResearcher": {
-      "model": "anthropic/claude-sonnet-4-5"
+      "model": "opencode/big-pickle"
     },
     "GrokResearcher": {
-      "model": "anthropic/claude-sonnet-4-5"
+      "model": "opencode/big-pickle"
     },
     "PerplexityResearcher": {
-      "model": "anthropic/claude-sonnet-4-5"
+      "model": "opencode/big-pickle"
     },
     "CodexResearcher": {
-      "model": "anthropic/claude-sonnet-4-5"
+      "model": "opencode/big-pickle"
     },
     "QATester": {
-      "model": "anthropic/claude-sonnet-4-5"
+      "model": "opencode/big-pickle"
     },
     "Pentester": {
-      "model": "anthropic/claude-sonnet-4-5"
+      "model": "opencode/big-pickle"
     },
     "Designer": {
-      "model": "anthropic/claude-sonnet-4-5"
+      "model": "opencode/big-pickle"
     },
     "Artist": {
-      "model": "anthropic/claude-sonnet-4-5"
+      "model": "opencode/big-pickle"
     }
   }
 }

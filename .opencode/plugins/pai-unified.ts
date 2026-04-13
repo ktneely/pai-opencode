@@ -53,7 +53,7 @@ import { fileURLToPath } from "node:url";
 
 // ESM-equivalent of __dirname — .opencode/package.json has "type": "module"
 // so CommonJS globals (__dirname / __filename) are not defined. Used below
-// by loadMinimalBootstrap() to resolve the PAI dir relative to this plugin
+// by loadUserSystemContext() to resolve the PAI dir relative to this plugin
 // file regardless of the current working directory opencode is launched from.
 const PLUGIN_DIR = path.dirname(fileURLToPath(import.meta.url));
 import type { Hooks, Plugin } from "@opencode-ai/plugin";
@@ -248,49 +248,29 @@ async function readFileSafe(filePath: string): Promise<string | null> {
 }
 
 /**
- * Load minimal bootstrap context — WP2: Minimal Useful
+ * Load user context — Steering Rules + User Identity
  *
- * Loads:
- * 1. MINIMAL_BOOTSTRAP.md (core Algorithm + Steering Rules)
- * 2. System AISTEERINGRULES.md (if exists)
- * 3. User Identity files (ABOUTME, TELOS, DAIDENTITY) if exist
+ * The PAI Core Skill (Algorithm, ISC, Capabilities) is loaded via the
+ * skill system (tier: "always") — NOT here. This function loads only
+ * the dynamic, user-specific context that can't live in static skill files:
  *
- * Target: ~15KB (not 2KB - must know the user!)
+ * 1. System AISTEERINGRULES.md (behavioral governance)
+ * 2. User Identity files (ABOUTME, TELOS, DAIDENTITY) if they exist
  */
-async function loadMinimalBootstrap(): Promise<string | null> {
+async function loadUserSystemContext(): Promise<{ context: string; filesLoaded: number } | null> {
 	try {
-		// Resolve PAI directory relative to plugin location, not cwd.
-		// Plugin is at ~/.opencode/plugins/pai-unified.ts
-		// PAI is at   ~/.opencode/PAI/
-		// PLUGIN_DIR is resolved via fileURLToPath(import.meta.url) because
-		// .opencode/package.json declares "type": "module" — __filename is
-		// not defined in ESM contexts.
 		const paiDir = path.join(PLUGIN_DIR, "..", "PAI");
-		const bootstrapPath = path.join(paiDir, "MINIMAL_BOOTSTRAP.md");
-
-		// Check if bootstrap exists (async)
-		try {
-			await fs.promises.access(bootstrapPath);
-		} catch {
-			fileLog("MINIMAL_BOOTSTRAP.md not found, using fallback", "warn");
-			return null;
-		}
-
 		const contextParts: string[] = [];
 
-		// 1. Core bootstrap (async)
-		const bootstrapContent = await fs.promises.readFile(bootstrapPath, "utf-8");
-		contextParts.push(`--- PAI BOOTSTRAP ---\n${bootstrapContent}`);
-
-		// 2. System Steering Rules (if exists)
+		// 1. System Steering Rules (if exists)
 		const systemSteeringPath = path.join(paiDir, "AISTEERINGRULES.md");
 		const systemSteering = await readFileSafe(systemSteeringPath);
 		if (systemSteering) {
 			contextParts.push(`--- System Steering Rules ---\n${systemSteering}`);
-			fileLog("Loaded System AISTEERINGRULES.md");
+			fileLog("Loaded PAI/AISTEERINGRULES.md");
 		}
 
-		// 3. User Identity Files (if exist) — CRITICAL: Must know the user!
+		// 2. User Identity Files (if exist) — CRITICAL: Must know the user!
 		const userDir = path.join(paiDir, "USER");
 		const userFiles = [
 			{ file: "ABOUTME.md", label: "User Profile" },
@@ -299,25 +279,31 @@ async function loadMinimalBootstrap(): Promise<string | null> {
 			{ file: "AISTEERINGRULES.md", label: "User Steering Rules" },
 		];
 
-		let userContextLoaded = 0;
 		for (const { file, label } of userFiles) {
 			const filePath = path.join(userDir, file);
 			const content = await readFileSafe(filePath);
 			if (content) {
 				contextParts.push(`--- ${label} ---\n${content}`);
-				fileLog(`Loaded USER/${file}`);
-				userContextLoaded++;
+				fileLog(`Loaded PAI/USER/${file}`);
 			}
 		}
 
-		// Combine all context
+		if (contextParts.length === 0) {
+			fileLog("No user context files found — PAI Core loaded via skill system");
+			return null;
+		}
+
+		// Combine all context — contextParts.length is the accurate total file count
 		const fullContext = contextParts.join("\n\n");
 		const size = Buffer.byteLength(fullContext, "utf-8");
-		fileLog(`Bootstrap loaded: ${size} bytes (${userContextLoaded} user files)`);
+		fileLog(`User context loaded: ${size} bytes (${contextParts.length} files)`);
 
-		return `<system-reminder>\nPAI CONTEXT (Lazy Loading Bootstrap)\n\n${fullContext}\n\n---\nSkills load on-demand via OpenCode skill tool. User context auto-loaded if exists.\n</system-reminder>`;
+		return {
+			context: `<system-reminder>\nPAI CONTEXT (User Context)\n\n${fullContext}\n\n---\nPAI Core Skill loaded via skill system. Skills load on-demand via Skill tool.\n</system-reminder>`,
+			filesLoaded: contextParts.length,
+		};
 	} catch (error) {
-		fileLogError("Failed to load minimal bootstrap", error);
+		fileLogError("Failed to load user system context", error);
 		// Return null to signal failure - caller should handle
 		return null;
 	}
@@ -385,8 +371,8 @@ export const PaiUnified: Plugin = async (_ctx) => {
 	/**
 	 * CONTEXT INJECTION (SessionStart equivalent)
 	 *
-	 * WP2: Injects minimal bootstrap (~7KB) instead of full 233KB context.
-	 * Skills load on-demand via OpenCode native skill tool.
+	 * Injects user system context (steering rules + identity files, ~7KB).
+	 * PAI Core Skill loads via native skill system (tier:always). Other skills load on-demand.
 	 *
 	 * NOTE: Only loads when PAI_ENABLED=1 is set (via `pai` wrapper).
 	 * Plain `opencode` launches without PAI context by design.
@@ -402,26 +388,27 @@ export const PaiUnified: Plugin = async (_ctx) => {
 				return;
 			}
 
-			fileLog("Injecting minimal bootstrap context (WP2 lazy loading)...");
+			fileLog("Injecting user system context (steering rules + identity)...");
 
 			// Emit session start
 			emitSessionStart({ model: (input as any).model }).catch(() => {});
 
-				// WP2: Use minimal bootstrap instead of full context loader
-				const bootstrap = await loadMinimalBootstrap();
+				// Load user-specific context (AISTEERINGRULES + USER/* identity files)
+				const userContextResult = await loadUserSystemContext();
 
-				if (bootstrap && bootstrap.length > 0) {
-					output.system.push(bootstrap);
-					fileLog(`Context injected successfully (${bootstrap.length} chars)`);
+				if (userContextResult && userContextResult.context.length > 0) {
+					const { context: userContext, filesLoaded } = userContextResult;
+					output.system.push(userContext);
+					fileLog(`Context injected successfully (${userContext.length} chars)`);
 
 					// Emit context loaded
 					emitContextLoaded({
-						files_loaded: 1,
-						total_size: bootstrap.length,
+						files_loaded: filesLoaded,
+						total_size: userContext.length,
 						success: true,
 					}).catch(() => {});
 				} else {
-					fileLog("Context injection skipped: empty bootstrap", "warn");
+					fileLog("Context injection skipped: empty user context", "warn");
 					// Emit context load failure
 					emitContextLoaded({
 						files_loaded: 0,
