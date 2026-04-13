@@ -257,7 +257,7 @@ async function readFileSafe(filePath: string): Promise<string | null> {
  * 1. System AISTEERINGRULES.md (behavioral governance)
  * 2. User Identity files (ABOUTME, TELOS, DAIDENTITY) if they exist
  */
-async function loadUserSystemContext(): Promise<string | null> {
+async function loadUserSystemContext(): Promise<{ context: string; filesLoaded: number } | null> {
 	try {
 		const paiDir = path.join(PLUGIN_DIR, "..", "PAI");
 		const contextParts: string[] = [];
@@ -267,7 +267,7 @@ async function loadUserSystemContext(): Promise<string | null> {
 		const systemSteering = await readFileSafe(systemSteeringPath);
 		if (systemSteering) {
 			contextParts.push(`--- System Steering Rules ---\n${systemSteering}`);
-			fileLog("Loaded System AISTEERINGRULES.md");
+			fileLog("Loaded PAI/AISTEERINGRULES.md");
 		}
 
 		// 2. User Identity Files (if exist) — CRITICAL: Must know the user!
@@ -279,14 +279,12 @@ async function loadUserSystemContext(): Promise<string | null> {
 			{ file: "AISTEERINGRULES.md", label: "User Steering Rules" },
 		];
 
-		let userContextLoaded = 0;
 		for (const { file, label } of userFiles) {
 			const filePath = path.join(userDir, file);
 			const content = await readFileSafe(filePath);
 			if (content) {
 				contextParts.push(`--- ${label} ---\n${content}`);
-				fileLog(`Loaded USER/${file}`);
-				userContextLoaded++;
+				fileLog(`Loaded PAI/USER/${file}`);
 			}
 		}
 
@@ -295,12 +293,15 @@ async function loadUserSystemContext(): Promise<string | null> {
 			return null;
 		}
 
-		// Combine all context
+		// Combine all context — contextParts.length is the accurate total file count
 		const fullContext = contextParts.join("\n\n");
 		const size = Buffer.byteLength(fullContext, "utf-8");
-		fileLog(`User context loaded: ${size} bytes (${userContextLoaded} user files)`);
+		fileLog(`User context loaded: ${size} bytes (${contextParts.length} files)`);
 
-		return `<system-reminder>\nPAI CONTEXT (User Context)\n\n${fullContext}\n\n---\nPAI Core Skill loaded via skill system. Skills load on-demand via Skill tool.\n</system-reminder>`;
+		return {
+			context: `<system-reminder>\nPAI CONTEXT (User Context)\n\n${fullContext}\n\n---\nPAI Core Skill loaded via skill system. Skills load on-demand via Skill tool.\n</system-reminder>`,
+			filesLoaded: contextParts.length,
+		};
 	} catch (error) {
 		fileLogError("Failed to load user system context", error);
 		// Return null to signal failure - caller should handle
@@ -393,15 +394,16 @@ export const PaiUnified: Plugin = async (_ctx) => {
 			emitSessionStart({ model: (input as any).model }).catch(() => {});
 
 				// Load user-specific context (AISTEERINGRULES + USER/* identity files)
-				const userContext = await loadUserSystemContext();
+				const userContextResult = await loadUserSystemContext();
 
-				if (userContext && userContext.length > 0) {
+				if (userContextResult && userContextResult.context.length > 0) {
+					const { context: userContext, filesLoaded } = userContextResult;
 					output.system.push(userContext);
 					fileLog(`Context injected successfully (${userContext.length} chars)`);
 
 					// Emit context loaded
 					emitContextLoaded({
-						files_loaded: 1,
+						files_loaded: filesLoaded,
 						total_size: userContext.length,
 						success: true,
 					}).catch(() => {});

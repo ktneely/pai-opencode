@@ -227,16 +227,17 @@ After:  User identity context only
 ```
 
 The plugin now loads only the pieces OpenCode's native system cannot provide:
-- `USER/ABOUTME.md` — personal background
-- `USER/TELOS/TELOS.md` — goals and mission
-- `USER/DAIDENTITY.md` — DA name and personality
-- `USER/AISTEERINGRULES.md` — behavioral steering rules
+- `PAI/AISTEERINGRULES.md` — behavioral governance (system-level)
+- `PAI/USER/ABOUTME.md` — personal background
+- `PAI/USER/TELOS/TELOS.md` — goals and mission
+- `PAI/USER/DAIDENTITY.md` — DA name and personality
+- `PAI/USER/AISTEERINGRULES.md` — personal behavioral steering rules
 
 PAI Core (Algorithm, ISC, Capabilities) loads automatically via the skill system.
 
 ### v3.0 Architecture — Context Flow
 
-```
+```text
 OpenCode session start
   │
   ├─► GenerateSkillIndex.ts (ALWAYS_LOADED_SKILLS)
@@ -245,10 +246,10 @@ OpenCode session start
   │
   └─► pai-unified.ts plugin (loadUserSystemContext)
           └─► PAI/AISTEERINGRULES.md              [behavioral governance]
-          └─► USER/ABOUTME.md                     [personal background]
-          └─► USER/TELOS/TELOS.md                 [goals & mission]
-          └─► USER/DAIDENTITY.md                  [DA name & personality]
-          └─► USER/AISTEERINGRULES.md             [personal steering rules]
+          └─► PAI/USER/ABOUTME.md                 [personal background]
+          └─► PAI/USER/TELOS/TELOS.md             [goals & mission]
+          └─► PAI/USER/DAIDENTITY.md              [DA name & personality]
+          └─► PAI/USER/AISTEERINGRULES.md         [personal steering rules]
 ```
 
 <details>
@@ -265,10 +266,10 @@ flowchart TD
 
     C --> G["loadUserSystemContext()"]
     G --> H["PAI/AISTEERINGRULES.md\nBehavioral governance"]
-    G --> I["USER/ABOUTME.md\nPersonal background"]
-    G --> J["USER/TELOS/TELOS.md\nGoals & mission"]
-    G --> K["USER/DAIDENTITY.md\nDA name & personality"]
-    G --> L["USER/AISTEERINGRULES.md\nPersonal steering rules"]
+    G --> I["PAI/USER/ABOUTME.md\nPersonal background"]
+    G --> J["PAI/USER/TELOS/TELOS.md\nGoals & mission"]
+    G --> K["PAI/USER/DAIDENTITY.md\nDA name & personality"]
+    G --> L["PAI/USER/AISTEERINGRULES.md\nPersonal steering rules"]
 
     F --> M[Session context]
     H & I & J & K & L --> M
