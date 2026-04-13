@@ -273,13 +273,12 @@ export async function stepInstallPAI(
 # OPENCODE_EXPERIMENTAL_LSP_TOOL=true
 `;
 
-	// Write provider API key if one was provided (e.g. via CLI flags)
-	const providerApiKey = state.collected.apiKey || "";
-	if (providerApiKey) {
-		const providerEnvVar = `${(state.collected.provider || "zen").toUpperCase()}_API_KEY`;
-		envContent += `${providerEnvVar}=${providerApiKey}\n`;
-	}
-	
+	// NOTE: Model provider API keys are NOT written to .env.
+	// Provider authentication is managed by OpenCode via /connect (stored in
+	// OpenCode's own credential store, outside this repository).
+	// Only voice service keys are written here — those are read directly by
+	// PAI tools, not by OpenCode's provider routing.
+
 	if (voiceEnvVar && state.collected.voiceApiKey) {
 		envContent += `${voiceEnvVar}=${state.collected.voiceApiKey}\n`;
 		if (state.collected.voiceProvider === "google") {
@@ -541,7 +540,22 @@ export async function runFreshInstall(
   });
   await emit({
     event: "message",
-    content: "Using OpenCode Zen (free models) — no API key required.\n\n💡 To connect premium providers later, run `/connect` inside OpenCode.",
+    content: [
+      "Using OpenCode Zen (free models) — no API key required.",
+      "",
+      "All agents default to opencode/big-pickle, which is always available on Zen free.",
+      "",
+      "To switch to a premium provider after install (two steps required):",
+      "  Step 1 — Connect the provider inside a running OpenCode session:",
+      "            /connect",
+      "            (This stores credentials in OpenCode's own config — not in .env)",
+      "  Step 2 — Update agent model assignments in opencode.json:",
+      "            bun run .opencode/tools/switch-provider.ts <profile>",
+      "            bun run .opencode/tools/switch-provider.ts --list",
+      "",
+      "The default remains opencode/big-pickle (Zen free) until Step 2 is performed.",
+      "Free model list: https://opencode.ai/docs/zen/",
+    ].join("\n"),
   });
   await emit({ event: "step_complete", step: "api-keys" });
 

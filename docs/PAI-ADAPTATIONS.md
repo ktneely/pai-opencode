@@ -136,12 +136,13 @@ export function fileLog(message: string, level = "info") {
 
 ### Skills System
 
-**100% unchanged** — PAI skill discovery now uses the native OpenCode scanner via symlink (`skills/PAI → ../PAI`). OpenCode discovers `PAI/SKILL.md` automatically without any bootstrap.
+**Skill content unchanged** — SKILL.md format, workflow files, and trigger logic are identical to v2.x. What changed is the *discovery path*: PAI now uses the native OpenCode scanner via the symlink `skills/PAI → ../PAI`, so OpenCode discovers `PAI/SKILL.md` automatically without any plugin intervention.
 
-- All 29 skills work identically
+- All skills work identically (invoke, trigger, and output behaviour unchanged)
 - SKILL.md format unchanged
 - Workflow files unchanged
 - Skill trigger logic unchanged
+- Discovery path changed: bootstrap → native scanner via symlink
 
 ### Memory Structure
 
@@ -222,12 +223,12 @@ The v3.0 release represents a fundamental shift in how PAI Core loads into conte
 **`pai-unified.ts` — What it does now:**
 
 ```text
-Before: Bootstrap loading + User identity context
-After:  User identity context only
+Before: Bootstrap loading (Algorithm + ISC + Capabilities) + behavioral governance + user identity
+After:  Behavioral governance + user identity context only (no Algorithm content)
 ```
 
-The plugin now loads only the pieces OpenCode's native system cannot provide:
-- `PAI/AISTEERINGRULES.md` — behavioral governance (system-level)
+The plugin now loads only the pieces OpenCode's native system cannot provide — files that are user-specific or cannot live in a committed skill file:
+- `PAI/AISTEERINGRULES.md` — behavioral governance (system-level, applies to all sessions)
 - `PAI/USER/ABOUTME.md` — personal background
 - `PAI/USER/TELOS/TELOS.md` — goals and mission
 - `PAI/USER/DAIDENTITY.md` — DA name and personality
