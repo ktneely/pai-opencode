@@ -302,7 +302,7 @@ async function loadUserSystemContext(): Promise<string | null> {
 
 		return `<system-reminder>\nPAI CONTEXT (User Context)\n\n${fullContext}\n\n---\nPAI Core Skill loaded via skill system. Skills load on-demand via Skill tool.\n</system-reminder>`;
 	} catch (error) {
-		fileLogError("Failed to load minimal bootstrap", error);
+		fileLogError("Failed to load user system context", error);
 		// Return null to signal failure - caller should handle
 		return null;
 	}
@@ -370,8 +370,8 @@ export const PaiUnified: Plugin = async (_ctx) => {
 	/**
 	 * CONTEXT INJECTION (SessionStart equivalent)
 	 *
-	 * WP2: Injects minimal bootstrap (~7KB) instead of full 233KB context.
-	 * Skills load on-demand via OpenCode native skill tool.
+	 * Injects user system context (steering rules + identity files, ~7KB).
+	 * PAI Core Skill loads via native skill system (tier:always). Other skills load on-demand.
 	 *
 	 * NOTE: Only loads when PAI_ENABLED=1 is set (via `pai` wrapper).
 	 * Plain `opencode` launches without PAI context by design.
@@ -387,26 +387,26 @@ export const PaiUnified: Plugin = async (_ctx) => {
 				return;
 			}
 
-			fileLog("Injecting minimal bootstrap context (WP2 lazy loading)...");
+			fileLog("Injecting user system context (steering rules + identity)...");
 
 			// Emit session start
 			emitSessionStart({ model: (input as any).model }).catch(() => {});
 
-				// WP2: Use minimal bootstrap instead of full context loader
-				const bootstrap = await loadUserSystemContext();
+				// Load user-specific context (AISTEERINGRULES + USER/* identity files)
+				const userContext = await loadUserSystemContext();
 
-				if (bootstrap && bootstrap.length > 0) {
-					output.system.push(bootstrap);
-					fileLog(`Context injected successfully (${bootstrap.length} chars)`);
+				if (userContext && userContext.length > 0) {
+					output.system.push(userContext);
+					fileLog(`Context injected successfully (${userContext.length} chars)`);
 
 					// Emit context loaded
 					emitContextLoaded({
 						files_loaded: 1,
-						total_size: bootstrap.length,
+						total_size: userContext.length,
 						success: true,
 					}).catch(() => {});
 				} else {
-					fileLog("Context injection skipped: empty bootstrap", "warn");
+					fileLog("Context injection skipped: empty user context", "warn");
 					// Emit context load failure
 					emitContextLoaded({
 						files_loaded: 0,

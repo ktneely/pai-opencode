@@ -196,7 +196,7 @@ export function fileLog(message: string, level = "info") {
 
 ## v3.0 Native OpenCode Architecture
 
-> **Architecture Decision:** ADR-020 - Native OpenCode Context Loading (Bootstrap Removal)
+> [!note] **Architecture Decision:** ADR-020 — Native OpenCode Context Loading (Bootstrap Removal)
 
 The v3.0 release represents a fundamental shift in how PAI Core loads into context. The custom bootstrap mechanism built for earlier versions became redundant once OpenCode's native skill system matured — so we removed it entirely.
 
@@ -234,6 +234,50 @@ The plugin now loads only the pieces OpenCode's native system cannot provide:
 
 PAI Core (Algorithm, ISC, Capabilities) loads automatically via the skill system.
 
+### v3.0 Architecture — Context Flow
+
+```
+OpenCode session start
+  │
+  ├─► GenerateSkillIndex.ts (ALWAYS_LOADED_SKILLS)
+  │       └─► skills/PAI symlink → PAI/SKILL.md   [tier:always]
+  │               Algorithm, ISC, Capabilities — always in context
+  │
+  └─► pai-unified.ts plugin (loadUserSystemContext)
+          └─► PAI/AISTEERINGRULES.md              [behavioral governance]
+          └─► USER/ABOUTME.md                     [personal background]
+          └─► USER/TELOS/TELOS.md                 [goals & mission]
+          └─► USER/DAIDENTITY.md                  [DA name & personality]
+          └─► USER/AISTEERINGRULES.md             [personal steering rules]
+```
+
+<details>
+<summary>Detailed Mermaid Diagram</summary>
+
+```mermaid
+flowchart TD
+    A[OpenCode session start] --> B[GenerateSkillIndex.ts]
+    A --> C[pai-unified.ts]
+
+    B --> D["ALWAYS_LOADED_SKILLS\n['PAI','CORE','Development',...]"]
+    D --> E["skills/PAI symlink\n→ PAI/SKILL.md"]
+    E --> F["PAI Core Skill\ntier: always\nAlgorithm · ISC · Capabilities"]
+
+    C --> G["loadUserSystemContext()"]
+    G --> H["PAI/AISTEERINGRULES.md\nBehavioral governance"]
+    G --> I["USER/ABOUTME.md\nPersonal background"]
+    G --> J["USER/TELOS/TELOS.md\nGoals & mission"]
+    G --> K["USER/DAIDENTITY.md\nDA name & personality"]
+    G --> L["USER/AISTEERINGRULES.md\nPersonal steering rules"]
+
+    F --> M[Session context]
+    H & I & J & K & L --> M
+
+    N["opencode.json\nagent model assignments"] --> O[Agent routing per task]
+```
+
+</details>
+
 ### AGENTS.md Simplification
 
 **From 450 LOC → 14 LOC**
@@ -262,7 +306,14 @@ All PAI behavior lives in `PAI/SKILL.md` — the single source of truth.
 const ALWAYS_LOADED_SKILLS = [];
 
 // After
-const ALWAYS_LOADED_SKILLS = ['PAI'];
+const ALWAYS_LOADED_SKILLS = [
+  'PAI',         // ← PAI Core Skill (Algorithm, ISC, Capabilities)
+  'CORE',
+  'Development',
+  'Research',
+  'Blogging',
+  'Art',
+];
 ```
 
 This ensures the full 479-line PAI Core Skill (Algorithm, ISC, Capabilities) is always available in session context without any plugin intervention.
